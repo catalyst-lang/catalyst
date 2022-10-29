@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <map>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <variant>
 #include <vector>
@@ -25,7 +26,7 @@
 #if CATALYST_PLATFORM_POSIX
 #include <csignal>
 void signal_handler(int s) {
-	std::cout << std::endl << rang::style::reset << rang::fg::red << rang::fg::bold;
+	std::cout << std::endl << rang::style::reset << rang::fg::red << rang::style::bold;
 	std::cout << "Control-C detected, exiting..." << rang::style::reset << std::endl;
 	std::exit(1); // will call the correct exit func, no unwinding of the stack though
 }
@@ -52,7 +53,7 @@ int main(const options &opts) {
 	if (opts.dump_ast) {
 		lexy::parse_tree_for<decltype(file.buffer())> tree;
 		auto result = lexy::parse_as_tree<grammar::translation_unit>(
-	   		tree, file.buffer(), lexy_ext::report_error.path(opts.input.c_str()));
+		    tree, file.buffer(), lexy_ext::report_error.path(opts.input.c_str()));
 
 		switch (opts.output_format) {
 		default:
@@ -70,12 +71,11 @@ int main(const options &opts) {
 
 	// auto root = std::get<ast::json_object>(((ast::json_value *)tree.root().address())->v);
 
-	auto json = lexy::parse<grammar::translation_unit>(
+	auto ast = lexy::parse<grammar::translation_unit>(
 	    file.buffer(), lexy_ext::report_error.path(opts.input.c_str()));
-	// auto lexeme = (lexy::buffer_lexeme<>*)json.value().ident.lexeme;
-	if (json.has_value()) {
-		auto il = json.value().declarations[0].ident.get_input_location(file.buffer());
-		auto ila = json.value().declarations[0].ident.get_input_line_annotation(file.buffer());
+	if (!ast.is_error()) {
+		auto il = ast.value().declarations[0].ident.get_input_location(file.buffer());
+		auto ila = ast.value().declarations[0].ident.get_input_line_annotation(file.buffer());
 		std::string annotated = std::string(ila.annotated.begin(), ila.annotated.end());
 		std::string after = std::string(ila.after.begin(), ila.after.end());
 		std::string before = std::string(ila.before.begin(), ila.before.end());
@@ -88,8 +88,10 @@ int main(const options &opts) {
 			std::cout << ' ';
 		for (auto i = 0; i != ila.annotated.size(); ++i)
 			std::cout << '^';
-		// std::cout << json.value().ident.name << ": " << (int)json.value().ident.lexeme.begin <<
-		// std::endl;
+		std::cout << std::endl;
+	} else {
+		std::cout << rang::fg::red << "Errors occurred." << rang::fg::reset << std::endl;
+		return 1;
 	}
 
 	return 0;
@@ -104,9 +106,10 @@ int main(int argc, char **argv) {
 	CLI::App app{"Catalyst Parser"};
 	options options;
 
-	app.set_version_flag("--version",
-	                     std::format("{} {} (Catalyst {})", app.get_description(),
-	                                 parser::version.string(), catalyst::version.string()));
+	std::stringstream version_string;
+	version_string << app.get_description() << " " << parser::version.string() << "(Catalyst "
+	               << catalyst::version.string() << ")";
+	app.set_version_flag("--version", version_string.str());
 
 	app.add_option("input", options.input, "The Catalyst file to be parsed.")
 	    ->required()

@@ -2,7 +2,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "SCons Debug",
+            "label": "SCons Debug Windows",
             "command": "scons DEBUG=1",
             "type": "shell",
             "group": {
@@ -12,11 +12,21 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "SCons Release",
+            "label": "SCons Release Windows",
             "command": "scons",
             "type": "shell",
             "group": "build",
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "SCons Debug LLDB",
+            "command": "scons DEBUG=1",
+            "type": "shell",
+            "group": {
+				"kind": "build",
+				"isDefault": true
+			},
+            "problemMatcher": "$gcc"
         },
     ]
 }

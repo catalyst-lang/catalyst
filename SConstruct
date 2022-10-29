@@ -3,7 +3,7 @@ env = Environment(SCONS_CXX_STANDARD="c++17")
 env['SYSTEM'] = platform.system().lower()
 
 if env['SYSTEM'] in ['linux', 'darwin']:
-    env.Append( CCFLAGS=["-std=c++17"] )
+    env.Append( CCFLAGS=["-std=c++20"] )
 if env['SYSTEM'] == 'windows':
     env.Append( CCFLAGS=["/std:c++20", "/EHsc"] )
 

@@ -1,3 +1,4 @@
 [submodule "toolchain/common/contrib/lexy"]
 	path = toolchain/common/contrib/lexy
 	url = https://github.com/foonathan/lexy.git
+	ignore = dirty
