@@ -1,0 +1,8 @@
+module test
+
+// this is a test
+fn main() {
+    var x = 5
+    var lskdj = 4323;
+    var b = x
+}
