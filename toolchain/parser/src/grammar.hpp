@@ -88,7 +88,7 @@ struct type {
 	});
 };
 
-struct expr_ident : lexy::transparent_production {
+struct expr_ident {
 	static constexpr auto name = "identifier expression";
 	static constexpr auto rule = dsl::p<ident>;
 	static constexpr auto value = lexy::construct<ast::expr_ident>;
@@ -208,6 +208,14 @@ struct nested_expr : lexy::transparent_production
     static constexpr auto value = lexy::forward<ast::expr_ptr>;
 };
 
+struct argument_list
+{
+    static constexpr auto whitespace = dsl::ascii::space;
+    static constexpr auto rule = dsl::terminator(LEXY_LIT(")"))
+                                     .opt_list(dsl::recurse<expr>, dsl::sep(dsl::comma));
+    static constexpr auto value = lexy::as_list<std::vector<ast::expr_ptr>>;
+};
+
 struct expr : lexy::expression_production {
 	static constexpr auto name = "expression";
 	static constexpr auto atom = [] {
@@ -215,19 +223,17 @@ struct expr : lexy::expression_production {
 		return paren_expr | dsl::p<expr_literal> | dsl::else_ >> dsl::p<expr_ident>;
 	}();
 
-	// struct prec2 : dsl::postfix_op {
-	// 	static constexpr auto op = [] {
-	// 		//auto item = ;
-	// 		auto item = dsl::lit_c<'('> + dsl::list(dsl::recurse<expr>, dsl::sep(dsl::comma)) + dsl::lit_c<')'>;
-	// 		//return dsl::op<pl>(dsl::round_bracketed.list(item, dsl::sep(dsl::comma)));
-	// 		return dsl::op(item);
-	// 	}();
-	// 	using operand = dsl::atom;
-	// };
+	struct prec2 : dsl::postfix_op {
+		static constexpr auto op = [] {
+			auto item = dsl::lit_c<'('> >> dsl::p<argument_list>;
+			return dsl::op(item);
+		}();
+		using operand = dsl::atom;
+	};
 
 	struct prec3 : dsl::prefix_op {
 		static constexpr auto op = dsl::op<ast::expr_unary_arithmetic::negate>(dsl::lit_c<'-'>);
-		using operand = dsl::atom;
+		using operand = prec2;
 	};
 
 	struct prec5 : dsl::infix_op_left {
@@ -250,11 +256,13 @@ struct expr : lexy::expression_production {
 		lexy::new_<ast::expr_ident, ast::expr_ptr>,
 		// unary/binary operators
 		lexy::new_<ast::expr_unary_arithmetic, ast::expr_ptr>,
-		lexy::new_<ast::expr_binary_arithmetic, ast::expr_ptr>
+		lexy::new_<ast::expr_binary_arithmetic, ast::expr_ptr>,
 		// conditional and assignment
 
-
-		//lexy::op<prec2::op>
+		// call
+		[](auto lhs, auto pos, std::vector<ast::expr_ptr> params) {
+			return std::make_shared<ast::expr_call>(lhs, params);
+		}
 
 		//lexy::new_<ast::expr_call, ast::expr_ptr>
 	    // lexy::forward<ast::expr_if>,

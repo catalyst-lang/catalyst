@@ -23,7 +23,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/toolchain/build/parser.exe",
             "preLaunchTask": "SCons Debug Windows",
-            "args": ["test_files/1.ct"],
+            "args": ["test_files/1.ct", "--dump-ast"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

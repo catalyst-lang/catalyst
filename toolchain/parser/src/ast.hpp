@@ -115,7 +115,7 @@ struct expr_call : expr {
 	std::vector<expr_ptr> parameters;
 
 	//explicit expr_call(expr_ptr lhs) : lhs(lhs) {}
-	expr_call() {}
+	expr_call(expr_ptr lhs, std::vector<expr_ptr> &params) : lhs(lhs), parameters(params) {}
 };
 
 struct expr_unary_arithmetic : expr {
