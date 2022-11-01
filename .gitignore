@@ -41,3 +41,5 @@ config.log
 # MSVC debug information
 *.pdb
 *.ilk
+
+**/build

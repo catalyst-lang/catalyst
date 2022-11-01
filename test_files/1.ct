@@ -6,7 +6,7 @@ fn main
     ij, 
 ljk: jklj) {
     
-    var i = 4u;
+    var i = 4u + 4;
     
     var b:      jkls = 8;
 

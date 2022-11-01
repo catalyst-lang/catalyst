@@ -15,8 +15,10 @@
 
 namespace catalyst::parser {
 struct lexeme {
-	parser::char_type *begin, *end;
-	lexeme(parser::char_type *begin, parser::char_type *end) : begin(begin), end(end) {}
+	const parser::char_type *begin;
+	const parser::char_type *end;
+	explicit lexeme(const parser::char_type *begin, const parser::char_type *end)
+		: begin(begin), end(end) {}
 	// lexeme(const parser::char_type *begin, const parser::char_type *end) : begin(begin), end(end)
 	// {} lexeme(const lexeme &n) : begin(n.begin), end(n.end) { }
 };
@@ -24,9 +26,7 @@ struct lexeme {
 struct positional {
 	parser::lexeme lexeme;
 
-	positional(parser::char_type *begin, parser::char_type *end)
-		: lexeme(begin, end) {}
-
+	positional(const parser::char_type *begin, const parser::char_type *end) : lexeme(begin, end) {}
 	// explicit positional(const parser::lexeme &lexeme) : lexeme(lexeme) {}
 	// positional(const positional &n) : lexeme(n.lexeme) { }
 
@@ -45,12 +45,14 @@ struct positional {
 namespace catalyst::ast {
 
 struct ident : parser::positional {
-	explicit ident(parser::char_type *begin, parser::char_type *end, std::string &name) : name(name),
-	parser::positional(begin, end) {}
+	explicit ident(parser::char_type *begin, parser::char_type *end, std::string &&name)
+		: name(name), parser::positional(begin, end) {}
 	std::string name;
 };
 
 struct type : parser::positional {
+	explicit type(parser::char_type *begin, parser::char_type *end, ident &ident)
+		: ident(ident), parser::positional(begin, end) {}
 	ident ident;
 };
 
@@ -62,9 +64,16 @@ struct expr_ident : expr, ident {
 	// expr_ident(parser::lexeme &lexeme, std::string &name) : ident(lexeme, name) {}
 };
 
-struct expr_literal : expr, parser::positional {};
+struct expr_literal : expr, parser::positional {
+		expr_literal(const parser::char_type *begin, const parser::char_type *end)
+		: parser::positional(begin, end) {}
+
+};
 
 struct expr_literal_bool : expr_literal {
+		expr_literal_bool(const parser::char_type *begin, const parser::char_type *end, bool value)
+		: expr_literal(begin, end), value(value) {}
+
 	bool value;
 };
 
@@ -85,6 +94,12 @@ enum class numeric_classifier {
 };
 
 struct expr_literal_numeric : expr_literal {
+	expr_literal_numeric(const parser::char_type *begin, const parser::char_type *end, int sign,
+	                     int64_t value, std::optional<int64_t> &fraction,
+	                     std::optional<int16_t> &exponent, numeric_classifier classifier)
+		: expr_literal(begin, end), sign(sign), integer(value), fraction(fraction),
+		  exponent(exponent), classifier(classifier) {}
+
 	int sign;
 	int64_t integer;
 	std::optional<int64_t> fraction;
@@ -143,12 +158,15 @@ struct statement_expr {
 using statement = std::variant<statement_var, statement_const, statement_expr>;
 
 struct decl : parser::positional {
-	decl(parser::char_type *begin, parser::char_type *end, ast::ident &ident)
+	decl(const parser::char_type *begin, const parser::char_type *end, ast::ident &ident)
 		: parser::positional(begin, end), ident(ident) {}
 	ident ident;
 };
 
 struct fn_parameter : parser::positional {
+	// fn_parameter(parser::char_type *begin, parser::char_type *end, ast::ident &ident,
+	//              std::optional<type> &type)
+	// 	: parser::positional(begin, end), ident(ident), type(type) {}
 	ident ident;
 	std::optional<type> type;
 };
@@ -164,7 +182,7 @@ struct fn_body_expr {
 using fn_body = std::variant<fn_body_block, fn_body_expr>;
 
 struct decl_fn : decl {
-	decl_fn(parser::char_type *begin, parser::char_type *end, ast::ident &ident,
+	decl_fn(const parser::char_type *begin, const parser::char_type *end, ast::ident &ident,
 	        std::vector<ast::fn_parameter> &parameter_list, fn_body &body)
 		: decl(begin, end, ident), parameter_list(parameter_list), body(body) {}
 	std::vector<ast::fn_parameter> parameter_list;

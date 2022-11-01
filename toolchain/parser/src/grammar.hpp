@@ -84,7 +84,7 @@ struct ident : lexy::transparent_production {
 struct type {
 	static constexpr auto rule = dsl::position + dsl::p<ident> + dsl::position;
 	static constexpr auto value = lexy::callback<ast::type>([](auto begin, auto ident, auto end) {
-		return ast::type{begin, end, ident};
+		return ast::type((parser::char_type*) begin, (parser::char_type*)end, ident);
 	});
 };
 
@@ -108,7 +108,7 @@ struct expr_literal_bool {
 	                             dsl::position + (dsl::p<true_> | dsl::p<false_>)+dsl::position;
 	static constexpr auto value =
 		lexy::callback<ast::expr_ptr>([](auto begin, auto value, auto end) {
-			return std::make_shared<ast::expr_literal_bool>({begin, end, value});
+			return std::make_shared<ast::expr_literal_bool>(begin, end, value);
 		});
 };
 
@@ -123,14 +123,14 @@ struct expr_literal_numeric {
 			.map<'u'>(ast::numeric_classifier::unsigned_)
 			.map<'i'>(ast::numeric_classifier::signed_)
 			.map<'s'>(ast::numeric_classifier::signed_)
-			.map<"i8">(ast::numeric_classifier::signed8)
-			.map<"u8">(ast::numeric_classifier::unsigned8)
-			.map<"i16">(ast::numeric_classifier::signed16)
-			.map<"u16">(ast::numeric_classifier::unsigned16)
-			.map<"i32">(ast::numeric_classifier::signed32)
-			.map<"u32">(ast::numeric_classifier::unsigned32)
-			.map<"i64">(ast::numeric_classifier::signed64)
-			.map<"u64">(ast::numeric_classifier::unsigned64);
+			.map<LEXY_SYMBOL("i8")>(ast::numeric_classifier::signed8)
+			.map<LEXY_SYMBOL("u8")>(ast::numeric_classifier::unsigned8)
+			.map<LEXY_SYMBOL("i16")>(ast::numeric_classifier::signed16)
+			.map<LEXY_SYMBOL("u16")>(ast::numeric_classifier::unsigned16)
+			.map<LEXY_SYMBOL("i32")>(ast::numeric_classifier::signed32)
+			.map<LEXY_SYMBOL("u32")>(ast::numeric_classifier::unsigned32)
+			.map<LEXY_SYMBOL("i64")>(ast::numeric_classifier::signed64)
+			.map<LEXY_SYMBOL("u64")>(ast::numeric_classifier::unsigned64);
 	// clang-format on
 
 	struct sign : lexy::transparent_production {
@@ -183,8 +183,9 @@ struct expr_literal_numeric {
 	       std::optional<int16_t> exponent, std::optional<ast::numeric_classifier> suffix,
 	       auto end) {
 			return std::make_shared<ast::expr_literal_numeric>(
-				{begin, end, sign, value, fraction, exponent,
-		         suffix.value_or(ast::numeric_classifier::none)});
+				begin, end, sign, value, fraction, exponent,
+		         suffix.value_or(ast::numeric_classifier::none)
+				 );
 		});
 };
 
@@ -262,9 +263,14 @@ struct statement_expr {
 };
 
 struct statement : lexy::transparent_production {
+	struct expected_nl_sc
+    {
+        static constexpr auto name = "expected newline or semicolon";
+    };
+
 	static constexpr auto name = "statement";
 	static constexpr auto rule =
-		dsl::p<statement_var> | dsl::p<statement_const> | dsl::else_ >> dsl::p<statement_expr>;
+		(dsl::p<statement_var> | dsl::p<statement_const> | dsl::else_ >> dsl::p<statement_expr>) + dsl::peek(dsl::semicolon | dsl::newline).error<expected_nl_sc>;
 	static constexpr auto value = lexy::construct<ast::statement>;
 };
 
@@ -290,17 +296,17 @@ struct statement : lexy::transparent_production {
 // 	static constexpr auto value = lexy::as_list<std::vector<ast::statement>>;
 // };
 
-struct nested_value {
-	static constexpr auto whitespace = dsl::ascii::space;
-	static constexpr auto rule = dsl::recurse<statement>;
-	static constexpr auto value = lexy::forward<ast::statement>;
-};
+// struct nested_value {
+// 	static constexpr auto whitespace = dsl::ascii::space;
+// 	static constexpr auto rule = dsl::recurse<statement>;
+// 	static constexpr auto value = lexy::forward<ast::statement>;
+// };
 
 struct fn_body_block {
 	static constexpr auto rule = [] {
 		// dsl::curly_bracketed(dsl::p<statements>);
-		auto item = dsl::p<nested_value>;
-		auto sep = dsl::trailing_sep(dsl::semicolon);
+		auto item = dsl::recurse<statement>;
+		auto sep = dsl::trailing_sep(dsl::while_one(dsl::semicolon | dsl::newline));
 		auto bracketed =
 			dsl::brackets(dsl::lit_c<'{'> >> dsl::whitespace(dsl::ascii::space), dsl::lit_c<'}'>);
 		return bracketed.opt_list(item, sep);
@@ -331,7 +337,7 @@ struct fn_parameter {
 		dsl::position + dsl::p<ident> + dsl::opt(dsl::colon >> dsl::p<type>) + dsl::position;
 	static constexpr auto value =
 		lexy::callback<ast::fn_parameter>([](auto begin, auto ident, auto type, auto end) {
-			return ast::fn_parameter{begin, end, ident, type};
+			return ast::fn_parameter { {begin, end}, ident, type };
 		});
 };
 
