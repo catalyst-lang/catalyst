@@ -104,11 +104,27 @@
         "cstdarg": "cpp",
         "cwctype": "cpp",
         "stack": "cpp",
-        "string_view": "cpp"
+        "string_view": "cpp",
+        "unordered_set": "cpp"
     },
     "files.insertFinalNewline": true,
 
     "python.analysis.diagnosticSeverityOverrides": {
         "reportUndefinedVariable": "none" // Ignore for SCons
-    }
+    },
+
+    "testMate.cpp.test.executables": "toolchain/build/**/*{test,Test,TEST}*",
+    "testMate.cpp.debug.configTemplate": {
+        "type": "cppvsdbg",
+        "linux": { "type": "cppdbg", "MIMode": "gdb" },
+        "darwin": { "type": "cppdbg", "MIMode": "lldb" },
+        "win32": { "type": "cppvsdbg" },
+        "program": "${exec}",
+        "args": "${argsArray}",
+        "cwd": "${cwd}",
+        "env": "${envObj}",
+        "environment": "${envObjArray}",
+        "sourceFileMap": "${sourceFileMapObj}",
+      }
+      
 }

@@ -1,10 +1,20 @@
+from msilib.schema import Directory
+
+import os
+
 Import('env')
 
 env = env.Clone()
 
-# lexy
-env.Append(CPPPATH = '../common/contrib/lexy/include')
+cpppath = ['../common/contrib/lexy/include', '../common']
+
+env.Append(CPPPATH = list(map(os.path.abspath, cpppath)))
 env.Append(CPPDEFINES = ['LEXY_HAS_UNICODE_DATABASE=1'])
+
 lexy_sources = ['../common/contrib/lexy/src/input/file.cpp']
 
-env.Program(target='parser', source=lexy_sources + ['parser.cpp'])
+env.Library(target='libparser', source=lexy_sources + Glob('src/*.cpp', exclude="src/main.cpp"))
+env.Program(target='parser', LIBS=['libparser'], LIBPATH='.', source=["src/main.cpp"])
+
+Export('env')
+SConscript('tests/SConscript')

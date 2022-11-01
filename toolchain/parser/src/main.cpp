@@ -1,5 +1,5 @@
-#include "../common/contrib/CLI11.hpp"
-#include "../common/contrib/rang.hpp"
+#include <contrib/CLI11.hpp>
+#include <contrib/rang.hpp>
 
 #include <cinttypes>
 #include <cstdint>
@@ -18,9 +18,10 @@
 
 #include <lexy_ext/report_error.hpp>
 
-#include "../common/platform.hpp"
+#include "catalyst/platform.hpp"
 
 #include "ast.hpp"
+#include "parser.hpp"
 #include "grammar.hpp"
 
 #if CATALYST_PLATFORM_POSIX
@@ -40,7 +41,7 @@ struct options {
 	bool dump_ast = false;
 	bool dump_bytecode = false;
 
-	enum class OutputFormat { ASCII = 0, Colors, Fancy } output_format = OutputFormat::ASCII;
+	enum class OutputFormat { ASCII = 0, Color, Fancy } format = OutputFormat::ASCII;
 };
 
 int main(const options &opts) {
@@ -55,12 +56,12 @@ int main(const options &opts) {
 		auto result = lexy::parse_as_tree<grammar::translation_unit>(
 		    tree, file.buffer(), lexy_ext::report_error.path(opts.input.c_str()));
 
-		switch (opts.output_format) {
+		switch (opts.format) {
 		default:
 		case options::OutputFormat::ASCII:
 			lexy::visualize(stdout, tree, {});
 			break;
-		case options::OutputFormat::Colors:
+		case options::OutputFormat::Color:
 			lexy::visualize(stdout, tree, {lexy::visualize_use_color});
 			break;
 		case options::OutputFormat::Fancy:
@@ -74,7 +75,9 @@ int main(const options &opts) {
 	auto ast = lexy::parse<grammar::translation_unit>(
 	    file.buffer(), lexy_ext::report_error.path(opts.input.c_str()));
 	if (!ast.is_error()) {
-		auto il = ast.value().declarations[0].ident.get_input_location(file.buffer());
+		auto fn = std::get<ast::decl_fn>(ast.value().declarations[0]);
+        auto body = std::get<ast::fn_body_block>(fn.body);
+		/*auto il = ast.value().declarations[0]->ident.get_input_location(file.buffer());
 		auto ila = ast.value().declarations[0].ident.get_input_line_annotation(file.buffer());
 		std::string annotated = std::string(ila.annotated.begin(), ila.annotated.end());
 		std::string after = std::string(ila.after.begin(), ila.after.end());
@@ -88,6 +91,8 @@ int main(const options &opts) {
 			std::cout << ' ';
 		for (auto i = 0; i != ila.annotated.size(); ++i)
 			std::cout << '^';
+		std::cout << std::endl;
+		*/
 		std::cout << std::endl;
 	} else {
 		std::cout << rang::fg::red << "Errors occurred." << rang::fg::reset << std::endl;
@@ -119,9 +124,9 @@ int main(int argc, char **argv) {
 
 	std::map<std::string, options::OutputFormat> output_type_map{
 	    {"ascii", options::OutputFormat::ASCII},
-	    {"yes", options::OutputFormat::Colors},
+	    {"color", options::OutputFormat::Color},
 	    {"fancy", options::OutputFormat::Fancy}};
-	app.add_option("--output-format", options.output_format, "Set the output format")
+	app.add_option("--format", options.format, "Set the output format")
 	    ->transform(CLI::CheckedTransformer(output_type_map, CLI::ignore_case));
 
 	std::atexit([]() { std::cout << rang::style::reset; });

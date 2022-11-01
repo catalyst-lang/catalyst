@@ -1,5 +1,11 @@
 import platform
-env = Environment(SCONS_CXX_STANDARD="c++17")
+
+vars = Variables(None, ARGUMENTS)
+vars.Add(BoolVariable("tests", "Build the unit tests", False))
+
+env = Environment(variables = vars, SCONS_CXX_STANDARD="c++17")
+Help(vars.GenerateHelpText(env))
+
 env['SYSTEM'] = platform.system().lower()
 
 if env['SYSTEM'] in ['linux', 'darwin']:

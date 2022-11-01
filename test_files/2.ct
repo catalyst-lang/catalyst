@@ -1,8 +1,21 @@
-module test
+
 
 // this is a test
-fn main() {
-    var x = 5
-    var lskdj = 4323;
-    var b = x
+fn main
+(
+    ij, 
+ljk: jklj) {
+    
+    STMT ;; ;;;STMT;
+
+    var i = EXPR;
+    
+    STMT;
+;
+;
+
+STMT
+
 }
+
+fn double(a, b){}// => b

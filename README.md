@@ -40,6 +40,10 @@ scons
    We don't want to end up on the [Google Graveyard](https://killedbygoogle.com/) and we don't want a marketing firm to run the organization of a programming language. We believe in Open Source and the governance of OS-projects. We know about Carbon. They seem sincere, but still [follow](https://github.com/carbon-language/carbon-lang/pull/221) [the](https://github.com/carbon-language/carbon-lang/pull/193) [Google](https://github.com/carbon-language/carbon-lang/blob/trunk/docs/project/evolution.md#carbon-leads-1) [agenda](https://cla.developers.google.com/about/google-individual?csw=1).
 
 
+## Language Design Principles
+see [Language Design Principles](language_design_principles.md).
+
+
 ## Project status
 
 -   ❌ Structured programming

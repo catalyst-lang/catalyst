@@ -1,3 +1,3 @@
 Import('env')
 Export('env')
-SConscript('parser/SConscript')
+SConscript('parser/SConscript', variant_dir='build', duplicate=0)

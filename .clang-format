@@ -2,7 +2,7 @@
 BasedOnStyle: LLVM
 TabWidth: '4'
 IndentWidth: '4'
-UseTab: ForIndentation
+UseTab: AlignWithSpaces
 ColumnLimit: 100
 AlwaysBreakTemplateDeclarations: 'Yes'
 ...

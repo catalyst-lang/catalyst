@@ -19,6 +19,13 @@
             "problemMatcher": "$msCompile"
         },
         {
+            "label": "SCons Tests Windows",
+            "command": "scons tests=yes",
+            "type": "shell",
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
+        {
             "label": "SCons Debug LLDB",
             "command": "scons DEBUG=1",
             "type": "shell",
