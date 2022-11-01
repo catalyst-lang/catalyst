@@ -88,7 +88,8 @@ struct type {
 	});
 };
 
-struct expr_ident {
+struct expr_ident : lexy::transparent_production {
+	static constexpr auto name = "identifier expression";
 	static constexpr auto rule = dsl::p<ident>;
 	static constexpr auto value = lexy::construct<ast::expr_ident>;
 };
@@ -158,7 +159,7 @@ struct expr_literal_numeric {
 		static constexpr auto value = lexy::as_integer<std::int16_t>;
 	};
 
-	static constexpr auto name = "integer";
+	static constexpr auto name = "numeric";
 	static constexpr auto rule = [] {
 		auto decimal_digits = integer<dsl::decimal>;
 		auto octal_digits = integer<dsl::octal>;
@@ -189,15 +190,15 @@ struct expr_literal_numeric {
 		});
 };
 
-struct expr_literal : lexy::transparent_production {
-	static constexpr auto name = "expression";
+struct expr_literal {
+	static constexpr auto name = "literal expression";
 	static constexpr auto rule = dsl::p<expr_literal_bool> | dsl::p<expr_literal_numeric>;
 	static constexpr auto value = lexy::forward<ast::expr_ptr>;
 };
 
 struct expr : lexy::expression_production {
 	static constexpr auto name = "expression";
-	static constexpr auto atom = dsl::p<expr_literal>;
+	static constexpr auto atom = dsl::p<expr_literal> | dsl::else_ >> dsl::p<expr_ident>;
 
 	struct prefix : dsl::prefix_op {
 		static constexpr auto op = dsl::op<ast::expr_unary_arithmetic::negate>(dsl::lit_c<'-'>);

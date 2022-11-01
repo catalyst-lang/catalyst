@@ -75,8 +75,8 @@ int main(const options &opts) {
 	auto ast = lexy::parse<grammar::translation_unit>(
 	    file.buffer(), lexy_ext::report_error.path(opts.input.c_str()));
 	if (!ast.is_error()) {
-		//auto fn = std::get<ast::decl_fn>(ast.value().declarations[0]);
-        //auto body = std::get<ast::fn_body_block>(fn.body);
+		auto fn = (ast::decl_fn*) ast.value().declarations[0].get();
+        auto body = std::get<ast::fn_body_block>(fn->body);
 		/*auto il = ast.value().declarations[0]->ident.get_input_location(file.buffer());
 		auto ila = ast.value().declarations[0].ident.get_input_line_annotation(file.buffer());
 		std::string annotated = std::string(ila.annotated.begin(), ila.annotated.end());

@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/toolchain/build/parser",
-            "args": ["test_files/1.ct"],
+            "args": ["test_files/1.ct", "--dump-ast"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "SCons Debug LLDB",

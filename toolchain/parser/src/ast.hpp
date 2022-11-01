@@ -45,6 +45,7 @@ struct positional {
 namespace catalyst::ast {
 
 struct ident : parser::positional {
+	ident(const ident &ident) : parser::positional(ident), name(ident.name) {}
 	explicit ident(parser::char_type *begin, parser::char_type *end, std::string &&name)
 		: name(name), parser::positional(begin, end) {}
 	std::string name;
@@ -61,7 +62,7 @@ struct expr {
 };
 
 struct expr_ident : expr, ident {
-	// expr_ident(parser::lexeme &lexeme, std::string &name) : ident(lexeme, name) {}
+	expr_ident(const ident &ident) : ast::ident(ident) {}
 };
 
 struct expr_literal : expr, parser::positional {
@@ -133,7 +134,10 @@ struct expr_binary_arithmetic : expr {
 	expr_ptr lhs, rhs;
 
 	explicit expr_binary_arithmetic(expr_ptr lhs, op_t op, expr_ptr rhs)
-		: op(op), lhs(LEXY_MOV(lhs)), rhs(LEXY_MOV(rhs)) {}
+		: op(op), lhs(lhs), rhs(rhs) {
+			expr *l = lhs.get();
+			std::cout << "bla" <<std::endl;
+		}
 };
 
 // using expr = std::variant<expr_literal, expr_ident, expr_binary_arithmetic,
