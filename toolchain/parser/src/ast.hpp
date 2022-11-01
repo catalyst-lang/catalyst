@@ -110,6 +110,14 @@ struct expr_literal_numeric : expr_literal {
 
 using expr_ptr = std::shared_ptr<struct expr>;
 
+struct expr_call : expr {
+	expr_ptr lhs;
+	std::vector<expr_ptr> parameters;
+
+	//explicit expr_call(expr_ptr lhs) : lhs(lhs) {}
+	expr_call() {}
+};
+
 struct expr_unary_arithmetic : expr {
 	enum op_t {
 		negate,
@@ -134,10 +142,7 @@ struct expr_binary_arithmetic : expr {
 	expr_ptr lhs, rhs;
 
 	explicit expr_binary_arithmetic(expr_ptr lhs, op_t op, expr_ptr rhs)
-		: op(op), lhs(lhs), rhs(rhs) {
-			expr *l = lhs.get();
-			std::cout << "bla" <<std::endl;
-		}
+		: op(op), lhs(lhs), rhs(rhs) {}
 };
 
 // using expr = std::variant<expr_literal, expr_ident, expr_binary_arithmetic,
