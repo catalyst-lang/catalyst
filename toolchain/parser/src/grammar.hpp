@@ -223,12 +223,17 @@ struct expr : lexy::expression_production {
 		return paren_expr | dsl::p<expr_literal> | dsl::else_ >> dsl::p<expr_ident>;
 	}();
 
-	struct prec2 : dsl::postfix_op {
+	struct prec1 : dsl::postfix_op {
 		static constexpr auto op = [] {
 			auto item = dsl::lit_c<'('> >> dsl::p<argument_list>;
 			return dsl::op(item);
 		}();
 		using operand = dsl::atom;
+	};
+	
+	struct prec2 : dsl::infix_op_left {
+		static constexpr auto op = dsl::op(dsl::lit_c<'.'>);
+		using operand = prec1;
 	};
 
 	struct prec3 : dsl::prefix_op {
@@ -259,9 +264,12 @@ struct expr : lexy::expression_production {
 		lexy::new_<ast::expr_binary_arithmetic, ast::expr_ptr>,
 		// conditional and assignment
 
-		// call
 		[](auto lhs, auto pos, std::vector<ast::expr_ptr> params) {
 			return std::make_shared<ast::expr_call>(lhs, params);
+		},
+
+		[](auto lhs, lexy::op<prec2::op>, auto rhs) {
+			return std::make_shared<ast::expr_member_access>(lhs, rhs);
 		}
 
 		//lexy::new_<ast::expr_call, ast::expr_ptr>

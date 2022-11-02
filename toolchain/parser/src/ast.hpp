@@ -114,8 +114,14 @@ struct expr_call : expr {
 	expr_ptr lhs;
 	std::vector<expr_ptr> parameters;
 
-	//explicit expr_call(expr_ptr lhs) : lhs(lhs) {}
 	expr_call(expr_ptr lhs, std::vector<expr_ptr> &params) : lhs(lhs), parameters(params) {}
+};
+
+struct expr_member_access : expr {
+	expr_ptr lhs;
+	expr_ptr rhs;
+
+	expr_member_access(expr_ptr lhs, expr_ptr rhs) : lhs(lhs), rhs(rhs) {}
 };
 
 struct expr_unary_arithmetic : expr {
