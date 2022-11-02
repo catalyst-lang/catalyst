@@ -141,13 +141,27 @@ struct expr_binary_arithmetic : expr {
 		times,
 		div,
 		pow,
+		mod,
 		bit_and,
 		bit_or,
 		bit_xor,
+		bit_lsh,
+		bit_rsh,
 	} op;
 	expr_ptr lhs, rhs;
 
 	explicit expr_binary_arithmetic(expr_ptr lhs, op_t op, expr_ptr rhs)
+		: op(op), lhs(lhs), rhs(rhs) {}
+};
+
+struct expr_binary_logical : expr {
+	enum op_t {
+		logical_and, 
+		logical_or
+	} op;
+	expr_ptr lhs, rhs;
+
+	explicit expr_binary_logical(expr_ptr lhs, op_t op, expr_ptr rhs)
 		: op(op), lhs(lhs), rhs(rhs) {}
 };
 
