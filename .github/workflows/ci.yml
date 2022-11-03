@@ -1,0 +1,65 @@
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - poc
+
+name: continuous-integration
+
+jobs:
+  unix:
+    strategy:
+      fail-fast: true
+      matrix:
+        platform: [ubuntu-22.04]
+        cxx_compiler: [clang++-20]
+        include:
+          - platform: macos-latest
+            cxx_compiler: "$(brew --prefix llvm@14)/bin/clang++"
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Ninja
+        uses: ashutoshvarma/setup-ninja@master
+        with:
+          # ninja version to download. Default: 1.10.0
+          version: 1.10.0
+
+      - name: Install macOS dependencies
+        if: ${{ matrix.platform == 'macos-latest' }}
+        run: brew install coreutils
+
+      - name: Build
+        run: |
+          cmake -GNinja -B build -DCMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }} -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
+
+      - name: Test
+        run: ./build/toolchain/parser/test-parser
+
+  windows:
+    strategy:
+      fail-fast: true
+
+    runs-on: windows-latest
+
+    steps:
+      - run: git config --global core.autocrlf false
+      - uses: actions/checkout@v2
+      - name: Setup Ninja
+        uses: ashutoshvarma/setup-ninja@master
+        with:
+          # ninja version to download. Default: 1.10.0
+          version: 1.10.0
+      - name: Configure CMake
+        run: cmake -B build -G Ninja -DCMAKE_CXX_COMPILER=clang.exe -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: |
+          .\build\toolchain\parser\test-parser.exe
