@@ -1,5 +1,5 @@
-#include <contrib/CLI11.hpp>
-#include <contrib/rang.hpp>
+#include <CLI11.hpp>
+#include <rang.hpp>
 
 #include <cinttypes>
 #include <cstdint>
@@ -57,26 +57,26 @@ int main(const options &opts) {
 		    tree, file.buffer(), lexy_ext::report_error.path(opts.input.c_str()));
 
 		switch (opts.format) {
-		default:
-		case options::OutputFormat::ASCII:
-			lexy::visualize(stdout, tree, {});
-			break;
-		case options::OutputFormat::Color:
-			lexy::visualize(stdout, tree, {lexy::visualize_use_color});
-			break;
-		case options::OutputFormat::Fancy:
-			lexy::visualize(stdout, tree, {lexy::visualize_fancy});
-			break;
-		};
+			using enum catalyst::parser::options::OutputFormat;
+			default:
+			case ASCII:
+				lexy::visualize(stdout, tree, {});
+				break;
+			case Color:
+				lexy::visualize(stdout, tree, {lexy::visualize_use_color});
+				break;
+			case Fancy:
+				lexy::visualize(stdout, tree, {lexy::visualize_fancy});
+				break;
+		}
 	}
-
-	// auto root = std::get<ast::json_object>(((ast::json_value *)tree.root().address())->v);
 
 	auto ast = lexy::parse<grammar::translation_unit>(
 	    file.buffer(), lexy_ext::report_error.path(opts.input.c_str()));
 	if (!ast.is_error()) {
 		auto fn = (ast::decl_fn*) ast.value().declarations[0].get();
         auto body = std::get<ast::fn_body_block>(fn->body);
+
 		/*auto il = ast.value().declarations[0]->ident.get_input_location(file.buffer());
 		auto ila = ast.value().declarations[0].ident.get_input_line_annotation(file.buffer());
 		std::string annotated = std::string(ila.annotated.begin(), ila.annotated.end());

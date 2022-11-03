@@ -57,9 +57,9 @@ constexpr auto kw_where = LEXY_KEYWORD("where", id);
 constexpr auto kw_while = LEXY_KEYWORD("while", id);
 constexpr auto kw_async = LEXY_KEYWORD("async", id);
 constexpr auto kw_await = LEXY_KEYWORD("await", id);
-constexpr auto kw_dyn = LEXY_KEYWORD("dyn", id);
+constexpr auto kw_yield = LEXY_KEYWORD("yield", id);
 
-struct ident : lexy::transparent_production {
+struct ident : lexy::token_production {
 	static constexpr auto name = "identifier";
 
 	static constexpr auto rule = [] {
@@ -68,7 +68,7 @@ struct ident : lexy::transparent_production {
 		                  kw_loop, kw_match, kw_mod, kw_move, kw_mut, kw_pub, kw_ref, kw_return,
 		                  kw_self, kw_Self, kw_static, kw_struct, kw_super, kw_trait, kw_true,
 		                  kw_type, kw_unsafe, kw_use, kw_var, kw_where, kw_while, kw_async,
-		                  kw_await, kw_dyn) |
+		                  kw_await, kw_yield) |
 		       dsl::error<expected_identifier>;
 	}();
 
@@ -81,20 +81,20 @@ struct ident : lexy::transparent_production {
 	});
 };
 
-struct type {
+struct type : lexy::token_production {
 	static constexpr auto rule = dsl::position + dsl::p<ident> + dsl::position;
 	static constexpr auto value = lexy::callback<ast::type>([](auto begin, auto ident, auto end) {
 		return ast::type((parser::char_type*) begin, (parser::char_type*)end, ident);
 	});
 };
 
-struct expr_ident {
+struct expr_ident : lexy::token_production {
 	static constexpr auto name = "identifier expression";
 	static constexpr auto rule = dsl::p<ident>;
 	static constexpr auto value = lexy::construct<ast::expr_ident>;
 };
 
-struct expr_literal_bool {
+struct expr_literal_bool : lexy::token_production {
 	struct true_ : lexy::transparent_production {
 		static constexpr auto rule = kw_true;
 		static constexpr auto value = lexy::constant(true);

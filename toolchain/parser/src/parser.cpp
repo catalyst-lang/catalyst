@@ -1,5 +1,4 @@
-#include <contrib/CLI11.hpp>
-#include <contrib/rang.hpp>
+#include <rang.hpp>
 
 #include <cinttypes>
 #include <cstdint>
