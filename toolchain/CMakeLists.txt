@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.18)
 project(catalyst-toolchain VERSION 0.0.1 LANGUAGES CXX)
 
-cmake_policy(SET CMP0135 NEW)
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+    cmake_policy(SET CMP0135 NEW)
+endif()
 
 include(FetchContent)
 # Prepare doctest for other targets to use
