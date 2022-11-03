@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.14)
 project(catalyst-parser VERSION 0.0.1 LANGUAGES CXX)
 
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.24.0)
+    cmake_policy(SET CMP0135 NEW)
+endif()
+
 include(FetchContent)
 FetchContent_Declare(lexy URL https://lexy.foonathan.net/download/lexy-src.zip)
 FetchContent_MakeAvailable(lexy)
