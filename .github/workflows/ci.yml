@@ -55,7 +55,7 @@ jobs:
         with:
           # ninja version to download. Default: 1.10.0
           version: 1.10.0
-          
+
       - name: Configure CMake
         run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
