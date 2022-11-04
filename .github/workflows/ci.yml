@@ -67,7 +67,7 @@ jobs:
       - name: Setup LLVM libraries
         shell: cmd
         run: |
-          curl https://github.com/catalyst-lang/llvm-windows-builds/releases/download/llvmorg-15.0.4/llvmorg-15.0.4-dev-win64.zip --output llvm.zip
+          curl -L https://github.com/catalyst-lang/llvm-windows-builds/releases/download/llvmorg-15.0.4/llvmorg-15.0.4-dev-win64.zip --output llvm.zip
           dir
           7z x llvm.zip
 
