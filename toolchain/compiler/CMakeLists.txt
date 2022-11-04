@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(catalyst-compiler VERSION 0.0.1 LANGUAGES CXX)
+project(catalyst-compiler VERSION 0.0.1 LANGUAGES C CXX)
 
 add_library(libcompiler src/compiler.cpp src/compiler.hpp)
 target_include_directories(libcompiler PUBLIC ../common)

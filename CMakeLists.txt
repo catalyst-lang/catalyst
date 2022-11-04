@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(catalyst VERSION 0.0.1 LANGUAGES CXX)
+project(catalyst VERSION 0.0.1 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS OFF)
 

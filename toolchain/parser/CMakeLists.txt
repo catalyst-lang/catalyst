@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(catalyst-parser VERSION 0.0.1 LANGUAGES CXX)
+project(catalyst-parser VERSION 0.0.1 LANGUAGES C CXX)
 
 if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.24.0)
     cmake_policy(SET CMP0135 NEW)
