@@ -47,7 +47,7 @@ jobs:
       - name: Test parser
         run: ./build/toolchain/parser/test-parser
       - name: Test compiler
-        run: ./build/toolchain/parser/test-compiler
+        run: ./build/toolchain/compiler/test-compiler
 
   windows:
     strategy:
@@ -87,4 +87,4 @@ jobs:
       - name: Test parser
         run: .\build\toolchain\parser\test-parser.exe
       - name: Test compiler
-        run: .\build\toolchain\parser\test-compiler.exe
+        run: .\build\toolchain\compiler\test-compiler.exe
