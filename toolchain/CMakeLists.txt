@@ -30,15 +30,15 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(cli11)
 
-option(BUILD_PARSER "Enable building parser" ON)
-#option(BUILD_SUBDIR2 "Enable building subdir2" ON)
+option(BUILD_PARSER "Enable building the parser" ON)
+option(BUILD_COMPILER "Enable building the compiler" ON)
 
 if(BUILD_PARSER)
     add_subdirectory(parser)
 endif()
-#if(BUILD_SUBDIR2)
-#    add_subdirectory(subdir2)
-#endif()
+if(BUILD_COMPILER)
+    add_subdirectory(compiler)
+endif()
 
 
 # Make test executable

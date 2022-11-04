@@ -40,3 +40,5 @@
 cmake-build-*/
 .idea/sonarlint/issuestore/*
 .idea/compilerexplorer.settings.xml
+
+llvm/

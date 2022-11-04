@@ -1,13 +1,13 @@
 #pragma once
 
-#include "ast.hpp"
+#include "catalyst/ast.hpp"
 #include <optional>
 #include <sstream>
 #include <string>
 
-#include "types.hpp"
+#include "catalyst/ast.hpp"
 #include "catalyst/version.hpp"
-#include "ast.hpp"
+#include "types.hpp"
 
 namespace catalyst::parser {
 
@@ -21,6 +21,7 @@ constexpr struct {
 	}
 } version;
 
-std::optional<catalyst::ast::translation_unit> parse(const std::string &string);
+std::optional<catalyst::ast::translation_unit> parse(const std::string &code);
+std::optional<catalyst::ast::translation_unit> parse_filename(const std::string &filename);
 
 }

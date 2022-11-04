@@ -28,9 +28,13 @@ jobs:
           # ninja version to download. Default: 1.10.0
           version: 1.10.0
 
+      - name: Install Linux dependencies
+        if: ${{ matrix.platform == 'ubuntu-22.04' }}
+        run: bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
+
       - name: Install macOS dependencies
         if: ${{ matrix.platform == 'macos-latest' }}
-        run: brew install coreutils
+        run: brew install coreutils llvm
 
       - name: Configure
         run: cmake -GNinja -B build -DCMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }} -DCMAKE_BUILD_TYPE=Release
@@ -56,10 +60,17 @@ jobs:
           # ninja version to download. Default: 1.10.0
           version: 1.10.0
 
+      - name: Setup LLVM libraries
+        shell: cmd
+        run: |
+          curl https://github.com/catalyst-lang/llvm-windows-builds/releases/download/llvmorg-15.0.4/llvmorg-15.0.4-dev-win64.zip -- output llvm.zip
+          7z x llvm.zip -o.
+
       - name: Configure CMake
         shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          set LLVM_DIR=%GITHUB_WORKSPACE%\llvm-build\lib\cmake
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
       - name: Build

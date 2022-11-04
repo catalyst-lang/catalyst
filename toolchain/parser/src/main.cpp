@@ -20,9 +20,9 @@
 
 #include "catalyst/platform.hpp"
 
-#include "ast.hpp"
-#include "parser.hpp"
+#include "catalyst/ast.hpp"
 #include "grammar.hpp"
+#include "parser.hpp"
 
 #if CATALYST_PLATFORM_POSIX
 #include <csignal>
@@ -45,13 +45,12 @@ struct options {
 };
 
 int main(const options &opts) {
-	auto file = lexy::read_file<lexy::deduce_encoding<parser::char_type>>(opts.input.c_str());
-	if (!file) {
-		std::fprintf(stderr, "file '%s' not found", opts.input.c_str());
-		return 2;
-	}
-
 	if (opts.dump_ast) {
+		auto file = lexy::read_file<lexy::deduce_encoding<parser::char_type>>(opts.input.c_str());
+		if (!file) {
+			std::fprintf(stderr, "file '%s' not found", opts.input.c_str());
+			return 2;
+		}
 		lexy::parse_tree_for<decltype(file.buffer())> tree;
 		auto result = lexy::parse_as_tree<grammar::translation_unit>(
 		    tree, file.buffer(), lexy_ext::report_error.path(opts.input.c_str()));
@@ -71,9 +70,8 @@ int main(const options &opts) {
 		}
 	}
 
-	auto ast = lexy::parse<grammar::translation_unit>(
-	    file.buffer(), lexy_ext::report_error.path(opts.input.c_str()));
-	if (!ast.is_error()) {
+	auto ast = parse_filename(opts.input.c_str());
+	if (ast.has_value()) {
 		auto fn = (ast::decl_fn*) ast.value().declarations[0].get();
         auto body = std::get<ast::fn_body_block>(fn->body);
 

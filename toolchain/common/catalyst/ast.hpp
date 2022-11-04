@@ -1,9 +1,11 @@
+// Copyright (c) 2021-2022 Bas du Pré and Catalyst contributors
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
 #include <cinttypes>
 #include <cstdint>
 #include <cstdio>
-#include <lexy/input_location.hpp>
 #include <map>
 #include <memory>
 #include <optional>
@@ -11,7 +13,7 @@
 #include <variant>
 #include <vector>
 
-#include "types.hpp"
+#include "../../parser/src/types.hpp"
 
 namespace catalyst::parser {
 struct lexeme {
@@ -27,18 +29,6 @@ struct positional {
 	parser::lexeme lexeme;
 
 	positional(const parser::char_type *begin, const parser::char_type *end) : lexeme(begin, end) {}
-	// explicit positional(const parser::lexeme &lexeme) : lexeme(lexeme) {}
-	// positional(const positional &n) : lexeme(n.lexeme) { }
-
-	template <typename Input>
-	auto get_input_location(const Input &input) const {
-		return lexy::get_input_location(input, lexeme.begin);
-	}
-
-	template <typename Input>
-	auto get_input_line_annotation(const Input &input) const {
-		return lexy::get_input_line_annotation(input, get_input_location(input), lexeme.end);
-	}
 };
 } // namespace catalyst::parser
 
@@ -131,7 +121,7 @@ struct expr_unary_arithmetic : expr {
 	} op;
 	expr_ptr rhs;
 
-	explicit expr_unary_arithmetic(op_t op, expr_ptr e) : op(op), rhs(LEXY_MOV(e)) {}
+	explicit expr_unary_arithmetic(op_t op, expr_ptr e) : op(op), rhs(e) {}
 };
 
 struct expr_binary_arithmetic : expr {

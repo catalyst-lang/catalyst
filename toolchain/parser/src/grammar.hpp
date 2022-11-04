@@ -5,7 +5,7 @@
 #include <lexy/dsl.hpp>
 #include <string>
 
-#include "ast.hpp"
+#include "catalyst/ast.hpp"
 
 namespace catalyst::parser::grammar {
 namespace dsl = lexy::dsl;
