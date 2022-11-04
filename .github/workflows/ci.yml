@@ -36,7 +36,7 @@ jobs:
         if: ${{ matrix.platform == 'macos-latest' }}
         run: |
           brew install coreutils llvm
-          export LLVM_DIR=/usr/local/opt/llvm
+          echo "LLVM_DIR=/usr/local/opt/llvm" >> $GITHUB_ENV
 
       - name: Configure
         run: cmake -GNinja -B build -DCMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }} -DCMAKE_BUILD_TYPE=Release
