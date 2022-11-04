@@ -42,8 +42,10 @@ jobs:
       - name: Build
         run: cmake --build build
 
-      - name: Test
+      - name: Test parser
         run: ./build/toolchain/parser/test-parser
+      - name: Test compiler
+        run: ./build/toolchain/parser/test-compiler
 
   windows:
     strategy:
@@ -64,6 +66,7 @@ jobs:
         shell: cmd
         run: |
           curl https://github.com/catalyst-lang/llvm-windows-builds/releases/download/llvmorg-15.0.4/llvmorg-15.0.4-dev-win64.zip --output llvm.zip
+          dir
           7z x llvm.zip -o.
 
       - name: Configure CMake
@@ -79,6 +82,7 @@ jobs:
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           cmake --build build
 
-      - name: Test
-        run: |
-          .\build\toolchain\parser\test-parser.exe
+      - name: Test parser
+        run: .\build\toolchain\parser\test-parser.exe
+      - name: Test compiler
+        run: .\build\toolchain\parser\test-compiler.exe

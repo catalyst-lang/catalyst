@@ -21,7 +21,7 @@ constexpr struct {
 	}
 } version;
 
-std::optional<catalyst::ast::translation_unit> parse(const std::string &code);
+std::optional<ast::translation_unit> parse_string(const std::string &string);
 std::optional<catalyst::ast::translation_unit> parse_filename(const std::string &filename);
 
 }
