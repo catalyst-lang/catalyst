@@ -63,7 +63,7 @@ jobs:
       - name: Setup LLVM libraries
         shell: cmd
         run: |
-          curl https://github.com/catalyst-lang/llvm-windows-builds/releases/download/llvmorg-15.0.4/llvmorg-15.0.4-dev-win64.zip -- output llvm.zip
+          curl https://github.com/catalyst-lang/llvm-windows-builds/releases/download/llvmorg-15.0.4/llvmorg-15.0.4-dev-win64.zip --output llvm.zip
           7z x llvm.zip -o.
 
       - name: Configure CMake
