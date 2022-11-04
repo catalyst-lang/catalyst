@@ -30,7 +30,7 @@ jobs:
 
       - name: Install Linux dependencies
         if: ${{ matrix.platform == 'ubuntu-22.04' }}
-        run: bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
+        run: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
 
       - name: Install macOS dependencies
         if: ${{ matrix.platform == 'macos-latest' }}
