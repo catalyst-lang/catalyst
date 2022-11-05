@@ -16,7 +16,7 @@ jobs:
         cxx_compiler: [clang++-14]
         include:
           - platform: macos-latest
-            cxx_compiler: "$(brew --prefix llvm@14)/bin/clang++"
+            cxx_compiler: "$(brew --prefix llvm@15)/bin/clang++"
 
     runs-on: ${{ matrix.platform }}
 
