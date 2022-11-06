@@ -41,7 +41,7 @@ jobs:
       - name: Install macOS dependencies
         if: ${{ matrix.platform == 'macos-latest' }}
         run: |
-          brew install coreutils llvm@LLVM_VER
+          brew install coreutils llvm@${LLVM_VER}
           echo "LLVM_DIR=/usr/local/opt/llvm" >> $GITHUB_ENV
 
       - name: Configure
