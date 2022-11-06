@@ -7,6 +7,9 @@ on:
 
 name: continuous-integration
 
+env:
+  LLVM_VER: 15.0.3
+
 jobs:
   unix:
     strategy:
@@ -16,7 +19,7 @@ jobs:
         cxx_compiler: [clang++-14]
         include:
           - platform: macos-latest
-            cxx_compiler: "$(brew --prefix llvm@15)/bin/clang++"
+            cxx_compiler: "$(brew --prefix llvm@$LLVM_VER)/bin/clang++"
 
     runs-on: ${{ matrix.platform }}
 
@@ -30,12 +33,15 @@ jobs:
 
       - name: Install Linux dependencies
         if: ${{ matrix.platform == 'ubuntu-22.04' }}
-        run: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh $LLVM_VER
 
       - name: Install macOS dependencies
         if: ${{ matrix.platform == 'macos-latest' }}
         run: |
-          brew install coreutils llvm
+          brew install coreutils llvm@LLVM_VER
           echo "LLVM_DIR=/usr/local/opt/llvm" >> $GITHUB_ENV
 
       - name: Configure
@@ -67,7 +73,7 @@ jobs:
       - name: Setup LLVM libraries
         shell: cmd
         run: |
-          curl -L https://github.com/catalyst-lang/llvm-windows-builds/releases/download/llvmorg-15.0.4/llvmorg-15.0.4-dev-win64.zip --output llvm.zip
+          curl -L https://github.com/catalyst-lang/llvm-windows-builds/releases/download/llvmorg-%LLVM_VER%/llvmorg-%LLVM_VER%-dev-win64.zip --output llvm.zip
           dir
           7z x llvm.zip
 
