@@ -36,7 +36,7 @@ jobs:
         run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh $LLVM_VER
+          sudo ./llvm.sh ${LLVM_VER%.*}
 
       - name: Install macOS dependencies
         if: ${{ matrix.platform == 'macos-latest' }}
