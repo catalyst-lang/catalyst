@@ -19,7 +19,7 @@ jobs:
         cxx_compiler: [clang++-14]
         include:
           - platform: macos-latest
-            cxx_compiler: "$(brew --prefix llvm@$LLVM_VER)/bin/clang++"
+            cxx_compiler: "$(brew --prefix llvm@${LLVM_VER%%.*})/bin/clang++"
 
     runs-on: ${{ matrix.platform }}
 
@@ -41,7 +41,7 @@ jobs:
       - name: Install macOS dependencies
         if: ${{ matrix.platform == 'macos-latest' }}
         run: |
-          brew install coreutils llvm@${LLVM_VER}
+          brew install coreutils llvm@${LLVM_VER%%.*}
           echo "LLVM_DIR=/usr/local/opt/llvm" >> $GITHUB_ENV
 
       - name: Configure
