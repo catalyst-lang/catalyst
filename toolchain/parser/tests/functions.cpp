@@ -1,7 +1,7 @@
 #include <doctest.h>
 
 #include "../src/parser.hpp"
-#include "catalyst/ast.hpp"
+#include "catalyst/ast/ast.hpp"
 
 using namespace catalyst;
 

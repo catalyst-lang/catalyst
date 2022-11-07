@@ -5,7 +5,7 @@
 #include <lexy/dsl.hpp>
 #include <string>
 
-#include "catalyst/ast.hpp"
+#include "catalyst/ast/ast.hpp"
 
 namespace catalyst::parser::grammar {
 namespace dsl = lexy::dsl;
@@ -124,6 +124,7 @@ struct expr_literal_numeric {
 			.map<'u'>(ast::numeric_classifier::unsigned_)
 			.map<'i'>(ast::numeric_classifier::signed_)
 			.map<'s'>(ast::numeric_classifier::signed_)
+			.map<LEXY_SYMBOL("z")>(ast::numeric_classifier::size)
 			.map<LEXY_SYMBOL("i8")>(ast::numeric_classifier::signed8)
 			.map<LEXY_SYMBOL("u8")>(ast::numeric_classifier::unsigned8)
 			.map<LEXY_SYMBOL("i16")>(ast::numeric_classifier::signed16)

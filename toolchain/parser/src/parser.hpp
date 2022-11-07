@@ -1,11 +1,11 @@
 #pragma once
 
-#include "catalyst/ast.hpp"
+#include "catalyst/ast/ast.hpp"
 #include <optional>
 #include <sstream>
 #include <string>
 
-#include "catalyst/ast.hpp"
+#include "catalyst/ast/ast.hpp"
 #include "catalyst/version.hpp"
 #include "types.hpp"
 

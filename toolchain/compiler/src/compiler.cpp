@@ -4,10 +4,18 @@
 
 #include "compiler.hpp"
 #include "../../parser/src/parser.hpp"
+#include "codegen/state.hpp"
+
+using namespace catalyst;
 
 namespace catalyst::compiler {
 
 bool compile(catalyst::ast::translation_unit &tu) {
+	codegen::state state;
+
+	ast::expr_ptr expr = std::make_shared<ast::expr_literal_numeric>(
+		nullptr, nullptr, 1, 123, std::nullopt, std::nullopt, ast::numeric_classifier::none);
+
 	return false;
 }
 
@@ -20,4 +28,4 @@ bool compile(const std::string &filename) {
 	}
 }
 
-} // namespace catalyst
+} // namespace catalyst::compiler

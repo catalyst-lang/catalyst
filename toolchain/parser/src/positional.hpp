@@ -5,7 +5,7 @@
 
 #include <lexy/input_location.hpp>
 
-#include "catalyst/ast.hpp"
+#include "catalyst/ast/ast.hpp"
 
 namespace catalyst::parser {
 

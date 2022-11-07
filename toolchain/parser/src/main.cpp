@@ -20,7 +20,7 @@
 
 #include "catalyst/platform.hpp"
 
-#include "catalyst/ast.hpp"
+#include "catalyst/ast/ast.hpp"
 #include "grammar.hpp"
 #include "parser.hpp"
 
