@@ -37,7 +37,6 @@ struct options {
 
 int main(const options &opts) {
 	return compile(opts.input.c_str()) ? 0 : 1;
-	return 0;
 }
 
 } // namespace catalyst::parser

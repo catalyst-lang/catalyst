@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
+#pragma warning(disable : 4624)
 
 #include <memory>
+#include <map>
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/BasicBlock.h"
@@ -29,4 +31,4 @@ struct state {
 	}
 };
 
-} // namespace catalyst
+} // namespace catalyst::compiler::codegen

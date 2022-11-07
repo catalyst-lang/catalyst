@@ -9,8 +9,9 @@ include(FetchContent)
 FetchContent_Declare(lexy URL https://lexy.foonathan.net/download/lexy-src.zip)
 FetchContent_MakeAvailable(lexy)
 
-add_library(libparser ../common/catalyst/ast/ast.hpp src/grammar.hpp src/parser.cpp src/types.hpp src/positional.hpp)
+add_library(libparser ../common/catalyst/ast/ast.hpp src/grammar.hpp src/parser.cpp src/types.hpp src/positional.hpp src/state.hpp)
 target_link_libraries(libparser PUBLIC foonathan::lexy)
+target_include_directories(libparser PRIVATE ${rang_SOURCE_DIR})
 target_include_directories(libparser PUBLIC ../common)
 target_compile_features(libparser PUBLIC cxx_std_20)
 

@@ -90,6 +90,7 @@ using decl_ptr = std::shared_ptr<decl>;
 
 struct translation_unit {
 	std::vector<decl_ptr> declarations;
+	parser::parser_state_ptr parser_state;
 };
 
 } // namespace catalyst::ast

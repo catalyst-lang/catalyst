@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "../../../parser/src/types.hpp"
 
 namespace catalyst::parser {
@@ -20,4 +22,8 @@ struct positional {
 
 	positional(const parser::char_type *begin, const parser::char_type *end) : lexeme(begin, end) {}
 };
+
+struct parser_state;
+using parser_state_ptr = std::shared_ptr<parser_state>;
+
 } // namespace catalyst::parser

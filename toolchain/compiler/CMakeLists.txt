@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 project(catalyst-compiler VERSION 0.0.1 LANGUAGES C CXX)
 
-add_library(libcompiler src/compiler.cpp src/compiler.hpp src/codegen/expr.cpp src/codegen/expr.hpp src/codegen/state.hpp)
+add_library(libcompiler src/compiler.cpp src/compiler.hpp src/codegen/expr.cpp src/codegen/expr.hpp src/codegen/codegen.cpp src/codegen/codegen.hpp)
 target_include_directories(libcompiler PUBLIC ../common)
 target_compile_features(libcompiler PUBLIC cxx_std_20)
 

@@ -1,10 +1,10 @@
 //
 // Created by basdu on 4-11-2022.
 //
-
 #include "compiler.hpp"
 #include "../../parser/src/parser.hpp"
-#include "codegen/state.hpp"
+#include "codegen/codegen.hpp"
+#include <iostream>
 
 using namespace catalyst;
 
@@ -15,6 +15,8 @@ bool compile(catalyst::ast::translation_unit &tu) {
 
 	ast::expr_ptr expr = std::make_shared<ast::expr_literal_numeric>(
 		nullptr, nullptr, 1, 123, std::nullopt, std::nullopt, ast::numeric_classifier::none);
+
+	//parser::report_error(tu.parser_state, "This is an error", *tu.declarations[1], "Here");
 
 	return false;
 }
