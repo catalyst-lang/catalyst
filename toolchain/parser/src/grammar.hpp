@@ -363,7 +363,7 @@ struct fn_body_block {
 		auto item = dsl::recurse<statement>;
 		auto sep = dsl::trailing_sep(dsl::while_one(dsl::semicolon | dsl::newline));
 		auto bracketed =
-			dsl::brackets(dsl::lit_c<'{'> >> dsl::whitespace(dsl::ascii::space), dsl::lit_c<'}'>);
+			dsl::brackets(dsl::lit_c<'{'> >> dsl::whitespace(whitespace_incl_nl), dsl::lit_c<'}'>);
 		return bracketed.opt_list(item, sep);
 	}();
 	static constexpr auto value =

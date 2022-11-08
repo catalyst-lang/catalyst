@@ -35,11 +35,11 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ptr expr) {
 }
 
 llvm::Value *codegen(codegen::state &state, ast::expr_literal_numeric &expr) {
-	return llvm::ConstantInt::get(state.TheContext, llvm::APInt(64, expr.integer, true));
+	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(64, expr.integer, true));
 }
 
 llvm::Value *codegen(codegen::state &state, ast::expr_literal_bool &expr) {
-	return llvm::ConstantInt::get(state.TheContext, llvm::APInt(1, expr.value));
+	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(1, expr.value));
 }
 
 llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr) {

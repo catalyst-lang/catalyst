@@ -31,60 +31,60 @@ namespace catalyst::compiler {
 using namespace llvm;
 using namespace llvm::orc;
 
-class KaleidoscopeASTLayer;
+//class KaleidoscopeASTLayer;
 class KaleidoscopeJIT;
 
-class KaleidoscopeASTMaterializationUnit : public MaterializationUnit {
-  public:
-	KaleidoscopeASTMaterializationUnit(KaleidoscopeASTLayer &L, ast::decl_fn *F);
+// class KaleidoscopeASTMaterializationUnit : public MaterializationUnit {
+//   public:
+// 	KaleidoscopeASTMaterializationUnit(KaleidoscopeASTLayer &L, ast::decl_fn *F);
 
-	StringRef getName() const override { return "KaleidoscopeASTMaterializationUnit"; }
+// 	StringRef getName() const override { return "KaleidoscopeASTMaterializationUnit"; }
 
-	void materialize(std::unique_ptr<MaterializationResponsibility> R) override;
+// 	void materialize(std::unique_ptr<MaterializationResponsibility> R) override;
 
-  private:
-	void discard(const JITDylib &JD, const SymbolStringPtr &Sym) override {
-		llvm_unreachable("Kaleidoscope functions are not overridable");
-	}
+//   private:
+// 	void discard(const JITDylib &JD, const SymbolStringPtr &Sym) override {
+// 		llvm_unreachable("Kaleidoscope functions are not overridable");
+// 	}
 
-	KaleidoscopeASTLayer &L;
-	ast::decl_fn *F;
-};
+// 	KaleidoscopeASTLayer &L;
+// 	ast::decl_fn *F;
+// };
 
-class KaleidoscopeASTLayer {
-  public:
-	KaleidoscopeASTLayer(IRLayer &BaseLayer, const DataLayout &DL) : BaseLayer(BaseLayer), DL(DL) {}
+// class KaleidoscopeASTLayer {
+//   public:
+// 	KaleidoscopeASTLayer(IRLayer &BaseLayer, const DataLayout &DL) : BaseLayer(BaseLayer), DL(DL) {}
 
-	Error add(ResourceTrackerSP RT, ast::decl_fn *F) {
-		return RT->getJITDylib().define(
-			std::make_unique<KaleidoscopeASTMaterializationUnit>(*this, F), RT);
-	}
+// 	Error add(ResourceTrackerSP RT, ast::decl_fn *F) {
+// 		return RT->getJITDylib().define(
+// 			std::make_unique<KaleidoscopeASTMaterializationUnit>(*this, F), RT);
+// 	}
 
-	void emit(std::unique_ptr<MaterializationResponsibility> MR, ast::decl_fn *F) {
-		BaseLayer.emit(std::move(MR), irgenAndTakeOwnership(F, ""));
-	}
+// 	void emit(std::unique_ptr<MaterializationResponsibility> MR, ast::decl_fn *F) {
+// 		BaseLayer.emit(std::move(MR), irgenAndTakeOwnership(F, ""));
+// 	}
 
-	MaterializationUnit::Interface getInterface(ast::decl_fn *F) {
-		MangleAndInterner Mangle(BaseLayer.getExecutionSession(), DL);
-		SymbolFlagsMap Symbols;
-		Symbols[Mangle(F->ident.name)] =
-			JITSymbolFlags(JITSymbolFlags::Exported | JITSymbolFlags::Callable);
-		return MaterializationUnit::Interface(std::move(Symbols), nullptr);
-	}
+// 	MaterializationUnit::Interface getInterface(ast::decl_fn *F) {
+// 		MangleAndInterner Mangle(BaseLayer.getExecutionSession(), DL);
+// 		SymbolFlagsMap Symbols;
+// 		Symbols[Mangle(F->ident.name)] =
+// 			JITSymbolFlags(JITSymbolFlags::Exported | JITSymbolFlags::Callable);
+// 		return MaterializationUnit::Interface(std::move(Symbols), nullptr);
+// 	}
 
-  private:
-	IRLayer &BaseLayer;
-	const DataLayout &DL;
-};
+//   private:
+// 	IRLayer &BaseLayer;
+// 	const DataLayout &DL;
+// };
 
-KaleidoscopeASTMaterializationUnit::KaleidoscopeASTMaterializationUnit(KaleidoscopeASTLayer &L,
-                                                                       ast::decl_fn *F)
-	: MaterializationUnit(L.getInterface(F)), L(L), F(F) {}
+// KaleidoscopeASTMaterializationUnit::KaleidoscopeASTMaterializationUnit(KaleidoscopeASTLayer &L,
+//                                                                        ast::decl_fn *F)
+// 	: MaterializationUnit(L.getInterface(F)), L(L), F(F) {}
 
-void KaleidoscopeASTMaterializationUnit::materialize(
-	std::unique_ptr<MaterializationResponsibility> R) {
-	L.emit(std::move(R), F);
-}
+// void KaleidoscopeASTMaterializationUnit::materialize(
+// 	std::unique_ptr<MaterializationResponsibility> R) {
+// 	L.emit(std::move(R), F);
+// }
 
 class KaleidoscopeJIT {
   private:
@@ -97,7 +97,7 @@ class KaleidoscopeJIT {
 	RTDyldObjectLinkingLayer ObjectLayer;
 	IRCompileLayer CompileLayer;
 	IRTransformLayer OptimizeLayer;
-	KaleidoscopeASTLayer ASTLayer;
+	//KaleidoscopeASTLayer ASTLayer;
 
 	JITDylib &MainJD;
 
@@ -115,7 +115,7 @@ class KaleidoscopeJIT {
 		  ObjectLayer(*this->ES, []() { return std::make_unique<SectionMemoryManager>(); }),
 		  CompileLayer(*this->ES, ObjectLayer,
 	                   std::make_unique<ConcurrentIRCompiler>(std::move(JTMB))),
-		  OptimizeLayer(*this->ES, CompileLayer, optimizeModule), ASTLayer(OptimizeLayer, this->DL),
+		  OptimizeLayer(*this->ES, CompileLayer, optimizeModule),
 		  MainJD(this->ES->createBareJITDylib("<main>")) {
 		MainJD.addGenerator(
 			cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(DL.getGlobalPrefix())));
@@ -166,14 +166,9 @@ class KaleidoscopeJIT {
 		return OptimizeLayer.add(RT, std::move(TSM));
 	}
 
-	Error addAST(ast::decl_fn *F, ResourceTrackerSP RT = nullptr) {
-		if (!RT)
-			RT = MainJD.getDefaultResourceTracker();
-		return ASTLayer.add(RT, F);
-	}
-
 	Expected<JITEvaluatedSymbol> lookup(StringRef Name) {
-		return ES->lookup({&MainJD}, Mangle(Name.str()));
+		auto mangled = Mangle(Name.str());
+		return ES->lookup({&MainJD}, mangled);
 	}
 
   private:

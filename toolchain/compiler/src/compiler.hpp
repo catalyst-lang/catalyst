@@ -20,7 +20,7 @@ constexpr struct {
 } version;
 
 struct options {
-	int optimizer_level = 0;
+	int optimizer_level = 2;
 };
 
 

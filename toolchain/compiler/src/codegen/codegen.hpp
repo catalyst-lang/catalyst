@@ -63,7 +63,7 @@ struct scope_stack : public std::deque<scope> {
 
 struct state {
 	compiler::options options;
-	llvm::LLVMContext TheContext;
+	std::unique_ptr<llvm::LLVMContext> TheContext;
 	llvm::IRBuilder<> Builder;
 	std::unique_ptr<llvm::Module> TheModule;
 	std::unique_ptr<llvm::legacy::FunctionPassManager> FPM;
@@ -72,7 +72,7 @@ struct state {
 
 	scope_stack scopes;
 
-	state() : Builder(TheContext) {
+	state() : TheContext(std::make_unique<llvm::LLVMContext>()), Builder(*TheContext) {
 	}
 
 	static void report_error(const std::string &error);

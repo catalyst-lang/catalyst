@@ -22,7 +22,7 @@ bool compile(catalyst::ast::translation_unit &tu, options options) {
 	codegen::state state;
 	state.translation_unit = &tu;
 	state.options = options;
-	state.TheModule = std::make_unique<llvm::Module>(tu.parser_state->filename, state.TheContext);
+	state.TheModule = std::make_unique<llvm::Module>(tu.parser_state->filename, *state.TheContext);
 	state.FPM = std::make_unique<llvm::legacy::FunctionPassManager>(state.TheModule.get());
 
 	switch (options.optimizer_level) {
@@ -59,7 +59,15 @@ bool compile(catalyst::ast::translation_unit &tu, options options) {
 			return false;
 		}
 		state.TheModule->setDataLayout((*TheJIT)->getDataLayout());
+		(*TheJIT)->addModule(ThreadSafeModule(std::move(state.TheModule), std::move(state.TheContext)));
 
+		auto ExprSymbol = (*TheJIT)->lookup("main");
+    	assert(ExprSymbol && "Entry function not found");
+
+		// Get the symbol's address and cast it to the right type (takes no
+		// arguments, returns a double) so we can call it as a native function.
+		int64_t (*FP)() = (int64_t (*)())(intptr_t)(*ExprSymbol).getAddress();
+		fprintf(stderr, "Evaluated to %lld\n", FP());
 	}
 
 	return false;

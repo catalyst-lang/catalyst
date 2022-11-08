@@ -1,8 +1,11 @@
 
+fn main() {
+    return double(122, 3)
+}
 
 // this is a test
-fn main(ij, ljk: jklj) {
-    230 + double(4, 45)
+fn main1(ij, ljk: jklj) {
+    // 230 + double(4, 45)
 
     -ij * (5 * ljk)
 
@@ -34,7 +37,7 @@ fn main(ij, ljk: jklj) {
 
 
 /*43*/ fn double(a, b){
-    return a + 4 + main(b, 3)
+    return a + 4 + main1(b, 3)
 }
 
  // jkl

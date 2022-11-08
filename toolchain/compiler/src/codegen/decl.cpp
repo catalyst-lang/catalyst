@@ -74,14 +74,14 @@ llvm::BasicBlock *codegen(codegen::state &state, ast::fn_body &body) {
 }
 
 llvm::BasicBlock *codegen(codegen::state &state, ast::fn_body_expr &body) {
-	llvm::BasicBlock *BB = llvm::BasicBlock::Create(state.TheContext, "entry");
+	llvm::BasicBlock *BB = llvm::BasicBlock::Create(*state.TheContext, "entry");
 	state.Builder.SetInsertPoint(BB);
 	state.Builder.CreateRet(codegen(state, body.expr));
 	return BB;
 }
 
 llvm::BasicBlock *codegen(codegen::state &state, ast::fn_body_block &body) {
-	llvm::BasicBlock *BB = llvm::BasicBlock::Create(state.TheContext, "entry");
+	llvm::BasicBlock *BB = llvm::BasicBlock::Create(*state.TheContext, "entry");
 	state.Builder.SetInsertPoint(BB);
 
 	for (auto &stmt : body.statements) {
@@ -108,9 +108,9 @@ void proto_pass(codegen::state &state, ast::decl_fn &decl) {
 
 	// Make the function type:  double(double,double) etc.
 	std::vector<llvm::Type *> ints(decl.parameter_list.size(),
-	                               llvm::Type::getInt64Ty(state.TheContext));
+	                               llvm::Type::getInt64Ty(*state.TheContext));
 	llvm::FunctionType *FT =
-		llvm::FunctionType::get(llvm::Type::getInt64Ty(state.TheContext), ints, false);
+		llvm::FunctionType::get(llvm::Type::getInt64Ty(*state.TheContext), ints, false);
 
 	auto the_function = llvm::Function::Create(FT, llvm::Function::ExternalLinkage, decl.ident.name,
 	                                      state.TheModule.get());
