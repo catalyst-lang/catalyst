@@ -4,6 +4,7 @@
 #pragma once
 #pragma warning(disable : 4624)
 
+#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/BasicBlock.h"
@@ -63,6 +64,7 @@ struct state {
 	llvm::LLVMContext TheContext;
 	llvm::IRBuilder<> Builder;
 	std::unique_ptr<llvm::Module> TheModule;
+	std::unique_ptr<llvm::legacy::FunctionPassManager> FPM;
 
 	catalyst::ast::translation_unit *translation_unit{};
 

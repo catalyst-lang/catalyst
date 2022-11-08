@@ -1,7 +1,7 @@
 // Copyright (c) 2021-2022 Bas du Pré and Catalyst contributors
 // SPDX-License-Identifier: MIT
 
-#include <format>
+#include <sstream>
 #include <typeinfo>
 
 #include "expr.hpp"
@@ -72,12 +72,12 @@ llvm::Value *codegen(codegen::state &state, ast::expr_binary_arithmetic &expr) {
 }
 
 llvm::Value *codegen(codegen::state &state, ast::expr_unary_arithmetic &expr) {
-	state.report_error("Not implemented");
+	state.report_error("expr_unary_arithmetic: Not implemented");
 	return nullptr;
 }
 
 llvm::Value *codegen(codegen::state &state, ast::expr_binary_logical &expr) {
-	state.report_error("Not implemented");
+	state.report_error("expr_binary_logical: Not implemented");
 	return nullptr;
 }
 
@@ -94,9 +94,10 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr) {
 		// If argument mismatch error.
 		if (CalleeF->arg_size() != expr.parameters.size()) {
 			// todo, make positional from parameters
-			state.report_error("Incorrect number of arguments passed", callee,
-			                   std::format("expected {}, but got {}", CalleeF->arg_size(),
-			                               expr.parameters.size()));
+			std::stringstream str;
+			str << "expected " << CalleeF->arg_size() << ", but got " << expr.parameters.size();
+
+			state.report_error("Incorrect number of arguments passed", callee, str.str());
 			return nullptr;
 		}
 
@@ -115,7 +116,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr) {
 }
 
 llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr) {
-	state.report_error("Not implemented");
+	state.report_error("expr_member_access: Not implemented");
 	return nullptr;
 }
 
