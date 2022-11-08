@@ -106,7 +106,10 @@
         "stack": "cpp",
         "string_view": "cpp",
         "unordered_set": "cpp",
-        "__verbose_abort": "cpp"
+        "__verbose_abort": "cpp",
+        "condition_variable": "cpp",
+        "future": "cpp",
+        "random": "cpp"
     },
     "files.insertFinalNewline": true,
 

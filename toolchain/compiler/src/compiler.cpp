@@ -18,68 +18,53 @@ using namespace catalyst;
 
 namespace catalyst::compiler {
 
-bool compile(catalyst::ast::translation_unit &tu, options options) {
-	codegen::state state;
-	state.translation_unit = &tu;
-	state.options = options;
-	state.TheModule = std::make_unique<llvm::Module>(tu.parser_state->filename, *state.TheContext);
-	state.FPM = std::make_unique<llvm::legacy::FunctionPassManager>(state.TheModule.get());
+compile_result compile(catalyst::ast::translation_unit &tu, options options) {
+	auto state = std::make_shared<codegen::state>();
+	state->translation_unit = &tu;
+	state->options = options;
+	state->TheModule = std::make_unique<llvm::Module>(tu.parser_state->filename, *state->TheContext);
+	state->FPM = std::make_unique<llvm::legacy::FunctionPassManager>(state->TheModule.get());
 
 	switch (options.optimizer_level) {
 	case 2:
 		// Do simple "peephole" optimizations and bit-twiddling optimizations.
-		state.FPM->add(llvm::createInstructionCombiningPass());
+		state->FPM->add(llvm::createInstructionCombiningPass());
 		// Re-associate expressions.
-		state.FPM->add(llvm::createReassociatePass());
+		state->FPM->add(llvm::createReassociatePass());
 	case 1:
 		// Eliminate Common SubExpressions.
-		state.FPM->add(llvm::createGVNPass());
+		state->FPM->add(llvm::createGVNPass());
 		// Simplify the control flow graph (deleting unreachable blocks, etc).
-		state.FPM->add(llvm::createCFGSimplificationPass());
+		state->FPM->add(llvm::createCFGSimplificationPass());
 	case 0:
 	default:
 		break;
 	}
 
-	state.FPM->doInitialization();
+	state->FPM->doInitialization();
 
-	auto v = codegen::codegen(state);
+	auto v = codegen::codegen(*state);
 	printf("Read module:\n");
-	state.TheModule->print(llvm::outs(), nullptr);
+	state->TheModule->print(llvm::outs(), nullptr);
 	printf("\n");
 
-	bool run_jit = true;
-	if (run_jit) {
-		llvm::InitializeNativeTarget();
-		llvm::InitializeNativeTargetAsmPrinter();
-		llvm::InitializeNativeTargetAsmParser();
-		auto TheJIT = KaleidoscopeJIT::Create();
-		if (TheJIT.takeError()) {
-			state.report_error("Problem while initializing JIT");
-			return false;
-		}
-		state.TheModule->setDataLayout((*TheJIT)->getDataLayout());
-		(*TheJIT)->addModule(ThreadSafeModule(std::move(state.TheModule), std::move(state.TheContext)));
-
-		auto ExprSymbol = (*TheJIT)->lookup("main");
-    	assert(ExprSymbol && "Entry function not found");
-
-		// Get the symbol's address and cast it to the right type (takes no
-		// arguments, returns a double) so we can call it as a native function.
-		int64_t (*FP)() = (int64_t (*)())(intptr_t)(*ExprSymbol).getAddress();
-		fprintf(stderr, "Evaluated to %lld\n", FP());
-	}
-
-	return false;
+	compile_result result;
+	result.state = std::move(state);
+	result.is_successful = true;
+	return result;
 }
 
-bool compile(const std::string &filename, options options) {
+compile_result compile(const std::string &filename, options options) {
 	auto ast = parser::parse_filename(filename);
 	if (ast.has_value()) {
 		return compile(ast.value(), options);
 	} else {
-		return false;
+		return compile_result::create_failed();
 	}
+}
+
+uint64_t run(compile_result &result) {
+	return run_jit(*std::static_pointer_cast<codegen::state>(result.state));
 }
 
 } // namespace catalyst::compiler

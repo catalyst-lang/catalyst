@@ -24,12 +24,14 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 #include <memory>
 
-#include "../common/catalyst/ast/ast.hpp"
+#include "codegen/codegen.hpp"
 
 namespace catalyst::compiler {
 
 using namespace llvm;
 using namespace llvm::orc;
+
+int64_t run_jit(codegen::state &state);
 
 //class KaleidoscopeASTLayer;
 class KaleidoscopeJIT;
@@ -101,13 +103,13 @@ class KaleidoscopeJIT {
 
 	JITDylib &MainJD;
 
-	static void handleLazyCallThroughError() {
+	inline static void handleLazyCallThroughError() {
 		errs() << "LazyCallThrough error: Could not find function body";
 		exit(1);
 	}
 
   public:
-	KaleidoscopeJIT(std::unique_ptr<ExecutionSession> ES,
+	inline KaleidoscopeJIT(std::unique_ptr<ExecutionSession> ES,
 	                std::unique_ptr<EPCIndirectionUtils> EPCIU, JITTargetMachineBuilder JTMB,
 	                DataLayout DL)
 		: ES(std::move(ES)), EPCIU(std::move(EPCIU)), DL(std::move(DL)),
@@ -121,78 +123,23 @@ class KaleidoscopeJIT {
 			cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(DL.getGlobalPrefix())));
 	}
 
-	~KaleidoscopeJIT() {
+	inline ~KaleidoscopeJIT() {
 		if (auto Err = ES->endSession())
 			ES->reportError(std::move(Err));
 		if (auto Err = EPCIU->cleanup())
 			ES->reportError(std::move(Err));
 	}
 
-	static Expected<std::unique_ptr<KaleidoscopeJIT>> Create() {
-		auto EPC = SelfExecutorProcessControl::Create();
-		if (!EPC)
-			return EPC.takeError();
+	static Expected<std::unique_ptr<KaleidoscopeJIT>> Create();
 
-		auto ES = std::make_unique<ExecutionSession>(std::move(*EPC));
-
-		auto EPCIU = EPCIndirectionUtils::Create(ES->getExecutorProcessControl());
-		if (!EPCIU)
-			return EPCIU.takeError();
-
-		(*EPCIU)->createLazyCallThroughManager(
-			*ES, pointerToJITTargetAddress(&handleLazyCallThroughError));
-
-		if (auto Err = setUpInProcessLCTMReentryViaEPCIU(**EPCIU))
-			return std::move(Err);
-
-		JITTargetMachineBuilder JTMB(ES->getExecutorProcessControl().getTargetTriple());
-
-		auto DL = JTMB.getDefaultDataLayoutForTarget();
-		if (!DL)
-			return DL.takeError();
-
-		return std::make_unique<KaleidoscopeJIT>(std::move(ES), std::move(*EPCIU), std::move(JTMB),
-		                                         std::move(*DL));
-	}
-
-	const DataLayout &getDataLayout() const { return DL; }
-
-	JITDylib &getMainJITDylib() { return MainJD; }
-
-	Error addModule(ThreadSafeModule TSM, ResourceTrackerSP RT = nullptr) {
-		if (!RT)
-			RT = MainJD.getDefaultResourceTracker();
-
-		return OptimizeLayer.add(RT, std::move(TSM));
-	}
-
-	Expected<JITEvaluatedSymbol> lookup(StringRef Name) {
-		auto mangled = Mangle(Name.str());
-		return ES->lookup({&MainJD}, mangled);
-	}
+	inline const DataLayout &getDataLayout() const { return DL; }
+	inline JITDylib &getMainJITDylib() { return MainJD; }
+	Error addModule(ThreadSafeModule TSM, ResourceTrackerSP RT = nullptr);
+	Expected<JITEvaluatedSymbol> lookup(StringRef Name);
 
   private:
 	static Expected<ThreadSafeModule> optimizeModule(ThreadSafeModule TSM,
-	                                                 const MaterializationResponsibility &R) {
-		TSM.withModuleDo([](Module &M) {
-			// Create a function pass manager.
-			auto FPM = std::make_unique<legacy::FunctionPassManager>(&M);
-
-			// Add some optimizations.
-			FPM->add(createInstructionCombiningPass());
-			FPM->add(createReassociatePass());
-			FPM->add(createGVNPass());
-			FPM->add(createCFGSimplificationPass());
-			FPM->doInitialization();
-
-			// Run the optimizations over all functions in the module being added to
-			// the JIT.
-			for (auto &F : M)
-				FPM->run(F);
-		});
-
-		return std::move(TSM);
-	}
+	                                                 const MaterializationResponsibility &R);
 };
 
 } // namespace catalyst::compiler

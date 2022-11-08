@@ -14,6 +14,7 @@
 #include "catalyst/platform.hpp"
 #include "catalyst/version.hpp"
 #include "compiler.hpp"
+#include "compiler.hpp"
 
 #if CATALYST_PLATFORM_POSIX
 #include <csignal>
@@ -31,6 +32,7 @@ struct cli_options {
 	bool compile_only = false;
 	bool dump_ast = false;
 	bool dump_bytecode = false;
+	bool run = true;
 
 	enum class OutputFormat { ASCII = 0, Color, Fancy } format = OutputFormat::ASCII;
 
@@ -38,7 +40,15 @@ struct cli_options {
 };
 
 int main(const cli_options &opts) {
-	return compile(opts.input.c_str(), opts.compiler_options) ? 0 : 1;
+	auto result = compile(opts.input.c_str(), opts.compiler_options);
+
+	if (opts.run) {
+		auto ret = run(result);
+		std::cout << "Result: " << ret << std::endl;
+		return ret;
+	}
+	else
+		return result.is_successful ? 0 : 1;
 }
 
 } // namespace catalyst::parser
@@ -69,6 +79,8 @@ int main(int argc, char **argv) {
 		->transform(CLI::CheckedTransformer(output_type_map, CLI::ignore_case));
 
 	app.add_option("-O,--optimize", options.compiler_options.optimizer_level, "Optimizer level");
+	
+	app.add_option("-R,--run", options.run, "Run");
 
 	std::atexit([]() { std::cout << rang::style::reset; });
 #if CATALYST_PLATFORM_POSIX

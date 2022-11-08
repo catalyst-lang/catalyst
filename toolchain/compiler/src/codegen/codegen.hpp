@@ -68,6 +68,8 @@ struct state {
 	std::unique_ptr<llvm::Module> TheModule;
 	std::unique_ptr<llvm::legacy::FunctionPassManager> FPM;
 
+	bool is_success = true;
+
 	catalyst::ast::translation_unit *translation_unit{};
 
 	scope_stack scopes;

@@ -6,6 +6,7 @@
 #include "catalyst/ast/ast.hpp"
 #include <sstream>
 #include <string>
+#include <memory>
 
 namespace catalyst::compiler {
 
@@ -23,8 +24,20 @@ struct options {
 	int optimizer_level = 2;
 };
 
+struct compile_result {
+	bool is_successful;
+	std::shared_ptr<void> state;
 
-bool compile(const std::string &string, options);
-bool compile(catalyst::ast::translation_unit &tu, options);
+	static compile_result create_failed() {
+		compile_result s;
+		s.is_successful = false;
+		return s;
+	}
+};
+
+compile_result compile(const std::string &string, options);
+compile_result compile(catalyst::ast::translation_unit &tu, options);
+
+uint64_t run(compile_result &);
 
 } // namespace catalyst
