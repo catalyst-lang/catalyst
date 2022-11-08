@@ -20,6 +20,7 @@
 #include <memory>
 #include <deque>
 
+#include "../compiler.hpp"
 #include "../common/catalyst/ast/ast.hpp"
 
 namespace catalyst::compiler::codegen {
@@ -61,6 +62,7 @@ struct scope_stack : public std::deque<scope> {
 };
 
 struct state {
+	compiler::options options;
 	llvm::LLVMContext TheContext;
 	llvm::IRBuilder<> Builder;
 	std::unique_ptr<llvm::Module> TheModule;

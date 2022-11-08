@@ -67,13 +67,26 @@ llvm::Value *codegen(codegen::state &state, ast::expr_binary_arithmetic &expr) {
 	case ast::expr_binary_arithmetic::op_t::div:
 		return state.Builder.CreateSDiv(lhs, rhs, "divtmp");
 	default:
+		state.report_error("Operator not implemented");
 		return nullptr;
 	}
 }
 
 llvm::Value *codegen(codegen::state &state, ast::expr_unary_arithmetic &expr) {
-	state.report_error("expr_unary_arithmetic: Not implemented");
-	return nullptr;
+	auto rhs = codegen(state, expr.rhs);
+
+	if (rhs == nullptr)
+		return nullptr;
+
+	switch (expr.op) {
+	case ast::expr_unary_arithmetic::op_t::complement:
+		return state.Builder.CreateXor(rhs, -1, "xortmp");
+	case ast::expr_unary_arithmetic::op_t::negate:
+		return state.Builder.CreateNeg(rhs, "negtmp");
+	default:
+		state.report_error("Operator not implemented");
+		return nullptr;
+	}
 }
 
 llvm::Value *codegen(codegen::state &state, ast::expr_binary_logical &expr) {

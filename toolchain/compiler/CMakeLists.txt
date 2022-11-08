@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 project(catalyst-compiler VERSION 0.0.1 LANGUAGES C CXX)
 
-add_library(libcompiler src/compiler.cpp src/compiler.hpp src/codegen/expr.cpp src/codegen/expr.hpp src/codegen/codegen.cpp src/codegen/codegen.hpp src/codegen/decl.cpp src/codegen/decl.hpp src/codegen/stmt.cpp src/codegen/stmt.hpp)
+add_library(libcompiler src/compiler.cpp src/compiler.hpp src/codegen/expr.cpp src/codegen/expr.hpp src/codegen/codegen.cpp src/codegen/codegen.hpp src/codegen/decl.cpp src/codegen/decl.hpp src/codegen/stmt.cpp src/codegen/stmt.hpp src/jit.cpp src/jit.hpp)
 target_include_directories(libcompiler PUBLIC ../common)
 target_compile_features(libcompiler PUBLIC cxx_std_20)
 
@@ -12,7 +12,7 @@ target_compile_features(libcompiler PUBLIC cxx_std_20)
 find_package(LLVM REQUIRED CONFIG)
 target_include_directories(libcompiler PRIVATE ${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
-llvm_map_components_to_libnames(llvm_libs support core orcjit)
+llvm_map_components_to_libnames(llvm_libs support core orcjit native)
 target_link_libraries(libcompiler PRIVATE libparser)
 target_link_libraries(libcompiler PRIVATE ${llvm_libs})
 

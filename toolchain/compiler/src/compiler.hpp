@@ -19,7 +19,12 @@ constexpr struct {
 	}
 } version;
 
-bool compile(const std::string &string);
-bool compile(catalyst::ast::translation_unit &tu);
+struct options {
+	int optimizer_level = 0;
+};
+
+
+bool compile(const std::string &string, options);
+bool compile(catalyst::ast::translation_unit &tu, options);
 
 } // namespace catalyst

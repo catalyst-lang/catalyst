@@ -26,17 +26,19 @@ void signal_handler(int s) {
 
 namespace catalyst::compiler {
 
-struct options {
+struct cli_options {
 	std::string input;
 	bool compile_only = false;
 	bool dump_ast = false;
 	bool dump_bytecode = false;
 
 	enum class OutputFormat { ASCII = 0, Color, Fancy } format = OutputFormat::ASCII;
+
+	options compiler_options;
 };
 
-int main(const options &opts) {
-	return compile(opts.input.c_str()) ? 0 : 1;
+int main(const cli_options &opts) {
+	return compile(opts.input.c_str(), opts.compiler_options) ? 0 : 1;
 }
 
 } // namespace catalyst::parser
@@ -46,7 +48,7 @@ using namespace catalyst::compiler;
 
 int main(int argc, char **argv) {
 	CLI::App app{"Catalyst Compiler"};
-	options options;
+	cli_options options;
 
 	std::stringstream version_string;
 	version_string << app.get_description() << " " << compiler::version.string() << "(Catalyst "
@@ -59,12 +61,14 @@ int main(int argc, char **argv) {
 
 	//app.add_flag("--dump-ast", options.dump_ast, "Dump AST to stdout.");
 
-	std::map<std::string, options::OutputFormat> output_type_map{
-		{"ascii", options::OutputFormat::ASCII},
-		{"color", options::OutputFormat::Color},
-		{"fancy", options::OutputFormat::Fancy}};
+	std::map<std::string, cli_options::OutputFormat> output_type_map{
+		{"ascii", cli_options::OutputFormat::ASCII},
+		{"color", cli_options::OutputFormat::Color},
+		{"fancy", cli_options::OutputFormat::Fancy}};
 	app.add_option("--format", options.format, "Set the output format")
 		->transform(CLI::CheckedTransformer(output_type_map, CLI::ignore_case));
+
+	app.add_option("-O,--optimize", options.compiler_options.optimizer_level, "Optimizer level");
 
 	std::atexit([]() { std::cout << rang::style::reset; });
 #if CATALYST_PLATFORM_POSIX

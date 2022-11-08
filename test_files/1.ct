@@ -4,7 +4,7 @@
 fn main(ij, ljk: jklj) {
     230 + double(4, 45)
 
-    ij * (5 * ljk)
+    -ij * (5 * ljk)
 
 //kj5 * (2 -
  //   (6/4-(4)))
@@ -23,7 +23,7 @@ fn main(ij, ljk: jklj) {
     -42.51u
     false
 
-    return 4
+    return -4
 ;
 ;
 
