@@ -12,7 +12,7 @@ with open (script_path + '/src/grammar.hpp', 'r' ) as f:
     #content = re.sub('static constexpr auto value\\s*=\\s*lexy::callback(.+?(?=}\\);)}\\);)', '//value', content, flags = re.M)
     content = re.sub('static constexpr auto value\\s*=[^;]+;', '//value', content, flags = re.M)
     content = re.sub('static constexpr auto value\\s*=', '//value', content, flags = re.M)
-    content = re.sub('\\/\\/value((.|\\n)+?(?=};))^};', '};', content, flags = re.M)
+    #content = re.sub('\\/\\/value((.|\\n)+?(?=};))^};', '};', content, flags = re.M)
     content = re.sub('<ast::numeric_classifier>', '<int>', content, flags = re.M)
     content = re.sub('(ast::numeric_classifier::[^)]+)', '0', content, flags = re.M)
     content = re.sub('<ast::[^>]+>', '', content, flags = re.M)

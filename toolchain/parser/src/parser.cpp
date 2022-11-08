@@ -28,7 +28,8 @@
 
 namespace catalyst::parser {
 
-auto _report_error = lexy_ext::report_error.opts({lexy::visualization_flags::visualize_use_color});
+//auto _report_error = lexy_ext::report_error.opts({lexy::visualization_flags::visualize_use_color});
+auto _report_error = lexy_ext::report_error.opts({});
 
 // template <typename Input>
 std::optional<ast::translation_unit> parse(parser_state_ptr state) {

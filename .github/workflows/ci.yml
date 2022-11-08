@@ -24,7 +24,7 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup Ninja
         uses: ashutoshvarma/setup-ninja@master
         with:
@@ -63,7 +63,7 @@ jobs:
 
     steps:
       - run: git config --global core.autocrlf false
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup Ninja
         uses: ashutoshvarma/setup-ninja@master
         with:

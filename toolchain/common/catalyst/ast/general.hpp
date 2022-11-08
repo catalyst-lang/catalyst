@@ -52,12 +52,18 @@ struct statement_expr {
 	expr_ptr expr;
 };
 
-using statement = std::variant<statement_var, statement_const, statement_expr>;
+struct statement_return {
+	expr_ptr expr;
+};
+
+using statement = std::variant<statement_var, statement_const, statement_return, statement_expr>;
 
 struct decl : parser::positional {
 	decl(const parser::char_type *begin, const parser::char_type *end, ast::ident const &ident)
 		: parser::positional(begin, end), ident(ident) {}
 	ident ident;
+
+	virtual ~decl() = default;
 };
 
 struct fn_parameter : parser::positional {

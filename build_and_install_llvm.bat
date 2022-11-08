@@ -18,12 +18,12 @@ git clone --config core.autocrlf=false --depth 1 https://github.com/llvm/llvm-pr
 if not exist build mkdir build
 cd build
 
-cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="%cd%\..\package" ../llvm-project/llvm
-cmake --build . --config Release
+cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="%cd%\..\package" ../llvm-project/llvm
+cmake --build . --config Debug
 
 echo.
 echo LLVM Build Complete!
 echo 
 
 if not exist ..\package mkdir ..\package
-cmake --build . --target install --config Release
+cmake --build . --target install --config Debug

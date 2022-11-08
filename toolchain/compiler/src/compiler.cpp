@@ -1,10 +1,11 @@
 //
 // Created by basdu on 4-11-2022.
 //
+#include <iostream>
 #include "compiler.hpp"
 #include "../../parser/src/parser.hpp"
 #include "codegen/codegen.hpp"
-#include <iostream>
+#include "codegen/expr.hpp"
 
 using namespace catalyst;
 
@@ -12,11 +13,13 @@ namespace catalyst::compiler {
 
 bool compile(catalyst::ast::translation_unit &tu) {
 	codegen::state state;
+	state.translation_unit = &tu;
+	state.TheModule = std::make_unique<llvm::Module>(tu.parser_state->filename, state.TheContext);
 
-	ast::expr_ptr expr = std::make_shared<ast::expr_literal_numeric>(
-		nullptr, nullptr, 1, 123, std::nullopt, std::nullopt, ast::numeric_classifier::none);
-
-	//parser::report_error(tu.parser_state, "This is an error", *tu.declarations[1], "Here");
+	auto v = codegen::codegen(state);
+	printf("Read module:\n");
+	state.TheModule->print(llvm::outs(), nullptr);
+	printf("\n");
 
 	return false;
 }

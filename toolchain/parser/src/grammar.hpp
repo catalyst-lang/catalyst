@@ -73,18 +73,15 @@ struct ident : lexy::token_production {
 	}();
 
 	static constexpr auto value = lexy::callback<ast::ident>([](auto lex) {
-		return ast::ident(
-			(parser::char_type *)lex.begin(), 
-			(parser::char_type *)lex.end(),
-			std::string(lex.begin(), lex.end())
-		);
+		return ast::ident((parser::char_type *)lex.begin(), (parser::char_type *)lex.end(),
+		                  std::string(lex.begin(), lex.end()));
 	});
 };
 
 struct type : lexy::token_production {
 	static constexpr auto rule = dsl::position + dsl::p<ident> + dsl::position;
 	static constexpr auto value = lexy::callback<ast::type>([](auto begin, auto ident, auto end) {
-		return ast::type((parser::char_type*) begin, (parser::char_type*)end, ident);
+		return ast::type((parser::char_type *)begin, (parser::char_type *)end, ident);
 	});
 };
 
@@ -115,8 +112,8 @@ struct expr_literal_bool : lexy::token_production {
 
 struct expr_literal_numeric {
 	template <typename Base>
-	static constexpr auto
-		integer = dsl::integer<std::int64_t>(dsl::digits<Base>.sep(dsl::digit_sep_tick));
+	static constexpr auto integer =
+		dsl::integer<std::int64_t>(dsl::digits<Base>.sep(dsl::digit_sep_tick));
 
 	// clang-format off
 	static constexpr auto suffixes =
@@ -186,8 +183,7 @@ struct expr_literal_numeric {
 	       auto end) {
 			return std::make_shared<ast::expr_literal_numeric>(
 				begin, end, sign, value, fraction, exponent,
-		         suffix.value_or(ast::numeric_classifier::none)
-				 );
+				suffix.value_or(ast::numeric_classifier::none));
 		});
 };
 
@@ -198,23 +194,27 @@ struct expr_literal {
 };
 
 // An expression that is nested inside another expression.
-struct nested_expr : lexy::transparent_production
-{
-    // We change the whitespace rule to allow newlines:
-    // as it's nested, we can properly handle continuation lines.
-    static constexpr auto whitespace = dsl::ascii::space;
-    // The rule itself just recurses back to expression, but with the adjusted whitespace now.
-    static constexpr auto rule = dsl::recurse<struct expr>;
+struct nested_expr : lexy::transparent_production {
+	// We change the whitespace rule to allow newlines:
+	// as it's nested, we can properly handle continuation lines.
+	static constexpr auto whitespace = dsl::ascii::space;
+	// The rule itself just recurses back to expression, but with the adjusted whitespace now.
+	static constexpr auto rule = dsl::recurse<struct expr>;
 
-    static constexpr auto value = lexy::forward<ast::expr_ptr>;
+	static constexpr auto value = lexy::forward<ast::expr_ptr>;
 };
 
-struct argument_list
-{
-    static constexpr auto whitespace = dsl::ascii::space;
-    static constexpr auto rule = dsl::terminator(LEXY_LIT(")"))
-                                     .opt_list(dsl::recurse<expr>, dsl::sep(dsl::comma));
-    static constexpr auto value = lexy::as_list<std::vector<ast::expr_ptr>>;
+struct expr_with_whitespace {
+	static constexpr auto whitespace = whitespace_incl_nl;
+	static constexpr auto rule = dsl::recurse<expr>;
+	static constexpr auto value = lexy::forward<ast::expr_ptr>;
+};
+
+struct argument_list {
+	static constexpr auto rule =
+		dsl::terminator(dsl::lit_c<')'>).opt_list(dsl::recurse<expr_with_whitespace>, dsl::sep(dsl::comma));
+
+	static constexpr auto value = lexy::as_list<std::vector<ast::expr_ptr>>;
 };
 
 struct expr : lexy::expression_production {
@@ -231,7 +231,7 @@ struct expr : lexy::expression_production {
 		}();
 		using operand = dsl::atom;
 	};
-	
+
 	struct prec2 : dsl::infix_op_left {
 		static constexpr auto op = dsl::op(dsl::lit_c<'.'>);
 		using operand = prec1;
@@ -273,9 +273,9 @@ struct expr : lexy::expression_production {
 			return std::make_shared<ast::expr_member_access>(lhs, rhs);
 		}
 
-		//lexy::new_<ast::expr_call, ast::expr_ptr>
-	    // lexy::forward<ast::expr_if>,
-	    // lexy::forward<ast::expr_assignment>
+		// lexy::new_<ast::expr_call, ast::expr_ptr>
+	    //  lexy::forward<ast::expr_if>,
+	    //  lexy::forward<ast::expr_assignment>
 	);
 };
 
@@ -305,20 +305,27 @@ struct statement_const {
 	static constexpr auto value = lexy::construct<ast::statement_const>;
 };
 
+struct statement_return {
+	static constexpr auto rule = kw_return >> dsl::p<expr>;
+	static constexpr auto value = lexy::construct<ast::statement_return>;
+};
+
 struct statement_expr {
 	static constexpr auto rule = dsl::p<expr>;
 	static constexpr auto value = lexy::construct<ast::statement_expr>;
 };
 
 struct statement : lexy::transparent_production {
-	struct expected_nl_sc
-    {
-        static constexpr auto name = "expected newline or semicolon";
-    };
+	struct expected_nl_sc {
+		static constexpr auto name = "expected newline or semicolon";
+	};
 
 	static constexpr auto name = "statement";
 	static constexpr auto rule =
-		(dsl::p<statement_var> | dsl::p<statement_const> | dsl::else_ >> dsl::p<statement_expr>) + dsl::peek(dsl::semicolon | dsl::newline).error<expected_nl_sc>;
+		(dsl::p<statement_var> | dsl::p<statement_const> | dsl::p<statement_return> |
+	     dsl::else_ >> dsl::p<statement_expr>) + dsl::peek(dsl::semicolon | dsl::newline |
+	                                                     dsl::lit_c<'}'>)
+			.error<expected_nl_sc>;
 	static constexpr auto value = lexy::construct<ast::statement>;
 };
 
@@ -385,7 +392,7 @@ struct fn_parameter {
 		dsl::position + dsl::p<ident> + dsl::opt(dsl::colon >> dsl::p<type>) + dsl::position;
 	static constexpr auto value =
 		lexy::callback<ast::fn_parameter>([](auto begin, auto ident, auto type, auto end) {
-			return ast::fn_parameter { {begin, end}, ident, type };
+			return ast::fn_parameter{{begin, end}, ident, type};
 		});
 };
 
