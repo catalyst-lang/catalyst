@@ -121,6 +121,9 @@ class KaleidoscopeJIT {
 		  MainJD(this->ES->createBareJITDylib("<main>")) {
 		MainJD.addGenerator(
 			cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(DL.getGlobalPrefix())));
+
+		// Required for Windows:
+		ObjectLayer.setOverrideObjectFlagsWithResponsibilityFlags(true);
 	}
 
 	inline ~KaleidoscopeJIT() {
