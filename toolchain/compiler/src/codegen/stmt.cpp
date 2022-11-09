@@ -13,17 +13,17 @@ namespace catalyst::compiler::codegen {
 // but the way that would work in C++ is so ugly, it introduces more overhead
 // and bloat to the codebase than just this one ugly dispatch function.
 // Feel free to refactor the AST and introduce an _elegant_ visitation pattern.
-llvm::Value *codegen(codegen::state &state, ast::statement &stmt) {
-	if (std::holds_alternative<ast::statement_expr>(stmt)) {
-		return codegen(state, std::get<ast::statement_expr>(stmt));
-	} else if (std::holds_alternative<ast::statement_var>(stmt)) {
-		return codegen(state, std::get<ast::statement_var>(stmt));
-	} else if (std::holds_alternative<ast::statement_return>(stmt)) {
-		return codegen(state, std::get<ast::statement_return>(stmt));
-	} else if (std::holds_alternative<ast::statement_const>(stmt)) {
-		return codegen(state, std::get<ast::statement_const>(stmt));
+llvm::Value *codegen(codegen::state &state, ast::statement_ptr stmt) {
+	if (typeid(*stmt) == typeid(ast::statement_expr)) {
+		return codegen(state, *(ast::statement_expr *)stmt.get());
+	} else if (typeid(*stmt) == typeid(ast::statement_var)) {
+		return codegen(state, *(ast::statement_var *)stmt.get());
+	} else if (typeid(*stmt) == typeid(ast::statement_return)) {
+		return codegen(state, *(ast::statement_return *)stmt.get());
+	} else if (typeid(*stmt) == typeid(ast::statement_const)) {
+		return codegen(state, *(ast::statement_const *)stmt.get());
 	} else {
-		state.report_error("unsupported body type");
+		state.report_error("unsupported statement type");
 	}
 
 	return nullptr;

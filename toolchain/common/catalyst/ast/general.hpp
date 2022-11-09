@@ -21,7 +21,9 @@
 namespace catalyst::ast {
 
 struct expr;
+struct statement;
 using expr_ptr = std::shared_ptr<struct expr>;
+using statement_ptr = std::shared_ptr<struct statement>;
 
 struct ident : parser::positional {
 	ident(const ident &ident) = default;
@@ -35,28 +37,6 @@ struct type : parser::positional {
 		: parser::positional(begin, end), ident(ident) {}
 	ident ident;
 };
-
-struct statement_var {
-	ident ident;
-	std::optional<type> type;
-	std::optional<expr_ptr> expr;
-};
-
-struct statement_const {
-	ident ident;
-	std::optional<type> type;
-	std::optional<expr_ptr> expr;
-};
-
-struct statement_expr {
-	expr_ptr expr;
-};
-
-struct statement_return {
-	expr_ptr expr;
-};
-
-using statement = std::variant<statement_var, statement_const, statement_return, statement_expr>;
 
 struct decl : parser::positional {
 	decl(const parser::char_type *begin, const parser::char_type *end, ast::ident const &ident)
@@ -75,7 +55,7 @@ struct fn_parameter : parser::positional {
 };
 
 struct fn_body_block {
-	std::vector<statement> statements;
+	std::vector<statement_ptr> statements;
 };
 
 struct fn_body_expr {

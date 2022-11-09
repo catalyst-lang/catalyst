@@ -9,7 +9,6 @@
 namespace catalyst::compiler::codegen {
 
 llvm::Value *codegen(codegen::state &state, ast::expr_ptr expr);
-llvm::Value *codegen(codegen::state &state, ast::expr &expr);
 llvm::Value *codegen(codegen::state &state, ast::expr_literal_numeric &expr);
 llvm::Value *codegen(codegen::state &state, ast::expr_literal_bool &expr);
 llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr);

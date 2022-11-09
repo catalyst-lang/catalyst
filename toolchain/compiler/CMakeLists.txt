@@ -16,7 +16,7 @@ llvm_map_components_to_libnames(llvm_libs support core orcjit native)
 target_link_libraries(libcompiler PRIVATE libparser)
 target_link_libraries(libcompiler PRIVATE ${llvm_libs})
 
-add_executable(compiler src/main.cpp)
+add_executable(compiler src/main.cpp ../common/catalyst/ast/stmt.hpp)
 target_link_libraries(compiler PUBLIC libcompiler)
 target_include_directories(compiler PRIVATE ${rang_SOURCE_DIR})
 target_include_directories(compiler PRIVATE ${cli11_SOURCE_DIR})

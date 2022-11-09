@@ -3,8 +3,7 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceFolder}/**",
-                "/opt/homebrew/Cellar/llvm/15.0.3/include"
+                "${workspaceFolder}/**"
             ],
             "defines": [
                 "_DEBUG",

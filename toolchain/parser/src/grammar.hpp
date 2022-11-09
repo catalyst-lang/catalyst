@@ -294,7 +294,8 @@ struct statement_var {
 		rule = kw_var >>
 	           dsl::p<ident> +
 	               dsl::opt(dsl::colon >> dsl::p<type>) + dsl::opt(dsl::equal_sign >> dsl::p<expr>);
-	static constexpr auto value = lexy::construct<ast::statement_var>;
+	//static constexpr auto value = lexy::construct<ast::statement_var>;
+	static constexpr auto value = lexy::new_<ast::statement_var, ast::statement_ptr>;
 };
 
 struct statement_const {
@@ -302,17 +303,21 @@ struct statement_const {
 		rule = kw_const >>
 	           dsl::p<ident> +
 	               dsl::opt(dsl::colon >> dsl::p<type>) + dsl::opt(dsl::equal_sign >> dsl::p<expr>);
-	static constexpr auto value = lexy::construct<ast::statement_const>;
+
+	static constexpr auto value = lexy::new_<ast::statement_const, ast::statement_ptr>;
 };
 
 struct statement_return {
 	static constexpr auto rule = kw_return >> dsl::p<expr>;
-	static constexpr auto value = lexy::construct<ast::statement_return>;
+	static constexpr auto value = lexy::new_<ast::statement_return, ast::statement_ptr>;
 };
 
 struct statement_expr {
 	static constexpr auto rule = dsl::p<expr>;
-	static constexpr auto value = lexy::construct<ast::statement_expr>;
+	static constexpr auto value =
+		lexy::callback<ast::statement_ptr>([](auto expr) {
+			return std::make_shared<ast::statement_expr>(expr);
+		});
 };
 
 struct statement : lexy::transparent_production {
@@ -326,36 +331,8 @@ struct statement : lexy::transparent_production {
 	     dsl::else_ >> dsl::p<statement_expr>) + dsl::peek(dsl::semicolon | dsl::newline |
 	                                                     dsl::lit_c<'}'>)
 			.error<expected_nl_sc>;
-	static constexpr auto value = lexy::construct<ast::statement>;
+	static constexpr auto value = lexy::forward<ast::statement_ptr>;
 };
-
-// struct statements {
-// 	struct sep : lexy::transparent_production {
-// 		static constexpr auto rule = dsl::while_one(dsl::p<statement_sep>);
-// 		static constexpr auto value = lexy::forward<void>;
-// 	};
-// 	struct opt_sep : lexy::transparent_production {
-// 		static constexpr auto rule = dsl::opt(dsl::p<sep>);
-// 		static constexpr auto value = lexy::forward<void>;
-// 	};
-
-// 	//static constexpr auto rule =
-// 	//	dsl::p<opt_sep> + dsl::opt(dsl::list(dsl::p<statement>, dsl::trailing_sep(dsl::p<sep>)));
-
-// 	static constexpr auto rule = []{
-// 		auto item = dsl::p<statement>;
-// 		auto sep = dsl::sep(dsl::while_one(dsl::ascii::newline | dsl::semicolon));
-// 		return dsl::list(item, sep);
-// 	}();
-
-// 	static constexpr auto value = lexy::as_list<std::vector<ast::statement>>;
-// };
-
-// struct nested_value {
-// 	static constexpr auto whitespace = dsl::ascii::space;
-// 	static constexpr auto rule = dsl::recurse<statement>;
-// 	static constexpr auto value = lexy::forward<ast::statement>;
-// };
 
 struct fn_body_block {
 	static constexpr auto rule = [] {
@@ -367,7 +344,7 @@ struct fn_body_block {
 		return bracketed.opt_list(item, sep);
 	}();
 	static constexpr auto value =
-		lexy::as_list<std::vector<ast::statement>> >>
+		lexy::as_list<std::vector<ast::statement_ptr>> >>
 		lexy::callback<ast::fn_body_block>(lexy::construct<ast::fn_body_block>,
 	                                       [](lexy::nullopt &&) { return ast::fn_body_block{}; });
 };

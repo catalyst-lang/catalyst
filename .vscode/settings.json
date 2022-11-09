@@ -109,7 +109,9 @@
         "__verbose_abort": "cpp",
         "condition_variable": "cpp",
         "future": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "queue": "cpp",
+        "shared_mutex": "cpp"
     },
     "files.insertFinalNewline": true,
 
@@ -129,6 +131,9 @@
         "env": "${envObj}",
         "environment": "${envObjArray}",
         "sourceFileMap": "${sourceFileMapObj}",
-      }
+    },
+    "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [
+        "modernize-use-trailing-return-type"
+    ]
       
 }
