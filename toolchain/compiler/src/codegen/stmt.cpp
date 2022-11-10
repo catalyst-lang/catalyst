@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 
 #include <typeinfo>
+#include <sstream>
+#include <iomanip>
 
 #include "decl.hpp"
 #include "expr.hpp"
@@ -54,9 +56,13 @@ void codegen(codegen::state &state, ast::statement_block &stmt) {
 	//                                                 state.current_scope().current_function);
 	// state.Builder.SetInsertPoint(BB);
 
+	std::stringstream sstream;
+	sstream << std::hex << (size_t)(&stmt);
+	state.scopes.enter(sstream.str());
 	for (auto &stmt : stmt.statements) {
 		codegen(state, stmt);
 	}
+	state.scopes.leave();
 }
 
 void codegen(codegen::state &state, ast::statement_if &stmt) {

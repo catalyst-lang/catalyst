@@ -25,6 +25,8 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ptr expr) {
 		return codegen(state, *(ast::expr_unary_arithmetic *)expr.get());
 	} else if (typeid(*expr) == typeid(ast::expr_binary_logical)) {
 		return codegen(state, *(ast::expr_binary_logical *)expr.get());
+	} else if (typeid(*expr) == typeid(ast::expr_assignment)) {
+		return codegen(state, *(ast::expr_assignment *)expr.get());
 	} else if (typeid(*expr) == typeid(ast::expr_call)) {
 		return codegen(state, *(ast::expr_call *)expr.get());
 	} else if (typeid(*expr) == typeid(ast::expr_member_access)) {
@@ -132,6 +134,18 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr) {
 llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr) {
 	state.report_error("expr_member_access: Not implemented");
 	return nullptr;
+}
+
+llvm::Value *codegen(codegen::state &state, ast::expr_assignment &expr) {
+	if (typeid(*expr.lhs) != typeid(ast::expr_ident)) {
+		state.report_error("assignment must be towards an lvalue");
+		return nullptr;
+	}
+	auto ident = (ast::expr_ident*)expr.lhs.get();
+	auto lvalue = state.scopes.find_named_symbol(ident->name);
+	
+	state.Builder.CreateStore(codegen(state, expr.rhs), lvalue->value);
+	return lvalue->value;
 }
 
 } // namespace catalyst::compiler::codegen

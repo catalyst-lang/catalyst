@@ -129,4 +129,14 @@ struct expr_binary_logical : expr {
 		: op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
 };
 
+struct expr_assignment : expr {
+	enum op_t {
+		assign,
+	} op;
+	expr_ptr lhs, rhs;
+
+	explicit expr_assignment(expr_ptr lhs, op_t op, expr_ptr rhs)
+		: op(op), lhs(lhs), rhs(rhs) {}
+};
+
 } // namespace catalyst::ast

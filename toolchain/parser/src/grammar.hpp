@@ -255,7 +255,12 @@ struct expr : lexy::expression_production {
 		using operand = prec5;
 	};
 
-	using operation = prec6;
+	struct assignment : dsl::infix_op_right {
+		static constexpr auto op = dsl::op<ast::expr_assignment::assign>(dsl::lit_c<'='>);
+		using operand = prec6;
+	};
+
+	using operation = assignment;
 
 	static constexpr auto value = lexy::callback<ast::expr_ptr>(
 		// atoms
@@ -265,6 +270,7 @@ struct expr : lexy::expression_production {
 		lexy::new_<ast::expr_unary_arithmetic, ast::expr_ptr>,
 		lexy::new_<ast::expr_binary_arithmetic, ast::expr_ptr>,
 		// conditional and assignment
+		lexy::new_<ast::expr_assignment, ast::expr_ptr>,
 
 		[](auto lhs, auto pos, std::vector<ast::expr_ptr> params) {
 			return std::make_shared<ast::expr_call>(lhs, params);
