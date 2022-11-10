@@ -110,10 +110,10 @@ struct expr_literal_bool : lexy::token_production {
 		});
 };
 
-struct expr_literal_numeric {
+struct expr_literal_numeric : lexy::token_production {
 	template <typename Base>
-	static constexpr auto integer =
-		dsl::integer<std::int64_t>(dsl::digits<Base>.sep(dsl::digit_sep_tick));
+	static constexpr auto
+		integer = dsl::integer<std::int64_t>(dsl::digits<Base>.sep(dsl::digit_sep_tick));
 
 	// clang-format off
 	static constexpr auto suffixes =
@@ -160,7 +160,7 @@ struct expr_literal_numeric {
 	static constexpr auto name = "numeric";
 	static constexpr auto rule = [] {
 		auto decimal_digits = integer<dsl::decimal>;
-		auto octal_digits = integer<dsl::octal>;
+		auto octal_digits = (LEXY_LIT("0o") | LEXY_LIT("0O")) >> integer<dsl::octal>;
 		auto hex_digits = (LEXY_LIT("0x") | LEXY_LIT("0X")) >> integer<dsl::hex>;
 		auto binary_digits = (LEXY_LIT("0b") | LEXY_LIT("0B")) >> integer<dsl::binary>;
 
@@ -168,7 +168,7 @@ struct expr_literal_numeric {
 
 		return dsl::peek(dsl::p<sign> + dsl::digit<>) >>
 		       dsl::position + dsl::p<sign> +
-		           (dsl::peek(dsl::lit_c<'0'>) >>
+		           (dsl::peek(dsl::lit_c<'0'> + LEXY_ASCII_ONE_OF("oOxXbB")) >>
 		                ((hex_digits | binary_digits | octal_digits) + dsl::nullopt + dsl::nullopt +
 		                 opt_suffix + dsl::position) |
 		            dsl::else_ >>
@@ -212,7 +212,8 @@ struct expr_with_whitespace {
 
 struct argument_list {
 	static constexpr auto rule =
-		dsl::terminator(dsl::lit_c<')'>).opt_list(dsl::recurse<expr_with_whitespace>, dsl::sep(dsl::comma));
+		dsl::terminator(dsl::lit_c<')'>)
+			.opt_list(dsl::recurse<expr_with_whitespace>, dsl::sep(dsl::comma));
 
 	static constexpr auto value = lexy::as_list<std::vector<ast::expr_ptr>>;
 };
@@ -224,7 +225,7 @@ struct expr : lexy::expression_production {
 		return paren_expr | dsl::p<expr_literal> | dsl::else_ >> dsl::p<expr_ident>;
 	}();
 
-	struct prec1 : dsl::postfix_op {
+	struct op_call : dsl::postfix_op {
 		static constexpr auto op = [] {
 			auto item = dsl::lit_c<'('> >> dsl::p<argument_list>;
 			return dsl::op(item);
@@ -232,14 +233,14 @@ struct expr : lexy::expression_production {
 		using operand = dsl::atom;
 	};
 
-	struct prec2 : dsl::infix_op_left {
+	struct op_member_access : dsl::infix_op_left {
 		static constexpr auto op = dsl::op(dsl::lit_c<'.'>);
-		using operand = prec1;
+		using operand = op_call;
 	};
 
 	struct prec3 : dsl::prefix_op {
 		static constexpr auto op = dsl::op<ast::expr_unary_arithmetic::negate>(dsl::lit_c<'-'>);
-		using operand = prec2;
+		using operand = op_member_access;
 	};
 
 	struct prec5 : dsl::infix_op_left {
@@ -269,7 +270,7 @@ struct expr : lexy::expression_production {
 			return std::make_shared<ast::expr_call>(lhs, params);
 		},
 
-		[](auto lhs, lexy::op<prec2::op>, auto rhs) {
+		[](auto lhs, lexy::op<op_member_access::op>, auto rhs) {
 			return std::make_shared<ast::expr_member_access>(lhs, rhs);
 		}
 
@@ -294,7 +295,6 @@ struct statement_var {
 		rule = kw_var >>
 	           dsl::p<ident> +
 	               dsl::opt(dsl::colon >> dsl::p<type>) + dsl::opt(dsl::equal_sign >> dsl::p<expr>);
-	//static constexpr auto value = lexy::construct<ast::statement_var>;
 	static constexpr auto value = lexy::new_<ast::statement_var, ast::statement_ptr>;
 };
 
@@ -314,10 +314,44 @@ struct statement_return {
 
 struct statement_expr {
 	static constexpr auto rule = dsl::p<expr>;
+	static constexpr auto value = lexy::callback<ast::statement_ptr>(
+		[](auto expr) { return std::make_shared<ast::statement_expr>(expr); });
+};
+
+// TODO: if statement is now always a block, this should optionally be a single statement
+struct statement_if {
+	static constexpr auto rule = kw_if >> dsl::p<expr> + dsl::recurse<struct statement_block> +
+	                                          dsl::opt(kw_else >> dsl::recurse<struct statement>);
 	static constexpr auto value =
-		lexy::callback<ast::statement_ptr>([](auto expr) {
-			return std::make_shared<ast::statement_expr>(expr);
+		lexy::callback<ast::statement_ptr>([](auto cond, auto then, auto else_) {
+			return std::make_shared<ast::statement_if>(cond, then, else_);
 		});
+};
+
+struct statement_for {
+	static constexpr auto rule = kw_for >> dsl::p<ident> + kw_in + dsl::p<expr> + LEXY_LIT("..") >>
+	                             dsl::p<expr> + dsl::recurse<struct statement>;
+	static constexpr auto value =
+		lexy::callback<ast::statement_ptr>([](auto ident, auto start, auto end, auto body) {
+			return std::make_shared<ast::statement_for>(ident, start, end, body);
+		});
+};
+
+struct statement_block {
+	static constexpr auto rule = [] {
+		auto item = dsl::recurse<statement>;
+		auto sep = dsl::trailing_sep(dsl::while_one(dsl::semicolon | dsl::newline));
+		auto bracketed =
+			dsl::brackets(dsl::lit_c<'{'> >> dsl::whitespace(whitespace_incl_nl), dsl::lit_c<'}'>);
+		return bracketed.opt_list(item, sep);
+	}();
+	static constexpr auto value =
+		lexy::as_list<std::vector<ast::statement_ptr>> >>
+		lexy::callback<ast::statement_ptr>(lexy::new_<ast::statement_block, ast::statement_ptr>,
+	                                       [](lexy::nullopt &&) {
+											   std::vector<ast::statement_ptr> empty;
+											   return std::make_shared<ast::statement_block>(empty);
+										   });
 };
 
 struct statement : lexy::transparent_production {
@@ -328,7 +362,8 @@ struct statement : lexy::transparent_production {
 	static constexpr auto name = "statement";
 	static constexpr auto rule =
 		(dsl::p<statement_var> | dsl::p<statement_const> | dsl::p<statement_return> |
-	     dsl::else_ >> dsl::p<statement_expr>) + dsl::peek(dsl::semicolon | dsl::newline |
+	     dsl::p<statement_if> | dsl::p<statement_for> | dsl::p<statement_block> |
+	     dsl::else_ >> dsl::p<statement_expr>)+dsl::peek(dsl::semicolon | dsl::newline |
 	                                                     dsl::lit_c<'}'>)
 			.error<expected_nl_sc>;
 	static constexpr auto value = lexy::forward<ast::statement_ptr>;

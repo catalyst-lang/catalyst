@@ -44,10 +44,11 @@ llvm::Value *codegen(codegen::state &state, ast::expr_literal_bool &expr) {
 
 llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr) {
 	// Look this variable up in the function.
-	llvm::Value *V = state.scopes.get_named_value(expr.name);
-	if (!V)
+	auto *symbol = state.scopes.find_named_symbol(expr.name);
+	if (!symbol)
 		state.report_error("Unknown variable name", expr);
-	return V;
+	llvm::AllocaInst *a = (llvm::AllocaInst *)symbol->value;
+	return state.Builder.CreateLoad(a->getAllocatedType(), a, expr.name.c_str());
 }
 
 llvm::Value *codegen(codegen::state &state, ast::expr_binary_arithmetic &expr) {
@@ -106,7 +107,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr) {
 
 		// If argument mismatch error.
 		if (CalleeF->arg_size() != expr.parameters.size()) {
-			// todo, make positional from parameters
+			// TODO, make positional from parameters
 			std::stringstream str;
 			str << "expected " << CalleeF->arg_size() << ", but got " << expr.parameters.size();
 

@@ -12,6 +12,7 @@
 #include "llvm/Transforms/InstCombine/InstCombine.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
+#include "llvm/Transforms/Utils.h"
 #include "jit.hpp"
 
 using namespace catalyst;
@@ -25,20 +26,18 @@ compile_result compile(catalyst::ast::translation_unit &tu, options options) {
 	state->TheModule = std::make_unique<llvm::Module>(tu.parser_state->filename, *state->TheContext);
 	state->FPM = std::make_unique<llvm::legacy::FunctionPassManager>(state->TheModule.get());
 
-	switch (options.optimizer_level) {
-	case 2:
+	if (options.optimizer_level >= 1) {
+		state->FPM->add(llvm::createPromoteMemoryToRegisterPass());
 		// Do simple "peephole" optimizations and bit-twiddling optimizations.
 		state->FPM->add(llvm::createInstructionCombiningPass());
 		// Re-associate expressions.
 		state->FPM->add(llvm::createReassociatePass());
-	case 1:
+	}
+	if (options.optimizer_level >= 2) {
 		// Eliminate Common SubExpressions.
 		state->FPM->add(llvm::createGVNPass());
 		// Simplify the control flow graph (deleting unreachable blocks, etc).
 		state->FPM->add(llvm::createCFGSimplificationPass());
-	case 0:
-	default:
-		break;
 	}
 
 	state->FPM->doInitialization();

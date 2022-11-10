@@ -8,10 +8,12 @@
 
 namespace catalyst::compiler::codegen {
 
-llvm::Value *codegen(codegen::state &state, ast::statement_ptr stmt);
-llvm::Value *codegen(codegen::state &state, ast::statement_var &stmt);
-llvm::Value *codegen(codegen::state &state, ast::statement_const &stmt);
-llvm::Value *codegen(codegen::state &state, ast::statement_return &stmt);
-llvm::Value *codegen(codegen::state &state, ast::statement_expr &stmt);
+void codegen(codegen::state &state, ast::statement_ptr stmt);
+void codegen(codegen::state &state, ast::statement_var &stmt);
+void codegen(codegen::state &state, ast::statement_const &stmt);
+void codegen(codegen::state &state, ast::statement_return &stmt);
+void codegen(codegen::state &state, ast::statement_expr &stmt);
+void codegen(codegen::state &state, ast::statement_if &stmt);
+void codegen(codegen::state &state, ast::statement_block &stmt);
 
 } // namespace catalyst::compiler::codegen

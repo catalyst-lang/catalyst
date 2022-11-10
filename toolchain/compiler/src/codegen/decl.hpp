@@ -8,11 +8,11 @@
 
 namespace catalyst::compiler::codegen {
 
-llvm::Value *codegen(codegen::state &state, ast::decl_ptr decl);
-llvm::Value *codegen(codegen::state &state, ast::decl_fn &decl);
-llvm::BasicBlock *codegen(codegen::state &state, ast::fn_body &body);
-llvm::BasicBlock *codegen(codegen::state &state, ast::fn_body_block &body);
-llvm::BasicBlock *codegen(codegen::state &state, ast::fn_body_expr &body);
+void codegen(codegen::state &state, ast::decl_ptr decl);
+void codegen(codegen::state &state, ast::decl_fn &decl);
+void codegen(codegen::state &state, ast::fn_body &body);
+void codegen(codegen::state &state, ast::fn_body_block &body);
+void codegen(codegen::state &state, ast::fn_body_expr &body);
 
 void proto_pass(codegen::state &state, ast::decl_ptr decl);
 void proto_pass(codegen::state &state, ast::decl_fn &decl);

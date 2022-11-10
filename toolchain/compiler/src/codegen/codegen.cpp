@@ -23,7 +23,7 @@ llvm::Value *codegen(codegen::state &state, ast::translation_unit &tu) {
 	}
 
 	for(auto decl : tu.declarations) {
-		auto v = codegen(state, decl);
+		codegen(state, decl);
 	}
 
 	return nullptr;

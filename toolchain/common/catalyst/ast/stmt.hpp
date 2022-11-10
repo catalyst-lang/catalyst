@@ -26,20 +26,19 @@ struct statement {
 
 struct statement_var : statement {
 	statement_var(ident ident, std::optional<type> type, std::optional<expr_ptr> expr)
-		: ident(ident), type(std::move(type)), expr(std::move(expr)) {}
+		: ident(ident), type(type), expr(expr) {}
 
 	ident ident;
-	std::optional<type> type;
-	std::optional<expr_ptr> expr;
+	std::optional<type> type = std::nullopt;
+	std::optional<expr_ptr> expr = std::nullopt;
+	bool is_const = false;
 };
 
-struct statement_const : statement {
-	statement_const(ident ident, std::optional<type> type, std::optional<expr_ptr> expr)
-		: ident(ident), type(std::move(type)), expr(std::move(expr)) {}
-
-	ident ident;
-	std::optional<type> type;
-	std::optional<expr_ptr> expr;
+struct statement_const : statement_var {
+	statement_const(ast::ident ident, std::optional<ast::type> type, std::optional<expr_ptr> expr)
+		: statement_var(ident, type, expr) {
+			is_const = true;
+		}
 };
 
 struct statement_expr : statement {
@@ -51,6 +50,11 @@ struct statement_expr : statement {
 struct statement_return : statement {
 	statement_return(expr_ptr expr) : expr(expr) {}
 	expr_ptr expr;
+};
+
+struct statement_block : statement {
+	statement_block(const std::vector<statement_ptr> &statements) : statements(statements) {}
+	std::vector<statement_ptr> statements;
 };
 
 struct statement_if : statement {
@@ -65,6 +69,11 @@ struct statement_if : statement {
 struct statement_for : statement {
 	statement_for(ident ident, expr_ptr start, expr_ptr end, expr_ptr step, statement_ptr body)
 		: ident(ident), start(start), end(end), step(step), body(body) {}
+
+	statement_for(ident ident, expr_ptr start, expr_ptr end, statement_ptr body)
+		: ident(ident), start(start), end(end), body(body) {
+			step = std::make_shared<ast::expr_literal_numeric>(1);
+		}
 
 	ident ident;
 	expr_ptr start;

@@ -3,10 +3,10 @@
 
 #pragma once
 
+#include "general.hpp"
+#include "parser.hpp"
 #include <memory>
 #include <variant>
-#include "parser.hpp"
-#include "general.hpp"
 
 namespace catalyst::ast {
 
@@ -34,7 +34,6 @@ struct expr_ident : expr, ident {
 struct expr_literal : expr, parser::positional {
 	expr_literal(const parser::char_type *begin, const parser::char_type *end)
 		: parser::positional(begin, end) {}
-
 };
 
 struct expr_literal_bool : expr_literal {
@@ -66,6 +65,9 @@ struct expr_literal_numeric : expr_literal {
 	                     std::optional<int16_t> const &exponent, numeric_classifier classifier)
 		: expr_literal(begin, end), sign(sign), integer(value), fraction(fraction),
 		  exponent(exponent), classifier(classifier) {}
+	expr_literal_numeric(uint64_t value)
+		: sign(1), integer(value), classifier(numeric_classifier::signed64), fraction(std::nullopt),
+		  exponent(std::nullopt), expr_literal(nullptr, nullptr) {}
 
 	int sign;
 	int64_t integer;
@@ -78,7 +80,8 @@ struct expr_call : expr {
 	expr_ptr lhs;
 	std::vector<expr_ptr> parameters;
 
-	expr_call(expr_ptr lhs, std::vector<expr_ptr> params) : lhs(std::move(lhs)), parameters(std::move(params)) {}
+	expr_call(expr_ptr lhs, std::vector<expr_ptr> params)
+		: lhs(std::move(lhs)), parameters(std::move(params)) {}
 };
 
 struct expr_member_access : expr {
@@ -119,14 +122,11 @@ struct expr_binary_arithmetic : expr {
 };
 
 struct expr_binary_logical : expr {
-	enum op_t {
-		logical_and,
-		logical_or
-	} op;
+	enum op_t { logical_and, logical_or } op;
 	expr_ptr lhs, rhs;
 
 	explicit expr_binary_logical(expr_ptr lhs, op_t op, expr_ptr rhs)
 		: op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
 };
 
-}
+} // namespace catalyst::ast

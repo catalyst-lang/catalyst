@@ -1,43 +1,15 @@
 
 fn main() {
-    return double(122, 3)
+    var i = 09
+    return test(i)
 }
 
-// this is a test
-fn main1(ij, ljk: jklj) {
-    // 230 + double(4, 45)
-
-    -ij * (5 * ljk)
-
-//kj5 * (2 -
- //   (6/4-(4)))
-
-    //var i = 4u + 4(ksfd,9(i),
-    // sdf ) * kj5;
-
-    var b:      jkls = 8;
-
-    -46e69
-    true
-
-    +0xff
-    0b10101011
-    31.453e-10
-    -42.51u
-    false
-
-    return -4
-;
-;
-
-
+fn test(a) {
+    var b
+    if a {
+        var o
+        return 10
+    } else {
+        return 5
+    }
 }
-
-
-
-
-/*43*/ fn double(a, b){
-    return a + 4 + main1(b, 3)
-}
-
- // jkl
