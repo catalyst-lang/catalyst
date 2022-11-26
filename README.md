@@ -4,7 +4,7 @@
 
 Catalyst transpiles to idiomatic, readable (but slightly opinionated) C++ code.
 
-**NOTE:** The language is under heavy development.
+> **Warning** The language is under heavy development.
 
 Catalyst's main draw is to provide a modern, current programming language that is compatible with the C++ ecosystem (mainly the vast amount of libraries available). C++ is a very powerful language, but has become very bloated and convoluted because of the decades of legacy it needs to drag along. Catalyst moderna language with much the same goals as C++, while also providing a modern day development experience in both syntax as well as idioms.
 
