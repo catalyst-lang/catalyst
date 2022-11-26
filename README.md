@@ -17,11 +17,32 @@ catalyst file.ct
 
 ## Building
 Dependencies for building:
-- `python` 3.6 or later (installing  [Python](https://www.python.org/downloads/))
-- `scons` 4.4.0 or later (installing  [SCons](https://scons.org/doc/production/HTML/scons-user/ch01s02.html))
+- `python` 3.6 or later (installing [Python](https://www.python.org/downloads/))
+- `cmake` 3.18 or later (installing [CMake](https://cmake.org/install/))
+- `llvm-dev` 14 or later.  
+    - Use `build_and_install_llvm.bat` on Windows.
+    - On Linux (or most other Unixes) use:
+        ```
+        $ wget https://apt.llvm.org/llvm.sh
+        $ chmod +x llvm.sh
+        $ sudo ./llvm.sh
+        ```
+    - On MacOS use:
+      ```
+      $ xcode-select --install
+      $ brew install coreutils llvm
+      ```
+      prefix the `cmake configure` command below with `LLVM_DIR=/opt/homebrew/opt/llvm`
 
+For building, we typically use Ninja, but the platform default should also work by _not_ specifying `-GNinja` below.
 ```
-scons
+$ cmake -GNinja -B build -DCMAKE_BUILD_TYPE=Release
+$ cmake --build build
+```
+run the tests:
+```
+$ ./build/toolchain/parser/test-parser
+$ ./build/toolchain/compiler/test-compiler
 ```
 
 ## Goals

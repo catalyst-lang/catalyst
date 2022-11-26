@@ -1,5 +1,0 @@
-Import('env')
-
-if env["tests"]:
-    env.Program(target='parser_tests', LIBS=['libparser'], LIBPATH='..', source=Glob('*.cpp'))
-
