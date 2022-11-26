@@ -22,7 +22,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${command:cmake.launchTargetPath}",
-            "args": ["test_files/1.ct", "--dump-ast"],
+            "args": ["test_files/1.ct"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "externalConsole": false,

@@ -5,6 +5,7 @@
 #include <typeinfo>
 
 #include "expr.hpp"
+#include "value.hpp"
 
 namespace catalyst::compiler::codegen {
 
@@ -137,15 +138,14 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr) {
 }
 
 llvm::Value *codegen(codegen::state &state, ast::expr_assignment &expr) {
-	if (typeid(*expr.lhs) != typeid(ast::expr_ident)) {
+	auto lvalue = get_lvalue(state, expr.lhs);
+	if (lvalue == nullptr) {
 		state.report_error("assignment must be towards an lvalue");
 		return nullptr;
 	}
-	auto ident = (ast::expr_ident*)expr.lhs.get();
-	auto lvalue = state.scopes.find_named_symbol(ident->name);
 	
-	state.Builder.CreateStore(codegen(state, expr.rhs), lvalue->value);
-	return lvalue->value;
+	state.Builder.CreateStore(codegen(state, expr.rhs), lvalue);
+	return lvalue;
 }
 
 } // namespace catalyst::compiler::codegen
