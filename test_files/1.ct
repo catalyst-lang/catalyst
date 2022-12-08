@@ -1,7 +1,7 @@
 
-fn main() {
+fn main() -> i64 {
     var i: i32 = 09
-    var b: bool = true
+    var b: i64 = true
     i = 5 + 7
     return b
     //return test(i)

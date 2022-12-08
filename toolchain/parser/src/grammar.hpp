@@ -317,9 +317,7 @@ struct statement_var {
 		},
 		[](auto ident, auto type, auto expr) {
 			return std::make_shared<ast::statement_var>(ident, type, expr);
-		}
-	);
-
+		});
 };
 
 struct statement_const {
@@ -340,8 +338,7 @@ struct statement_const {
 		},
 		[](auto ident, auto type, auto expr) {
 			return std::make_shared<ast::statement_const>(ident, type, expr);
-		}
-	);
+		});
 };
 
 struct statement_return {
@@ -456,11 +453,13 @@ struct decl_fn {
 	static constexpr auto name = "function declaration";
 
 	static constexpr auto rule = dsl::position + kw_fn + dsl::p<ident> + dsl::p<parameter_list> +
-	                             dsl::position + dsl::p<fn_body>;
+	                             dsl::opt(LEXY_LIT("->") >> dsl::p<type>) + dsl::position + dsl::p<fn_body>;
+
 	// static constexpr auto value = lexy::construct<ast::decl_fn>;
 	static constexpr auto value = lexy::callback<ast::decl_ptr>(
-		[](auto begin, auto ident, auto parameter_list, auto end, auto body) {
-			return std::make_shared<ast::decl_fn>(begin, end, ident, parameter_list, body);
+		[](auto begin, auto ident, auto parameter_list, auto type, auto end, auto body) {
+			return std::make_shared<ast::decl_fn>(begin, end, ident, parameter_list, type,
+		                                          body);
 		});
 };
 

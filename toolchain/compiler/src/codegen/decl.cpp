@@ -270,9 +270,11 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 
 	int changed_num = n == 0 ? 1 : 0;
 
+	auto return_type = decl.type.has_value() ? type::create(decl.type.value()) : type::create();
+
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 	const auto [res, symbol_introduced] =
-		state.symbol_table.try_emplace(key, &decl, nullptr, type::create_function(type::create()));
+		state.symbol_table.try_emplace(key, &decl, nullptr, type::create_function(return_type));
 	auto &sym = res->second;
 
 	symbol *prev_fn_sym = state.current_function_symbol;
@@ -288,7 +290,6 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 		params.push_back(type::create(param.type.value()));
 	}
 
-	// TODO: return type if defined (-> i32 or something)
 	auto current_fn_type = (type_function *)sym.type.get();
 	auto fn_type = type::create_function(current_fn_type->return_type, params);
 
