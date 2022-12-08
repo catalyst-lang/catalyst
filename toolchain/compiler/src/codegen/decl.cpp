@@ -106,7 +106,7 @@ int locals_pass(codegen::state &state, int n, ast::statement_return &stmt) {
 	}
 	if (fn_type->return_type->is_valid && expr_type->is_valid &&
 	    *fn_type->return_type != *expr_type) {
-		state.report_error("Mixed return types", *state.current_function_symbol->get_positional());
+		// Mixed return types, codegen will check if this is legal
 		return 0;
 	} else {
 		return 0;
@@ -174,12 +174,17 @@ void codegen(codegen::state &state, ast::decl_fn &decl) {
 	auto type = (type_function *)sym.type.get();
 	auto the_function = (llvm::Function *)sym.value;
 
+	auto previous_function = state.current_function;
+	auto previous_function_symbol = state.current_function_symbol;
 	state.current_function = the_function;
+	state.current_function_symbol = &sym;
 	state.scopes.enter(decl.ident.name);
 
 	llvm::BasicBlock *BB = llvm::BasicBlock::Create(*state.TheContext, "entry", the_function);
 	state.Builder.SetInsertPoint(BB);
 
+	auto previous_return = state.current_return;
+	auto previous_return_block = state.current_return_block;
 	state.current_return = CreateEntryBlockAlloca(state, the_function, "ret", *type->return_type);
 	state.current_return_block = llvm::BasicBlock::Create(*state.TheContext, "return");
 
@@ -228,6 +233,12 @@ void codegen(codegen::state &state, ast::decl_fn &decl) {
 		state.scopes.pop_back();
 		the_function->eraseFromParent();
 	}
+
+	state.current_function = previous_function;
+	state.current_function_symbol = previous_function_symbol;
+	state.current_return = previous_return;
+	state.current_return_block = previous_return_block;
+
 }
 
 void codegen(codegen::state &state, ast::fn_body &body) {
@@ -295,6 +306,7 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 
 	if (*current_fn_type != *fn_type) {
 		sym.type = fn_type;
+		current_fn_type = (type_function *)fn_type.get();
 		changed_num = 1;
 	}
 
@@ -307,6 +319,9 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 
 	if (changed_num) {
 		// redefine the llvm type
+		if (sym.value) {
+			((llvm::Function*)sym.value)->eraseFromParent();
+		}
 		auto the_function = llvm::Function::Create(
 			(llvm::FunctionType *)current_fn_type->get_llvm_type(state),
 			llvm::Function::ExternalLinkage, decl.ident.name, state.TheModule.get());

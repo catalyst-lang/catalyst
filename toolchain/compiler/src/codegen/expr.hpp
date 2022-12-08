@@ -19,7 +19,10 @@ llvm::Value * codegen(codegen::state &state, ast::expr_assignment &expr);
 llvm::Value * codegen(codegen::state &state, ast::expr_call &expr);
 llvm::Value * codegen(codegen::state &state, ast::expr_member_access &expr);
 
-llvm::Value *convert_primitive(llvm::Value *value, std::shared_ptr<type> from,
-                               std::shared_ptr<type> to);
+void codegen_assignment(codegen::state &state, llvm::Value* dest_ptr,
+                        std::shared_ptr<type> dest_type, ast::expr_ptr rhs);
+
+llvm::Value *convert_primitive(codegen::state &state, llvm::Value *value,
+                               std::shared_ptr<type> from, std::shared_ptr<type> to);
 
 } // namespace catalyst::compiler::codegen

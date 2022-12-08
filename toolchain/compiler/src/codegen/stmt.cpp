@@ -1,12 +1,13 @@
 // Copyright (c) 2021-2022 Bas du Pré and Catalyst contributors
 // SPDX-License-Identifier: MIT
 
-#include <typeinfo>
-#include <sstream>
 #include <iomanip>
+#include <sstream>
+#include <typeinfo>
 
 #include "decl.hpp"
 #include "expr.hpp"
+#include "expr_type.hpp"
 #include "stmt.hpp"
 
 namespace catalyst::compiler::codegen {
@@ -37,7 +38,13 @@ void codegen(codegen::state &state, ast::statement_expr &stmt) { codegen(state, 
 
 void codegen(codegen::state &state, ast::statement_return &stmt) {
 	auto expr = codegen(state, stmt.expr);
-	// TODO: check if expr->value is same as return type of current function
+	auto expr_type = expr_resulting_type(state, stmt.expr);
+
+	if (*expr_type != *((type_function*)state.current_function_symbol->type.get())->return_type) {
+		state.report_error("Mixed return types", *state.current_function_symbol->get_positional());
+		// TODO: warn (instead of error) about return type mismatch
+	}
+
 	state.Builder.CreateStore(expr, state.current_return);
 }
 
@@ -45,8 +52,7 @@ void codegen(codegen::state &state, ast::statement_var &stmt) {
 	// the locals pass already made sure there is a value in the symbol table
 	auto var = state.scopes.find_named_symbol(stmt.ident.name);
 	if (stmt.expr.has_value() && stmt.expr.value() != nullptr) {
-		auto expr = codegen(state, stmt.expr.value());
-		state.Builder.CreateStore(expr, var->value);
+		codegen_assignment(state, var->value, var->type, stmt.expr.value());
 	}
 }
 
@@ -77,8 +83,15 @@ void codegen(codegen::state &state, ast::statement_if &stmt) {
 	// cond_val = state.Builder.CreateFCmpONE(
 	//	cond_val, llvm::ConstantFP::get(*state.TheContext, llvm::APFloat(0.0)), "ifcond");
 
-	auto cond_val = state.Builder.CreateICmpNE(
-		cond_expr, llvm::ConstantInt::get(*state.TheContext, llvm::APInt(64, 0)), "ifcond");
+	auto cond_type = expr_resulting_type(state, stmt.cond);
+	auto p_cond_type = dynamic_cast<type_primitive *>(cond_type.get());
+	if (p_cond_type == nullptr) {
+		state.report_error("condition does not result in comparable primitive type");
+		return;
+	}
+
+	auto cond_val =
+		state.Builder.CreateICmpNE(cond_expr, p_cond_type->get_llvm_constant_zero(state), "ifcond");
 
 	// Create blocks for the then and else cases.  Insert the 'then' block at the
 	// eend of the function.

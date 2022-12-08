@@ -130,10 +130,13 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_call 
 	if (typeid(*expr.lhs) == typeid(ast::expr_ident)) {
 		auto &callee = *(ast::expr_ident *)expr.lhs.get();
 		auto sym = state.scopes.find_named_symbol(callee.name);
+		if (sym == nullptr) {
+			return type::create();
+		}
 		auto type = (type_function*)sym->type.get();
 		return type->return_type;
 	} else {
-		return type::create("");
+		return type::create();
 	}
 }
 

@@ -58,96 +58,117 @@ struct type_primitive : type {
 		: type(fqn, specialization_score), is_signed(is_signed) {}
 
 	bool is_signed = true;
+
+	virtual llvm::Value *get_llvm_constant_zero(codegen::state &state) const = 0;
+
 };
 
 struct type_bool : type_primitive {
-	type_bool() : type_primitive("bool", 8) {}
+	type_bool() : type_primitive("bool", 8, false) {}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
+	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_i8 : type_primitive {
 	type_i8() : type_primitive("i8", 10) {}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
+	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_i16 : type_primitive {
 	type_i16() : type_primitive("i16", 11) {}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
+	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_i32 : type_primitive {
 	type_i32() : type_primitive("i32", 12) {}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
+	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_i64 : type_primitive {
 	type_i64() : type_primitive("i64", 13) {}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
+	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_i128 : type_primitive {
 	type_i128() : type_primitive("i128", 14) {}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
+	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_isize : type_primitive {
 	type_isize() : type_primitive("isize", 13) {}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
+	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_u8 : type_primitive {
 	type_u8() : type_primitive("u8", 10, false) {}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
+	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_u16 : type_primitive {
 	type_u16() : type_primitive("u16", 11, false) {}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
+	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_u32 : type_primitive {
 	type_u32() : type_primitive("u32", 12, false) {}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
+	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_u64 : type_primitive {
 	type_u64() : type_primitive("u64", 13, false) {}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
+	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_u128 : type_primitive {
 	type_u128() : type_primitive("u128", 14, false) {}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
+	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_usize : type_primitive {
 	type_usize() : type_primitive("usize", 13, false) {}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
+	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_fp16 : type_primitive {
 	type_fp16() : type_primitive("fp16", 20) {}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
+	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_fp32 : type_primitive {
 	type_fp32() : type_primitive("fp32", 21) {}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
+	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_fp64 : type_primitive {
 	type_fp64() : type_primitive("fp64", 22) {}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
+	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_fp128 : type_primitive {
 	type_fp128() : type_primitive("fp128", 24) {}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
+	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_fp80 : type_primitive {
 	type_fp80() : type_primitive("fp80", 23) {}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
+	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_function : type {

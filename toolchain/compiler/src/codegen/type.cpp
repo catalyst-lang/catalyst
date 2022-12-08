@@ -82,72 +82,144 @@ llvm::Type *type_bool::get_llvm_type(state &state) const {
 	return llvm::Type::getInt1Ty(*state.TheContext);
 }
 
+llvm::Value *type_bool::get_llvm_constant_zero(codegen::state &state) const {
+	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(1, 0));
+}
+
 llvm::Type *type_i8::get_llvm_type(state &state) const {
 	return llvm::Type::getInt8Ty(*state.TheContext);
+}
+
+llvm::Value *type_i8::get_llvm_constant_zero(codegen::state &state) const {
+	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(8, 0));
 }
 
 llvm::Type *type_i16::get_llvm_type(state &state) const {
 	return llvm::Type::getInt16Ty(*state.TheContext);
 }
 
+llvm::Value *type_i16::get_llvm_constant_zero(codegen::state &state) const {
+	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(16, 0));
+}
+
 llvm::Type *type_i32::get_llvm_type(state &state) const {
 	return llvm::Type::getInt32Ty(*state.TheContext);
+}
+
+llvm::Value *type_i32::get_llvm_constant_zero(codegen::state &state) const {
+	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(32, 0));
 }
 
 llvm::Type *type_i64::get_llvm_type(state &state) const {
 	return llvm::Type::getInt64Ty(*state.TheContext);
 }
 
+llvm::Value *type_i64::get_llvm_constant_zero(codegen::state &state) const {
+	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(64, 0));
+}
+
 llvm::Type *type_i128::get_llvm_type(state &state) const {
 	return llvm::Type::getInt128Ty(*state.TheContext);
+}
+
+llvm::Value *type_i128::get_llvm_constant_zero(codegen::state &state) const {
+	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(128, 0));
 }
 
 llvm::Type *type_isize::get_llvm_type(state &state) const {
 	return llvm::Type::getInt64Ty(*state.TheContext);
 }
 
+llvm::Value *type_isize::get_llvm_constant_zero(codegen::state &state) const {
+	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(64, 0));
+}
+
 llvm::Type *type_u8::get_llvm_type(state &state) const {
 	return llvm::Type::getInt8Ty(*state.TheContext);
+}
+
+llvm::Value *type_u8::get_llvm_constant_zero(codegen::state &state) const {
+	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(8, 0));
 }
 
 llvm::Type *type_u16::get_llvm_type(state &state) const {
 	return llvm::Type::getInt16Ty(*state.TheContext);
 }
 
+llvm::Value *type_u16::get_llvm_constant_zero(codegen::state &state) const {
+	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(16, 0));
+}
+
 llvm::Type *type_u32::get_llvm_type(state &state) const {
 	return llvm::Type::getInt32Ty(*state.TheContext);
+}
+
+llvm::Value *type_u32::get_llvm_constant_zero(codegen::state &state) const {
+	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(32, 0));
 }
 
 llvm::Type *type_u64::get_llvm_type(state &state) const {
 	return llvm::Type::getInt64Ty(*state.TheContext);
 }
 
+llvm::Value *type_u64::get_llvm_constant_zero(codegen::state &state) const {
+	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(64, 0));
+}
+
 llvm::Type *type_u128::get_llvm_type(state &state) const {
 	return llvm::Type::getInt128Ty(*state.TheContext);
+}
+
+llvm::Value *type_u128::get_llvm_constant_zero(codegen::state &state) const {
+	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(128, 0));
 }
 
 llvm::Type *type_usize::get_llvm_type(state &state) const {
 	return llvm::Type::getInt64Ty(*state.TheContext);
 }
 
+llvm::Value *type_usize::get_llvm_constant_zero(codegen::state &state) const {
+	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(64, 0));
+}
+
 llvm::Type *type_fp16::get_llvm_type(state &state) const {
 	return llvm::Type::getHalfTy(*state.TheContext);
+}
+
+llvm::Value *type_fp16::get_llvm_constant_zero(codegen::state &state) const {
+	return llvm::ConstantFP::get(*state.TheContext, llvm::APFloat(0.0));
 }
 
 llvm::Type *type_fp32::get_llvm_type(state &state) const {
 	return llvm::Type::getFloatTy(*state.TheContext);
 }
 
+llvm::Value *type_fp32::get_llvm_constant_zero(codegen::state &state) const {
+	return llvm::ConstantFP::get(*state.TheContext, llvm::APFloat(0.0));
+}
+
 llvm::Type *type_fp64::get_llvm_type(state &state) const {
 	return llvm::Type::getDoubleTy(*state.TheContext);
+}
+
+llvm::Value *type_fp64::get_llvm_constant_zero(codegen::state &state) const {
+	return llvm::ConstantFP::get(*state.TheContext, llvm::APFloat(0.0));
 }
 
 llvm::Type *type_fp128::get_llvm_type(state &state) const {
 	return llvm::Type::getFP128Ty(*state.TheContext);
 }
 
+llvm::Value *type_fp128::get_llvm_constant_zero(codegen::state &state) const {
+	return llvm::ConstantFP::get(*state.TheContext, llvm::APFloat(0.0));
+}
+
 llvm::Type *type_fp80::get_llvm_type(state &state) const {
 	return llvm::Type::getX86_FP80Ty(*state.TheContext);
+}
+
+llvm::Value *type_fp80::get_llvm_constant_zero(codegen::state &state) const {
+	return llvm::ConstantFP::get(*state.TheContext, llvm::APFloat(0.0));
 }
 
 llvm::Type *type_function::get_llvm_type(state &state) const {

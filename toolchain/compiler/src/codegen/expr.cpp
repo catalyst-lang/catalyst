@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 #include <sstream>
+#include <iostream>
 #include <typeinfo>
 
 #include "expr.hpp"
@@ -66,7 +67,7 @@ llvm::Value *convert_primitive(codegen::state &state, llvm::Value *value,
 		return nullptr;
 	}
 
-	if (p_to->is_signed) {
+	if (p_from->is_signed) {
 		return state.Builder.CreateSExtOrTrunc(value, p_to->get_llvm_type(state));
 	} else {
 		return state.Builder.CreateZExtOrTrunc(value, p_to->get_llvm_type(state));
@@ -174,6 +175,26 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr) {
 	return nullptr;
 }
 
+void codegen_assignment(codegen::state &state, llvm::Value* dest_ptr,
+                        std::shared_ptr<type> dest_type, ast::expr_ptr rhs) {
+	auto rhs_value = codegen(state, rhs);
+	auto rhs_type = expr_resulting_type(state, rhs);
+
+	if (*dest_type != *rhs_type) {
+		// need to cast
+		auto new_rhs_value = convert_primitive(state, rhs_value, rhs_type, dest_type);
+		if (new_rhs_value) {
+			rhs_value = new_rhs_value;
+		} else {
+			// TODO casting
+			state.report_error("Warning, probably failing assignment due to type mismatch");
+			return;
+		}
+	}
+
+	state.Builder.CreateStore(rhs_value, dest_ptr);
+}
+
 llvm::Value *codegen(codegen::state &state, ast::expr_assignment &expr) {
 	auto lvalue = get_lvalue(state, expr.lhs);
 	if (lvalue == nullptr) {
@@ -181,9 +202,8 @@ llvm::Value *codegen(codegen::state &state, ast::expr_assignment &expr) {
 		return nullptr;
 	}
 
-	auto rhs = codegen(state, expr.rhs);
+	codegen_assignment(state, lvalue, expr_resulting_type(state, expr.lhs), expr.rhs);
 
-	state.Builder.CreateStore(rhs, lvalue);
 	return lvalue;
 }
 
