@@ -57,6 +57,8 @@ enum class numeric_classifier {
 	unsigned32, // u32
 	signed64,   // i64
 	unsigned64, // u64
+	float_,     // f
+	double_,    // d
 };
 
 struct expr_literal_numeric : expr_literal {

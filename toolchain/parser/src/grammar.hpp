@@ -112,8 +112,8 @@ struct expr_literal_bool : lexy::token_production {
 
 struct expr_literal_numeric : lexy::token_production {
 	template <typename Base>
-	static constexpr auto
-		integer = dsl::integer<std::int64_t>(dsl::digits<Base>.sep(dsl::digit_sep_tick));
+	static constexpr auto integer =
+		dsl::integer<std::int64_t>(dsl::digits<Base>.sep(dsl::digit_sep_tick));
 
 	// clang-format off
 	static constexpr auto suffixes =
@@ -129,7 +129,10 @@ struct expr_literal_numeric : lexy::token_production {
 			.map<LEXY_SYMBOL("i32")>(ast::numeric_classifier::signed32)
 			.map<LEXY_SYMBOL("u32")>(ast::numeric_classifier::unsigned32)
 			.map<LEXY_SYMBOL("i64")>(ast::numeric_classifier::signed64)
-			.map<LEXY_SYMBOL("u64")>(ast::numeric_classifier::unsigned64);
+			.map<LEXY_SYMBOL("d")>(ast::numeric_classifier::double_)
+			.map<LEXY_SYMBOL("f")>(ast::numeric_classifier::float_)
+			.map<LEXY_SYMBOL("f32")>(ast::numeric_classifier::float_)
+			.map<LEXY_SYMBOL("f64")>(ast::numeric_classifier::double_);
 	// clang-format on
 
 	struct sign : lexy::transparent_production {
@@ -301,7 +304,22 @@ struct statement_var {
 		rule = kw_var >>
 	           dsl::p<ident> +
 	               dsl::opt(dsl::colon >> dsl::p<type>) + dsl::opt(dsl::equal_sign >> dsl::p<expr>);
-	static constexpr auto value = lexy::new_<ast::statement_var, ast::statement_ptr>;
+
+	static constexpr auto value = lexy::callback<ast::statement_ptr>(
+		[](auto ident, lexy::nullopt type, lexy::nullopt expr) {
+			return std::make_shared<ast::statement_var>(ident, std::nullopt, std::nullopt);
+		},
+		[](auto ident, auto type, lexy::nullopt expr) {
+			return std::make_shared<ast::statement_var>(ident, type, std::nullopt);
+		},
+		[](auto ident, lexy::nullopt type, auto expr) {
+			return std::make_shared<ast::statement_var>(ident, std::nullopt, expr);
+		},
+		[](auto ident, auto type, auto expr) {
+			return std::make_shared<ast::statement_var>(ident, type, expr);
+		}
+	);
+
 };
 
 struct statement_const {
@@ -310,7 +328,20 @@ struct statement_const {
 	           dsl::p<ident> +
 	               dsl::opt(dsl::colon >> dsl::p<type>) + dsl::opt(dsl::equal_sign >> dsl::p<expr>);
 
-	static constexpr auto value = lexy::new_<ast::statement_const, ast::statement_ptr>;
+	static constexpr auto value = lexy::callback<ast::statement_ptr>(
+		[](auto ident, lexy::nullopt type, lexy::nullopt expr) {
+			return std::make_shared<ast::statement_const>(ident, std::nullopt, std::nullopt);
+		},
+		[](auto ident, auto type, lexy::nullopt expr) {
+			return std::make_shared<ast::statement_const>(ident, type, std::nullopt);
+		},
+		[](auto ident, lexy::nullopt type, auto expr) {
+			return std::make_shared<ast::statement_const>(ident, std::nullopt, expr);
+		},
+		[](auto ident, auto type, auto expr) {
+			return std::make_shared<ast::statement_const>(ident, type, expr);
+		}
+	);
 };
 
 struct statement_return {

@@ -5,5 +5,10 @@
     <libraryRoots>
       <file path="$PROJECT_DIR$/llvm" />
     </libraryRoots>
+    <excludeRoots>
+      <file path="$PROJECT_DIR$/llvm/build" />
+      <file path="$PROJECT_DIR$/llvm/llvm-project" />
+      <file path="$PROJECT_DIR$/llvm/package-rel" />
+    </excludeRoots>
   </component>
 </project>

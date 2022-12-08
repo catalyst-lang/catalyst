@@ -103,7 +103,7 @@ void report_error(parser_state_ptr parser_state, const std::string &error_title,
 	auto out = write(context, error);
 	using convert_type = std::codecvt_utf8<wchar_t>;
 	std::wstring_convert<convert_type, wchar_t> converter;
-	std::cout << converter.to_bytes(out);
+	std::cout << converter.to_bytes(out) << std::endl;
 }
 
 } // namespace catalyst::parser

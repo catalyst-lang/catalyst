@@ -4,11 +4,12 @@
 #pragma once
 
 #include "../common/catalyst/ast/ast.hpp"
+#include <memory>
 
 #include "codegen.hpp"
 
 namespace catalyst::compiler::codegen {
 
-llvm::Value *get_lvalue(codegen::state &state, ast::expr_ptr expr);
+llvm::Value * get_lvalue(codegen::state &state, ast::expr_ptr expr);
 
 } // namespace catalyst::compiler::codegen

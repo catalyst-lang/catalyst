@@ -1,7 +1,7 @@
 ---
 BasedOnStyle: LLVM
-TabWidth: '4'
-IndentWidth: '4'
+TabWidth: 4
+IndentWidth: 4
 UseTab: AlignWithSpaces
 ColumnLimit: 100
 AlwaysBreakTemplateDeclarations: 'Yes'

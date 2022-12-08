@@ -10,6 +10,7 @@
 
 #include "decl.hpp"
 #include "expr.hpp"
+#include "expr_type.hpp"
 #include "stmt.hpp"
 
 namespace catalyst::compiler::codegen {
@@ -27,74 +28,151 @@ void codegen(codegen::state &state, ast::decl_ptr decl) {
 	}
 }
 
-void locals_pass(codegen::state &state, ast::statement_ptr &stmt);
+/// Recursively go over all nested local variables in an AST node and add them to the symbol_table
+/// @return number of locals added or changed in this pass
+int locals_pass(codegen::state &state, int n, ast::statement_ptr &stmt);
 
-void locals_pass(codegen::state &state, std::vector<catalyst::ast::statement_ptr> &statements) {
+int locals_pass(codegen::state &state, int n,
+                std::vector<catalyst::ast::statement_ptr> &statements) {
+	int locals_changed = 0;
 	for (auto &stmt : statements) {
-		locals_pass(state, stmt);
+		locals_changed += locals_pass(state, n, stmt);
 	}
+	return locals_changed;
 }
 
-void locals_pass(codegen::state &state, ast::statement_var &stmt) {
-	state.symbol_table[state.scopes.get_fully_qualified_scope_name(stmt.ident.name)] = {&stmt};
+int locals_pass(codegen::state &state, int n, ast::statement_var &stmt) {
+	auto key = state.scopes.get_fully_qualified_scope_name(stmt.ident.name);
+	int locals_changed = 0;
+
+	// get the existing symbol OR emplace a new symbol
+	const auto [res, symbol_introduced] =
+		state.symbol_table.try_emplace(key, &stmt, nullptr, type::create(""));
+	auto &sym = res->second;
+
+	// if first pass and symbol is NOT introduced, this is a redefinition error
+	if (n == 0 && !symbol_introduced) {
+		state.report_error("Symbol redefined", stmt.ident);
+		return 0;
+		// todo: show where first definition is
+		// state.report_error("First definition here", sym.ast_node);
+	}
+
+	if (symbol_introduced)
+		locals_changed = 1;
+
+	std::shared_ptr<type> new_type;
+
+	if (stmt.type.has_value()) {
+		new_type = type::create(stmt.type.value());
+	} else if (stmt.expr.has_value()) {
+		new_type = expr_resulting_type(state, stmt.expr.value());
+	} else {
+		// TODO: search for first assignment and infer type
+		return 0;
+	}
+
+	if (*sym.type != *new_type) {
+		sym.type = new_type;
+		locals_changed = 1;
+	}
+	return locals_changed;
 }
 
-void locals_pass(codegen::state &state, ast::statement_if &stmt) {
-	locals_pass(state, stmt.then);
+int locals_pass(codegen::state &state, int n, ast::statement_if &stmt) {
+	int locals_changed = locals_pass(state, n, stmt.then);
 	if (stmt.else_.has_value())
-		locals_pass(state, stmt.else_.value());
+		locals_changed += locals_pass(state, n, stmt.else_.value());
+	return locals_changed;
 }
 
-void locals_pass(codegen::state &state, ast::statement_block &stmt) {
+int locals_pass(codegen::state &state, int n, ast::statement_block &stmt) {
 	std::stringstream sstream;
 	sstream << std::hex << (size_t)(&stmt);
 	state.scopes.enter(sstream.str());
-	locals_pass(state, stmt.statements);
+	int locals_changed = locals_pass(state, n, stmt.statements);
 	state.scopes.leave();
+	return locals_changed;
 }
 
-void locals_pass(codegen::state &state, ast::statement_ptr &stmt) {
-	if (typeid(*stmt) == typeid(ast::statement_var)) {
-		locals_pass(state, *(ast::statement_var *)stmt.get());
-	} else if (typeid(*stmt) == typeid(ast::statement_const)) {
-		locals_pass(state, *(ast::statement_var *)stmt.get());
-	} else if (typeid(*stmt) == typeid(ast::statement_if)) {
-		locals_pass(state, *(ast::statement_if *)stmt.get());
-	} else if (typeid(*stmt) == typeid(ast::statement_block)) {
-		locals_pass(state, *(ast::statement_block *)stmt.get());
+int locals_pass(codegen::state &state, int n, ast::statement_return &stmt) {
+	std::shared_ptr<type> expr_type = expr_resulting_type(state, stmt.expr);
+
+	type_function *fn_type = (type_function *)state.current_function_symbol->type.get();
+
+	if (!fn_type->return_type->is_valid && expr_type->is_valid) {
+		fn_type->return_type = expr_type;
+		return 1;
+	}
+	if (fn_type->return_type->is_valid && expr_type->is_valid &&
+	    *fn_type->return_type != *expr_type) {
+		state.report_error("Mixed return types", *state.current_function_symbol->get_positional());
+		return 0;
+	} else {
+		return 0;
 	}
 }
 
-void locals_pass(codegen::state &state, ast::decl_fn &decl) {
+int locals_pass(codegen::state &state, int n, ast::statement_ptr &stmt) {
+	if (typeid(*stmt) == typeid(ast::statement_var)) {
+		return locals_pass(state, n, *(ast::statement_var *)stmt.get());
+	} else if (typeid(*stmt) == typeid(ast::statement_const)) {
+		return locals_pass(state, n, *(ast::statement_var *)stmt.get());
+	} else if (typeid(*stmt) == typeid(ast::statement_if)) {
+		return locals_pass(state, n, *(ast::statement_if *)stmt.get());
+	} else if (typeid(*stmt) == typeid(ast::statement_block)) {
+		return locals_pass(state, n, *(ast::statement_block *)stmt.get());
+	} else if (typeid(*stmt) == typeid(ast::statement_return)) {
+		return locals_pass(state, n, *(ast::statement_return *)stmt.get());
+	} else if (typeid(*stmt) == typeid(ast::statement_expr)) {
+		// TODO
+		return 0;
+	}
+	state.report_error("Choices exhausted");
+	return 0;
+}
+
+/// Perform a locals pass for a function declaration
+int locals_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 	state.scopes.enter(decl.ident.name);
 
-	for (auto &param : decl.parameter_list) {
-		state.symbol_table[state.scopes.get_fully_qualified_scope_name(param.ident.name)] = {
-			&param};
+	int pass_changes = 0;
+	if (n == 0) {
+		for (auto &param : decl.parameter_list) {
+			if (!param.type.has_value()) {
+				state.report_error("Parameter has no type", param);
+				return 0;
+			}
+			auto key = state.scopes.get_fully_qualified_scope_name(param.ident.name);
+			state.symbol_table[key] =
+				symbol(&param, nullptr, codegen::type::create(param.type.value()));
+			pass_changes++;
+		}
 	}
 
 	if (std::holds_alternative<ast::fn_body_block>(decl.body)) {
 		auto &block = std::get<ast::fn_body_block>(decl.body);
-		locals_pass(state, block.statements);
+		pass_changes = locals_pass(state, n, block.statements);
 	}
 
 	state.scopes.leave();
+	return pass_changes;
 }
 
 /// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
 /// the function.  This is used for mutable variables etc.
 static llvm::AllocaInst *CreateEntryBlockAlloca(codegen::state &state, llvm::Function *TheFunction,
-                                                const std::string &VarName) {
+                                                const std::string &VarName, const type &type) {
 	llvm::IRBuilder<> TmpB(&TheFunction->getEntryBlock(), TheFunction->getEntryBlock().begin());
-	return TmpB.CreateAlloca(llvm::Type::getInt64Ty(*state.TheContext), 0, VarName.c_str());
+	return TmpB.CreateAlloca(type.get_llvm_type(state), 0, VarName.c_str());
 }
 
 void codegen(codegen::state &state, ast::decl_fn &decl) {
 	// First, check for an existing function from a previous 'extern' declaration.
-	auto the_function =
-		(llvm::Function *)state
-			.symbol_table[state.scopes.get_fully_qualified_scope_name(decl.ident.name)]
-			.value;
+	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
+	auto &sym = state.symbol_table[key];
+	auto type = (type_function*)sym.type.get();
+	auto the_function = (llvm::Function *)sym.value;
 
 	state.current_function = the_function;
 	state.scopes.enter(decl.ident.name);
@@ -102,11 +180,11 @@ void codegen(codegen::state &state, ast::decl_fn &decl) {
 	llvm::BasicBlock *BB = llvm::BasicBlock::Create(*state.TheContext, "entry", the_function);
 	state.Builder.SetInsertPoint(BB);
 
-	state.current_return = CreateEntryBlockAlloca(state, the_function, "ret");
+	state.current_return = CreateEntryBlockAlloca(state, the_function, "ret", *type->return_type);
 	state.current_return_block = llvm::BasicBlock::Create(*state.TheContext, "return");
 
 	for (auto &[name, variable] : state.scopes.get_locals()) {
-		variable->value = CreateEntryBlockAlloca(state, the_function, name);
+		variable->value = CreateEntryBlockAlloca(state, the_function, name, *variable->type);
 	}
 
 	// Record the function arguments in the NamedValues map.
@@ -163,7 +241,8 @@ void codegen(codegen::state &state, ast::fn_body &body) {
 }
 
 void codegen(codegen::state &state, ast::fn_body_expr &body) {
-	state.Builder.CreateRet(codegen(state, body.expr));
+	auto expr = codegen(state, body.expr);
+	state.Builder.CreateRet(expr);
 }
 
 void codegen(codegen::state &state, ast::fn_body_block &body) {
@@ -172,40 +251,76 @@ void codegen(codegen::state &state, ast::fn_body_block &body) {
 	}
 }
 
-void proto_pass(codegen::state &state, ast::decl_ptr decl) {
+int proto_pass(codegen::state &state, int n, ast::decl_ptr decl) {
 	if (typeid(*decl) == typeid(ast::decl_fn)) {
-		proto_pass(state, *(ast::decl_fn *)decl.get());
+		return proto_pass(state, n, *(ast::decl_fn *)decl.get());
 	}
+	return 0;
 }
 
-void proto_pass(codegen::state &state, ast::decl_fn &decl) {
+int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 	// First, check for an existing function from a previous 'extern' declaration.
 	// llvm::Function *the_function = state.TheModule->getFunction(decl.ident.name);
 
-	if (state.symbol_table.count(state.scopes.get_fully_qualified_scope_name(decl.ident.name)) >
-	    0) {
+	if (n == 0 &&
+	    state.symbol_table.contains(state.scopes.get_fully_qualified_scope_name(decl.ident.name))) {
 		state.report_error("Function name already exists", decl.ident);
-		return;
+		return 0;
 	}
 
-	// Make the function type:  double(double,double) etc.
-	std::vector<llvm::Type *> ints(decl.parameter_list.size(),
-	                               llvm::Type::getInt64Ty(*state.TheContext));
-	llvm::FunctionType *FT =
-		llvm::FunctionType::get(llvm::Type::getInt64Ty(*state.TheContext), ints, false);
+	int changed_num = n == 0 ? 1 : 0;
 
-	auto the_function = llvm::Function::Create(FT, llvm::Function::ExternalLinkage, decl.ident.name,
-	                                           state.TheModule.get());
+	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
+	const auto [res, symbol_introduced] =
+		state.symbol_table.try_emplace(key, &decl, nullptr, type::create(""));
+	auto &sym = res->second;
 
-	// Set names for all arguments.
-	unsigned Idx = 0;
-	for (auto &Arg : the_function->args())
-		Arg.setName(decl.parameter_list[Idx++].ident.name);
+	symbol *prev_fn_sym = state.current_function_symbol;
+	state.current_function_symbol = &sym;
 
-	state.symbol_table[state.scopes.get_fully_qualified_scope_name(decl.ident.name)] = {
-		&decl, the_function};
+	// Make the function type
+	std::vector<std::shared_ptr<type>> params;
+	for (const auto &param : decl.parameter_list) {
+		if (!param.type.has_value()) {
+			state.report_error("Parameter has no type", param);
+			return 0;
+		}
+		params.push_back(type::create(param.type.value()));
+	}
 
-	locals_pass(state, decl);
+	// TODO: return type if defined (-> i32 or something)
+	std::shared_ptr<type> return_type = type::create(""); // we don't know the return type
+	auto fn_type = type::create_function(return_type, params);
+
+	if (*sym.type != *fn_type) {
+		sym.type = fn_type;
+		changed_num = 1;
+	}
+
+	int locals_updated = 1;
+	int pass_n = n;
+	while (locals_updated > 0) {
+		locals_updated = locals_pass(state, pass_n++, decl);
+		changed_num += locals_updated;
+	}
+
+	if (changed_num) {
+		// redefine the llvm type
+		auto the_function = llvm::Function::Create(
+			(llvm::FunctionType *)fn_type->get_llvm_type(state), llvm::Function::ExternalLinkage,
+			decl.ident.name, state.TheModule.get());
+
+		// Set names for all arguments.
+		unsigned Idx = 0;
+		for (auto &Arg : the_function->args())
+			Arg.setName(decl.parameter_list[Idx++].ident.name);
+
+		sym.value = the_function;
+	}
+
+	state.current_function_symbol = prev_fn_sym;
+
+	return changed_num;
 }
 
 } // namespace catalyst::compiler::codegen

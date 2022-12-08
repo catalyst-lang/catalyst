@@ -36,14 +36,17 @@ void codegen(codegen::state &state, ast::statement_ptr stmt) {
 void codegen(codegen::state &state, ast::statement_expr &stmt) { codegen(state, stmt.expr); }
 
 void codegen(codegen::state &state, ast::statement_return &stmt) {
-	state.Builder.CreateStore(codegen(state, stmt.expr), state.current_return);
+	auto expr = codegen(state, stmt.expr);
+	// TODO: check if expr->value is same as return type of current function
+	state.Builder.CreateStore(expr, state.current_return);
 }
 
 void codegen(codegen::state &state, ast::statement_var &stmt) {
 	// the locals pass already made sure there is a value in the symbol table
 	auto var = state.scopes.find_named_symbol(stmt.ident.name);
 	if (stmt.expr.has_value() && stmt.expr.value() != nullptr) {
-		state.Builder.CreateStore(codegen(state, stmt.expr.value()), var->value);
+		auto expr = codegen(state, stmt.expr.value());
+		state.Builder.CreateStore(expr, var->value);
 	}
 }
 
@@ -66,16 +69,16 @@ void codegen(codegen::state &state, ast::statement_block &stmt) {
 }
 
 void codegen(codegen::state &state, ast::statement_if &stmt) {
-	llvm::Value *cond_val = codegen(state, stmt.cond);
-	if (!cond_val)
+	auto cond_expr = codegen(state, stmt.cond);
+	if (!cond_expr)
 		return;
 
 	// Convert condition to a bool by comparing non-equal to 0.0.
 	// cond_val = state.Builder.CreateFCmpONE(
 	//	cond_val, llvm::ConstantFP::get(*state.TheContext, llvm::APFloat(0.0)), "ifcond");
 
-	cond_val = state.Builder.CreateICmpNE(
-		cond_val, llvm::ConstantInt::get(*state.TheContext, llvm::APInt(64, 0)), "ifcond");
+	auto cond_val = state.Builder.CreateICmpNE(
+		cond_expr, llvm::ConstantInt::get(*state.TheContext, llvm::APInt(64, 0)), "ifcond");
 
 	// Create blocks for the then and else cases.  Insert the 'then' block at the
 	// eend of the function.

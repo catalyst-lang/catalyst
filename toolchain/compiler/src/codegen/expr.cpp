@@ -5,6 +5,7 @@
 #include <typeinfo>
 
 #include "expr.hpp"
+#include "expr_type.hpp"
 #include "value.hpp"
 
 namespace catalyst::compiler::codegen {
@@ -34,10 +35,11 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ptr expr) {
 		return codegen(state, *(ast::expr_member_access *)expr.get());
 	}
 
-	return nullptr;
+	return {nullptr};
 }
 
 llvm::Value *codegen(codegen::state &state, ast::expr_literal_numeric &expr) {
+
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(64, expr.integer, true));
 }
 
@@ -54,12 +56,43 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr) {
 	return state.Builder.CreateLoad(a->getAllocatedType(), a, expr.name.c_str());
 }
 
+llvm::Value *convert_primitive(codegen::state &state, llvm::Value *value,
+                               std::shared_ptr<type> from, std::shared_ptr<type> to) {
+	auto p_from = dynamic_cast<type_primitive *>(from.get());
+	auto p_to = dynamic_cast<type_primitive *>(to.get());
+	if (p_from == nullptr || p_to == nullptr) {
+		state.report_error("Converting between types that aren't both primitives");
+		assert(false);
+		return nullptr;
+	}
+
+	if (p_to->is_signed) {
+		return state.Builder.CreateSExtOrTrunc(value, p_to->get_llvm_type(state));
+	} else {
+		return state.Builder.CreateZExtOrTrunc(value, p_to->get_llvm_type(state));
+	}
+}
+
 llvm::Value *codegen(codegen::state &state, ast::expr_binary_arithmetic &expr) {
 	auto lhs = codegen(state, expr.lhs);
 	auto rhs = codegen(state, expr.rhs);
 
 	if (lhs == nullptr || rhs == nullptr)
 		return nullptr;
+
+	// below only works for primitive types
+
+	auto expr_type = expr_resulting_type(state, expr);
+	auto lhs_type = expr_resulting_type(state, expr.lhs);
+	auto rhs_type = expr_resulting_type(state, expr.rhs);
+
+	if (*lhs_type != *expr_type) {
+		lhs = convert_primitive(state, lhs, lhs_type, expr_type);
+	}
+
+	if (*rhs_type != *expr_type) {
+		rhs = convert_primitive(state, rhs, rhs_type, expr_type);
+	}
 
 	switch (expr.op) {
 	case ast::expr_binary_arithmetic::op_t::plus:
@@ -102,7 +135,10 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr) {
 	if (typeid(*expr.lhs) == typeid(ast::expr_ident)) {
 		auto &callee = *(ast::expr_ident *)expr.lhs.get();
 		// Look up the name in the global module table.
-		llvm::Function *CalleeF = state.TheModule->getFunction(callee.name);
+		// llvm::Function *CalleeF = state.TheModule->getFunction(callee.name);
+		auto sym = state.scopes.find_named_symbol(callee.name);
+		auto type = (type_function *)sym->type.get();
+		llvm::Function *CalleeF = (llvm::Function *)sym->value;
 		if (!CalleeF) {
 			state.report_error("Unknown function referenced", callee);
 			return nullptr;
@@ -110,7 +146,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr) {
 
 		// If argument mismatch error.
 		if (CalleeF->arg_size() != expr.parameters.size()) {
-			// TODO, make positional from parameters
+			// TODO, make positional from parameters for reporting errors
 			std::stringstream str;
 			str << "expected " << CalleeF->arg_size() << ", but got " << expr.parameters.size();
 
@@ -120,7 +156,8 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr) {
 
 		std::vector<llvm::Value *> ArgsV;
 		for (unsigned i = 0, e = expr.parameters.size(); i != e; ++i) {
-			ArgsV.push_back(codegen(state, expr.parameters[i]));
+			auto param = codegen(state, expr.parameters[i]);
+			ArgsV.push_back(param);
 			if (!ArgsV.back())
 				return nullptr;
 		}
@@ -143,8 +180,10 @@ llvm::Value *codegen(codegen::state &state, ast::expr_assignment &expr) {
 		state.report_error("assignment must be towards an lvalue");
 		return nullptr;
 	}
-	
-	state.Builder.CreateStore(codegen(state, expr.rhs), lvalue);
+
+	auto rhs = codegen(state, expr.rhs);
+
+	state.Builder.CreateStore(rhs, lvalue);
 	return lvalue;
 }
 

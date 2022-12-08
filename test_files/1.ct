@@ -1,16 +1,16 @@
 
 fn main() {
-    var i = 09
-    i = 5 + 2
-    return test(i)
+    var i: i32 = 09
+    i = 5 + 7
+    return i
+    //return test(i)
 }
 
-fn test(a) {
-    var b
-    if a {
-        var o = a / 3
-        return a + 10 / o
-    } else {
-        return 5
-    }
-}
+//fn test(a: i64) {
+//    if a {
+//        var o = a / 3
+//        return a + 10 / o
+//    } else {
+//        return 5
+//    }
+//}
