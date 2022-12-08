@@ -1,8 +1,9 @@
 
 fn main() {
     var i: i32 = 09
+    var b: bool = true
     i = 5 + 7
-    return i
+    return b
     //return test(i)
 }
 

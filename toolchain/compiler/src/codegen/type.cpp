@@ -6,14 +6,42 @@
 namespace catalyst::compiler::codegen {
 
 std::shared_ptr<type> type::create(const std::string &name) {
+	if (name == "i8")
+		return std::make_shared<type_i8>();
+	if (name == "i16")
+		return std::make_shared<type_i16>();
 	if (name == "i32")
 		return std::make_shared<type_i32>();
 	if (name == "i64")
 		return std::make_shared<type_i64>();
-	if (name == "i32")
-		return std::make_shared<type_i32>();
-	if (name == "i64")
-		return std::make_shared<type_i64>();
+	if (name == "i128")
+		return std::make_shared<type_i128>();
+	if (name == "isize")
+		return std::make_shared<type_isize>();
+	if (name == "u8")
+		return std::make_shared<type_u8>();
+	if (name == "u16")
+		return std::make_shared<type_u16>();
+	if (name == "u32")
+		return std::make_shared<type_u32>();
+	if (name == "u64")
+		return std::make_shared<type_u64>();
+	if (name == "u128")
+		return std::make_shared<type_u128>();
+	if (name == "usize")
+		return std::make_shared<type_usize>();
+	if (name == "fp16")
+		return std::make_shared<type_fp16>();
+	if (name == "fp32")
+		return std::make_shared<type_fp32>();
+	if (name == "fp64")
+		return std::make_shared<type_fp64>();
+	if (name == "fp128")
+		return std::make_shared<type_fp128>();
+	if (name == "fp80")
+		return std::make_shared<type_fp80>();
+	if (name == "bool")
+		return std::make_shared<type_bool>();
 
 	if (name == "")
 		return std::make_shared<type_undefined>();
@@ -35,11 +63,11 @@ std::shared_ptr<type> type::create(const ast::type &ast_type) {
 }
 
 bool type::operator==(const type &other) const {
-	return (this->fqn == other.fqn);
+	return (this->get_fqn() == other.get_fqn());
 }
 
 bool type::operator!=(const type &other) const {
-	return (this->fqn != other.fqn);
+	return (this->get_fqn() != other.get_fqn());
 }
 
 std::string type::get_fqn() const {
@@ -50,12 +78,40 @@ llvm::Type *type_undefined::get_llvm_type(state &state) const {
 	return llvm::Type::getVoidTy(*state.TheContext);
 }
 
+llvm::Type *type_bool::get_llvm_type(state &state) const {
+	return llvm::Type::getInt1Ty(*state.TheContext);
+}
+
+llvm::Type *type_i8::get_llvm_type(state &state) const {
+	return llvm::Type::getInt8Ty(*state.TheContext);
+}
+
+llvm::Type *type_i16::get_llvm_type(state &state) const {
+	return llvm::Type::getInt16Ty(*state.TheContext);
+}
+
 llvm::Type *type_i32::get_llvm_type(state &state) const {
 	return llvm::Type::getInt32Ty(*state.TheContext);
 }
 
 llvm::Type *type_i64::get_llvm_type(state &state) const {
 	return llvm::Type::getInt64Ty(*state.TheContext);
+}
+
+llvm::Type *type_i128::get_llvm_type(state &state) const {
+	return llvm::Type::getInt128Ty(*state.TheContext);
+}
+
+llvm::Type *type_isize::get_llvm_type(state &state) const {
+	return llvm::Type::getInt64Ty(*state.TheContext);
+}
+
+llvm::Type *type_u8::get_llvm_type(state &state) const {
+	return llvm::Type::getInt8Ty(*state.TheContext);
+}
+
+llvm::Type *type_u16::get_llvm_type(state &state) const {
+	return llvm::Type::getInt16Ty(*state.TheContext);
 }
 
 llvm::Type *type_u32::get_llvm_type(state &state) const {
@@ -66,12 +122,32 @@ llvm::Type *type_u64::get_llvm_type(state &state) const {
 	return llvm::Type::getInt64Ty(*state.TheContext);
 }
 
-llvm::Type *type_float::get_llvm_type(state &state) const {
+llvm::Type *type_u128::get_llvm_type(state &state) const {
+	return llvm::Type::getInt128Ty(*state.TheContext);
+}
+
+llvm::Type *type_usize::get_llvm_type(state &state) const {
+	return llvm::Type::getInt64Ty(*state.TheContext);
+}
+
+llvm::Type *type_fp16::get_llvm_type(state &state) const {
+	return llvm::Type::getHalfTy(*state.TheContext);
+}
+
+llvm::Type *type_fp32::get_llvm_type(state &state) const {
 	return llvm::Type::getFloatTy(*state.TheContext);
 }
 
-llvm::Type *type_double::get_llvm_type(state &state) const {
+llvm::Type *type_fp64::get_llvm_type(state &state) const {
 	return llvm::Type::getDoubleTy(*state.TheContext);
+}
+
+llvm::Type *type_fp128::get_llvm_type(state &state) const {
+	return llvm::Type::getFP128Ty(*state.TheContext);
+}
+
+llvm::Type *type_fp80::get_llvm_type(state &state) const {
+	return llvm::Type::getX86_FP80Ty(*state.TheContext);
 }
 
 llvm::Type *type_function::get_llvm_type(state &state) const {

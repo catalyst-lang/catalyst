@@ -171,7 +171,7 @@ void codegen(codegen::state &state, ast::decl_fn &decl) {
 	// First, check for an existing function from a previous 'extern' declaration.
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 	auto &sym = state.symbol_table[key];
-	auto type = (type_function*)sym.type.get();
+	auto type = (type_function *)sym.type.get();
 	auto the_function = (llvm::Function *)sym.value;
 
 	state.current_function = the_function;
@@ -272,7 +272,7 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 	const auto [res, symbol_introduced] =
-		state.symbol_table.try_emplace(key, &decl, nullptr, type::create(""));
+		state.symbol_table.try_emplace(key, &decl, nullptr, type::create_function(type::create()));
 	auto &sym = res->second;
 
 	symbol *prev_fn_sym = state.current_function_symbol;
@@ -289,10 +289,10 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 	}
 
 	// TODO: return type if defined (-> i32 or something)
-	std::shared_ptr<type> return_type = type::create(""); // we don't know the return type
-	auto fn_type = type::create_function(return_type, params);
+	auto current_fn_type = (type_function *)sym.type.get();
+	auto fn_type = type::create_function(current_fn_type->return_type, params);
 
-	if (*sym.type != *fn_type) {
+	if (*current_fn_type != *fn_type) {
 		sym.type = fn_type;
 		changed_num = 1;
 	}
@@ -307,8 +307,8 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 	if (changed_num) {
 		// redefine the llvm type
 		auto the_function = llvm::Function::Create(
-			(llvm::FunctionType *)fn_type->get_llvm_type(state), llvm::Function::ExternalLinkage,
-			decl.ident.name, state.TheModule.get());
+			(llvm::FunctionType *)current_fn_type->get_llvm_type(state),
+			llvm::Function::ExternalLinkage, decl.ident.name, state.TheModule.get());
 
 		// Set names for all arguments.
 		unsigned Idx = 0;
