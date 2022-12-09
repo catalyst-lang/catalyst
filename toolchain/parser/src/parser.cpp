@@ -81,7 +81,7 @@ void report_error(const std::string &error_title) {
 }
 
 void report_error(parser_state_ptr parser_state, const std::string &error_title,
-                  const parser::positional &positional, const std::string &error_positional_title) {
+                  const parser::ast_node &positional, const std::string &error_positional_title) {
 	auto write = [parser_state](const auto &context, const auto &error) {
 		std::wstring str;
 		// lexy_ext::_detail::write_error(std::back_insert_iterator(str), context, error,

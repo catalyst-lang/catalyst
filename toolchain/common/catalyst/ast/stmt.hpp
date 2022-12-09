@@ -7,6 +7,7 @@
 
 #include "expr.hpp"
 #include "general.hpp"
+#include "parser.hpp"
 
 namespace catalyst::ast {
 
@@ -20,13 +21,15 @@ struct statement_return;
 struct statement_if;
 struct statement_for;
 
-struct statement {
+struct statement : parser::ast_node {
 	virtual ~statement() = default;
+	using ast_node::ast_node;
 };
 
 struct statement_var : statement {
-	statement_var(ident ident, std::optional<type> type, std::optional<expr_ptr> expr)
-		: ident(ident), type(type), expr(expr) {}
+	statement_var(const parser::char_type *begin, const parser::char_type *end, ident ident,
+	              std::optional<type> type, std::optional<expr_ptr> expr)
+		: statement(begin, end), ident(ident), type(type), expr(expr) {}
 
 	ident ident;
 	std::optional<type> type = std::nullopt;
@@ -35,31 +38,36 @@ struct statement_var : statement {
 };
 
 struct statement_const : statement_var {
-	statement_const(ast::ident ident, std::optional<ast::type> type, std::optional<expr_ptr> expr)
-		: statement_var(ident, type, expr) {
-			is_const = true;
-		}
+	statement_const(const parser::char_type *begin, const parser::char_type *end, ast::ident ident,
+	                std::optional<ast::type> type, std::optional<expr_ptr> expr)
+		: statement_var(begin, end, ident, type, expr) {
+		is_const = true;
+	}
 };
 
 struct statement_expr : statement {
-	statement_expr(expr_ptr expr) : expr(expr) {}
+	statement_expr(expr_ptr expr) : statement(expr->lexeme.begin, expr->lexeme.end), expr(expr) {}
 
 	expr_ptr expr;
 };
 
 struct statement_return : statement {
-	statement_return(expr_ptr expr) : expr(expr) {}
+	statement_return(const parser::char_type *begin, const parser::char_type *end, expr_ptr expr)
+		: statement(begin, end), expr(expr) {}
 	expr_ptr expr;
 };
 
 struct statement_block : statement {
-	statement_block(const std::vector<statement_ptr> &statements) : statements(statements) {}
+	statement_block(const parser::char_type *begin, const parser::char_type *end,
+	                const std::vector<statement_ptr> &statements)
+		: statement(begin, end), statements(statements) {}
 	std::vector<statement_ptr> statements;
 };
 
 struct statement_if : statement {
-	statement_if(expr_ptr cond, statement_ptr then, std::optional<statement_ptr> else_)
-		: cond(cond), then(then), else_(else_) {}
+	statement_if(const parser::char_type *begin, const parser::char_type *end, expr_ptr cond,
+	             statement_ptr then, std::optional<statement_ptr> else_)
+		: statement(begin, end), cond(cond), then(then), else_(else_) {}
 
 	expr_ptr cond;
 	statement_ptr then;
@@ -67,18 +75,22 @@ struct statement_if : statement {
 };
 
 struct statement_for : statement {
-	statement_for(ident ident, expr_ptr start, expr_ptr end, expr_ptr step, statement_ptr body)
-		: ident(ident), start(start), end(end), step(step), body(body) {}
+	statement_for(const parser::char_type *begin, const parser::char_type *end, ident ident,
+	              expr_ptr expr_start, expr_ptr expr_end, expr_ptr expr_step, statement_ptr body)
+		: statement(begin, end), ident(ident), expr_start(expr_start), expr_end(expr_end),
+		  expr_step(expr_step), body(body) {}
 
-	statement_for(ident ident, expr_ptr start, expr_ptr end, statement_ptr body)
-		: ident(ident), start(start), end(end), body(body) {
-			step = std::make_shared<ast::expr_literal_numeric>(1);
-		}
+	statement_for(const parser::char_type *begin, const parser::char_type *end, ident ident,
+	              expr_ptr expr_start, expr_ptr expr_end, statement_ptr body)
+		: statement(begin, end), ident(ident), expr_start(expr_start), expr_end(expr_end),
+		  body(body) {
+		expr_step = std::make_shared<ast::expr_literal_numeric>(1);
+	}
 
 	ident ident;
-	expr_ptr start;
-	expr_ptr end;
-	expr_ptr step;
+	expr_ptr expr_start;
+	expr_ptr expr_end;
+	expr_ptr expr_step;
 	statement_ptr body;
 };
 

@@ -12,7 +12,7 @@ void state::report_error(const std::string &error) {
 	parser::report_error(error);
 }
 
-void state::report_error(const std::string &error, const parser::positional &positional,
+void state::report_error(const std::string &error, const parser::ast_node &positional,
                          const std::string &pos_comment) const {
 	parser::report_error(this->translation_unit->parser_state, error, positional, pos_comment);
 }

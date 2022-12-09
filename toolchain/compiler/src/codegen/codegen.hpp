@@ -54,7 +54,7 @@ struct state {
 		  scopes(&symbol_table) {}
 
 	static void report_error(const std::string &error);
-	void report_error(const std::string &error, const parser::positional &positional,
+	void report_error(const std::string &error, const parser::ast_node &positional,
 	                  const std::string &pos_comment = "here") const;
 
 	scope &current_scope() { return scopes.current_scope(); }

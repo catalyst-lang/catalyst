@@ -87,7 +87,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_liter
 
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_ident &expr, std::shared_ptr<type> expecting_type) {
 	// Look this variable up in the function.
-	auto *symbol = state.scopes.find_named_symbol(expr.name);
+	auto *symbol = state.scopes.find_named_symbol(expr.ident.name);
 	if (!symbol)
 		return type::create("");
 	return symbol->type;
@@ -145,7 +145,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_binar
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_call &expr, std::shared_ptr<type> expecting_type) {
 	if (typeid(*expr.lhs) == typeid(ast::expr_ident)) {
 		auto &callee = *(ast::expr_ident *)expr.lhs.get();
-		auto sym = state.scopes.find_named_symbol(callee.name);
+		auto sym = state.scopes.find_named_symbol(callee.ident.name);
 		if (sym == nullptr) {
 			return type::create();
 		}

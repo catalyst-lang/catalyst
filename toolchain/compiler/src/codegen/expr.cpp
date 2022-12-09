@@ -50,11 +50,11 @@ llvm::Value *codegen(codegen::state &state, ast::expr_literal_bool &expr) {
 
 llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr) {
 	// Look this variable up in the function.
-	auto *symbol = state.scopes.find_named_symbol(expr.name);
+	auto *symbol = state.scopes.find_named_symbol(expr.ident.name);
 	if (!symbol)
 		state.report_error("Unknown variable name", expr);
 	llvm::AllocaInst *a = (llvm::AllocaInst *)symbol->value;
-	return state.Builder.CreateLoad(a->getAllocatedType(), a, expr.name.c_str());
+	return state.Builder.CreateLoad(a->getAllocatedType(), a, expr.ident.name.c_str());
 }
 
 llvm::Value *codegen(codegen::state &state, ast::expr_binary_arithmetic &expr) {
@@ -120,7 +120,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr) {
 		auto &callee = *(ast::expr_ident *)expr.lhs.get();
 		// Look up the name in the global module table.
 		// llvm::Function *CalleeF = state.TheModule->getFunction(callee.name);
-		auto sym = state.scopes.find_named_symbol(callee.name);
+		auto sym = state.scopes.find_named_symbol(callee.ident.name);
 		auto type = (type_function *)sym->type.get();
 		llvm::Function *CalleeF = (llvm::Function *)sym->value;
 		if (!CalleeF) {
@@ -130,7 +130,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr) {
 
 		// If argument mismatch error.
 		if (CalleeF->arg_size() != expr.parameters.size()) {
-			// TODO, make positional from parameters for reporting errors
+			// TODO, make ast_node from parameters for reporting errors
 			std::stringstream str;
 			str << "expected " << CalleeF->arg_size() << ", but got " << expr.parameters.size();
 

@@ -25,40 +25,51 @@ struct statement;
 using expr_ptr = std::shared_ptr<struct expr>;
 using statement_ptr = std::shared_ptr<struct statement>;
 
-struct ident : parser::positional {
+struct ident : parser::ast_node {
 	ident(const ident &ident) = default;
 	explicit ident(parser::char_type const *begin, parser::char_type const *end, std::string &&name)
-		: parser::positional(begin, end), name(name) {}
+		: parser::ast_node(begin, end), name(name) {}
 	std::string name;
 };
 
-struct type : parser::positional {
+struct type : parser::ast_node {
 	explicit type(parser::char_type const *begin, parser::char_type const *end, ident const &ident)
-		: parser::positional(begin, end), ident(ident) {}
+		: parser::ast_node(begin, end), ident(ident) {}
 	ident ident;
 };
 
-struct decl : parser::positional {
+struct decl : parser::ast_node {
 	decl(const parser::char_type *begin, const parser::char_type *end, ast::ident const &ident)
-		: parser::positional(begin, end), ident(ident) {}
+		: parser::ast_node(begin, end), ident(ident) {}
 	ident ident;
 
 	virtual ~decl() = default;
 };
 
-struct fn_parameter : parser::positional {
+struct fn_parameter : parser::ast_node {
 	// fn_parameter(parser::char_type *begin, parser::char_type *end, ast::ident &ident,
 	//              std::optional<type> &type)
-	// 	: parser::positional(begin, end), ident(ident), type(type) {}
+	// 	: parser::ast_node(begin, end), ident(ident), type(type) {}
 	ident ident;
 	std::optional<type> type;
 };
 
-struct fn_body_block {
+struct fn_body_block : parser::ast_node {
+	fn_body_block(const parser::char_type *begin, const parser::char_type *end,
+	              std::vector<statement_ptr> statements)
+		: parser::ast_node(begin, end), statements(statements) {}
 	std::vector<statement_ptr> statements;
 };
 
-struct fn_body_expr {
+}
+
+#include "expr.hpp"
+
+namespace catalyst::ast {
+
+struct fn_body_expr : parser::ast_node {
+	fn_body_expr(expr_ptr expr)
+		: parser::ast_node(expr->lexeme.begin, expr->lexeme.end), expr(expr) {}
 	expr_ptr expr;
 };
 

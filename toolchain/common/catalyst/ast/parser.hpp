@@ -17,10 +17,10 @@ struct lexeme {
 	// {} lexeme(const lexeme &n) : begin(n.begin), end(n.end) { }
 };
 
-struct positional {
+struct ast_node {
 	parser::lexeme lexeme;
 
-	positional(const parser::char_type *begin, const parser::char_type *end) : lexeme(begin, end) {}
+	ast_node(const parser::char_type *begin, const parser::char_type *end) : lexeme(begin, end) {}
 };
 
 struct parser_state;

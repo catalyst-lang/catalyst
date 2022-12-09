@@ -10,8 +10,8 @@ namespace catalyst::compiler::codegen {
 // in the Catalyst compiler, an lvalue is an llvm::Value address to something.
 llvm::Value * get_lvalue(codegen::state &state, ast::expr_ptr expr) {
     if (typeid(*expr) == typeid(ast::expr_ident)) {
-		auto ident = (ast::expr_ident*)expr.get();
-		auto sym = state.scopes.find_named_symbol(ident->name);
+		auto expr_ident = (ast::expr_ident*)expr.get();
+		auto sym = state.scopes.find_named_symbol(expr_ident->ident.name);
 	    return sym->value;
 	}
     return nullptr;

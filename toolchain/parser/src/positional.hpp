@@ -10,13 +10,13 @@
 namespace catalyst::parser {
 
 template <typename Input>
-auto positional_get_input_location(const positional &positional, const Input &input) {
+auto ast_node_get_input_location(const ast_node &positional, const Input &input) {
 	return lexy::get_input_location(input, positional.lexeme.begin);
 }
 
 template <typename Input>
-auto positional_get_input_line_annotation(const positional &positional, const Input &input) {
-	return lexy::get_input_line_annotation(input, positional_get_input_location(positional, input), positional.lexeme.end);
+auto ast_node_get_input_line_annotation(const ast_node &positional, const Input &input) {
+	return lexy::get_input_line_annotation(input, ast_node_get_input_location(positional, input), positional.lexeme.end);
 }
 
 }

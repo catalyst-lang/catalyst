@@ -30,8 +30,8 @@ struct symbol {
 	symbol(ast_node_type ast_node, llvm::Value *value, std::shared_ptr<codegen::type> type)
 		: ast_node(ast_node), value(value), type(std::move(type)) {}
 
-	inline catalyst::parser::positional* get_positional() const {
-		catalyst::parser::positional* pos = nullptr;
+	inline catalyst::parser::ast_node * get_positional() const {
+		catalyst::parser::ast_node * pos = nullptr;
 		std::visit([this, &pos](auto&& arg) {
 			using T = std::decay_t<decltype(arg)>;
 			if constexpr (std::is_same_v<T, ast::statement_var *>) {
