@@ -32,7 +32,7 @@ llvm::Value *codegen(codegen::state &state, ast::translation_unit &tu) {
 	for (const auto &[k, v] : state.symbol_table)
 	{
 		if (v.type == nullptr || !v.type->is_valid) {
-			state.report_error("No type has been defined and can't be inferred", *v.get_positional());
+			state.report_error("No type has been defined and can't be inferred", *v.ast_node);
 		}
 		std::cout << k << ": " << v.type->get_fqn() << std::endl;
 	}

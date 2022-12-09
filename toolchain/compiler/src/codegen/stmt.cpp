@@ -41,7 +41,7 @@ void codegen(codegen::state &state, ast::statement_return &stmt) {
 	auto expr_type = expr_resulting_type(state, stmt.expr);
 
 	if (*expr_type != *((type_function*)state.current_function_symbol->type.get())->return_type) {
-		state.report_error("Mixed return types", *state.current_function_symbol->get_positional());
+		state.report_error("Mixed return types", *state.current_function_symbol->ast_node);
 		// TODO: warn (instead of error) about return type mismatch
 	}
 
