@@ -12,7 +12,7 @@ namespace catalyst::compiler::codegen {
 // but the way that would work in C++ is so ugly, it introduces more overhead
 // and bloat to the codebase than just this one ugly dispatch function.
 // Feel free to refactor the AST and introduce an _elegant_ visitation pattern.
-std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_ptr expr) {
+std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_ptr expr, std::shared_ptr<type> expecting_type) {
 	if (typeid(*expr) == typeid(ast::expr_ident)) {
 		return expr_resulting_type(state, *(ast::expr_ident *)expr.get());
 	} else if (typeid(*expr) == typeid(ast::expr_literal_numeric)) {
@@ -36,7 +36,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_ptr e
 	return type::create("");
 }
 
-std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_literal_numeric &expr) {
+std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_literal_numeric &expr, std::shared_ptr<type> expecting_type) {
 	switch (expr.classifier) {
 	case ast::numeric_classifier::unsigned_: return type::create("u64");
 	case ast::numeric_classifier::signed_: return type::create("i64");
@@ -57,19 +57,35 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_liter
 	default:
 		if (expr.fraction.has_value() || (expr.exponent.has_value() && expr.exponent < 0)) {
 			// floating point type, default to double
-			return type::create("double");
+			if (expecting_type == nullptr) return type::create("fp64");
+			if (expecting_type->get_fqn() == "fp16") return type::create("fp16");
+			if (expecting_type->get_fqn() == "fp32") return type::create("fp32");
+			if (expecting_type->get_fqn() == "fp64") return type::create("fp64");
+			if (expecting_type->get_fqn() == "fp80") return type::create("fp80");
+			if (expecting_type->get_fqn() == "fp128") return type::create("fp128");
 		} else {
 			// integer type, default to i64
-			return type::create("i64");
+			if (expecting_type == nullptr) return type::create("i64");
+			if (expecting_type->get_fqn() == "i8") return type::create("i8");
+			if (expecting_type->get_fqn() == "i16") return type::create("i16");
+			if (expecting_type->get_fqn() == "i32") return type::create("i32");
+			if (expecting_type->get_fqn() == "i64") return type::create("i64");
+			if (expecting_type->get_fqn() == "i128") return type::create("i128");
+			if (expecting_type->get_fqn() == "u8") return type::create("u8");
+			if (expecting_type->get_fqn() == "u16") return type::create("u16");
+			if (expecting_type->get_fqn() == "u32") return type::create("u32");
+			if (expecting_type->get_fqn() == "u64") return type::create("u64");
+			if (expecting_type->get_fqn() == "u128") return type::create("u128");
 		}
+		return type::create("i64");
 	}
 }
 
-std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_literal_bool &expr) {
+std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_literal_bool &expr, std::shared_ptr<type> expecting_type) {
 	return type::create("bool");
 }
 
-std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_ident &expr) {
+std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_ident &expr, std::shared_ptr<type> expecting_type) {
 	// Look this variable up in the function.
 	auto *symbol = state.scopes.find_named_symbol(expr.name);
 	if (!symbol)
@@ -87,7 +103,7 @@ std::shared_ptr<type> get_most_specialized_type(std::shared_ptr<type> &lhs, std:
 	}
 }
 
-std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_binary_arithmetic &expr) {
+std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_binary_arithmetic &expr, std::shared_ptr<type> expecting_type) {
 	auto lhs = expr_resulting_type(state, expr.lhs);
 	auto rhs = expr_resulting_type(state, expr.rhs);
 
@@ -107,7 +123,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_binar
 	}
 }
 
-std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_unary_arithmetic &expr) {
+std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_unary_arithmetic &expr, std::shared_ptr<type> expecting_type) {
 	auto rhs = expr_resulting_type(state, expr.rhs);
 
 	if (!rhs->is_valid)
@@ -122,11 +138,11 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_unary
 	}
 }
 
-std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_binary_logical &expr) {
+std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_binary_logical &expr, std::shared_ptr<type> expecting_type) {
 	return type::create("bool");
 }
 
-std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_call &expr) {
+std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_call &expr, std::shared_ptr<type> expecting_type) {
 	if (typeid(*expr.lhs) == typeid(ast::expr_ident)) {
 		auto &callee = *(ast::expr_ident *)expr.lhs.get();
 		auto sym = state.scopes.find_named_symbol(callee.name);
@@ -140,12 +156,12 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_call 
 	}
 }
 
-std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_member_access &expr) {
+std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_member_access &expr, std::shared_ptr<type> expecting_type) {
 	state.report_error("expr_member_access: Not implemented");
 	return type::create("");
 }
 
-std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_assignment &expr) {
+std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_assignment &expr, std::shared_ptr<type> expecting_type) {
 	return expr_resulting_type(state, expr.lhs);
 }
 

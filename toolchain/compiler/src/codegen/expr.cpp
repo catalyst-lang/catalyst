@@ -1,8 +1,8 @@
 // Copyright (c) 2021-2022 Bas du Pré and Catalyst contributors
 // SPDX-License-Identifier: MIT
 
-#include <sstream>
 #include <iostream>
+#include <sstream>
 #include <typeinfo>
 
 #include "expr.hpp"
@@ -57,23 +57,6 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr) {
 	return state.Builder.CreateLoad(a->getAllocatedType(), a, expr.name.c_str());
 }
 
-llvm::Value *convert_primitive(codegen::state &state, llvm::Value *value,
-                               std::shared_ptr<type> from, std::shared_ptr<type> to) {
-	auto p_from = dynamic_cast<type_primitive *>(from.get());
-	auto p_to = dynamic_cast<type_primitive *>(to.get());
-	if (p_from == nullptr || p_to == nullptr) {
-		state.report_error("Converting between types that aren't both primitives");
-		assert(false);
-		return nullptr;
-	}
-
-	if (p_from->is_signed) {
-		return state.Builder.CreateSExtOrTrunc(value, p_to->get_llvm_type(state));
-	} else {
-		return state.Builder.CreateZExtOrTrunc(value, p_to->get_llvm_type(state));
-	}
-}
-
 llvm::Value *codegen(codegen::state &state, ast::expr_binary_arithmetic &expr) {
 	auto lhs = codegen(state, expr.lhs);
 	auto rhs = codegen(state, expr.rhs);
@@ -88,11 +71,11 @@ llvm::Value *codegen(codegen::state &state, ast::expr_binary_arithmetic &expr) {
 	auto rhs_type = expr_resulting_type(state, expr.rhs);
 
 	if (*lhs_type != *expr_type) {
-		lhs = convert_primitive(state, lhs, lhs_type, expr_type);
+		lhs = lhs_type->cast_llvm_value(state, lhs, expr_type);
 	}
 
 	if (*rhs_type != *expr_type) {
-		rhs = convert_primitive(state, rhs, rhs_type, expr_type);
+		rhs = rhs_type->cast_llvm_value(state, rhs, expr_type);
 	}
 
 	switch (expr.op) {
@@ -157,8 +140,13 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr) {
 
 		std::vector<llvm::Value *> ArgsV;
 		for (unsigned i = 0, e = expr.parameters.size(); i != e; ++i) {
-			auto param = codegen(state, expr.parameters[i]);
-			ArgsV.push_back(param);
+			auto arg_type = expr_resulting_type(state, expr.parameters[i], type->parameters[i]);
+			auto arg = codegen(state, expr.parameters[i]);
+			if (!arg_type->equals(type->parameters[i])) {
+				// TODO: warn if casting happens
+				arg = arg_type->cast_llvm_value(state, arg, type->parameters[i]);
+			}
+			ArgsV.push_back(arg);
 			if (!ArgsV.back())
 				return nullptr;
 		}
@@ -175,14 +163,14 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr) {
 	return nullptr;
 }
 
-void codegen_assignment(codegen::state &state, llvm::Value* dest_ptr,
+void codegen_assignment(codegen::state &state, llvm::Value *dest_ptr,
                         std::shared_ptr<type> dest_type, ast::expr_ptr rhs) {
 	auto rhs_value = codegen(state, rhs);
-	auto rhs_type = expr_resulting_type(state, rhs);
+	auto rhs_type = expr_resulting_type(state, rhs, dest_type);
 
 	if (*dest_type != *rhs_type) {
 		// need to cast
-		auto new_rhs_value = convert_primitive(state, rhs_value, rhs_type, dest_type);
+		auto new_rhs_value = rhs_type->cast_llvm_value(state, rhs_value, dest_type);
 		if (new_rhs_value) {
 			rhs_value = new_rhs_value;
 		} else {

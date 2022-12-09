@@ -37,9 +37,15 @@ struct type {
 	                std::vector<std::shared_ptr<type>> const &parameters);
 
 	virtual llvm::Type *get_llvm_type(codegen::state &state) const = 0;
+	virtual llvm::Value *cast_llvm_value(codegen::state &state, llvm::Value *value,
+	                                     std::shared_ptr<type> to);
 
 	bool operator==(const type &other) const;
 	bool operator!=(const type &other) const;
+
+	inline bool equals(const type &other) const { return *this == other; }
+	inline bool equals(const type* other) const { return *this == *other; }
+	inline bool equals(const std::shared_ptr<type> other) const { return *this == *other; }
 
   private:
 	std::string fqn;
@@ -60,7 +66,8 @@ struct type_primitive : type {
 	bool is_signed = true;
 
 	virtual llvm::Value *get_llvm_constant_zero(codegen::state &state) const = 0;
-
+	llvm::Value *cast_llvm_value(codegen::state &state, llvm::Value *value,
+	                             std::shared_ptr<type> to) override;
 };
 
 struct type_bool : type_primitive {

@@ -49,11 +49,11 @@ std::shared_ptr<type> type::create(const std::string &name) {
 	return std::make_shared<type_undefined>();
 }
 
-std::shared_ptr<type> type::create_function(const std::shared_ptr<type>& return_type) {
+std::shared_ptr<type> type::create_function(const std::shared_ptr<type> &return_type) {
 	return std::make_shared<type_function>(return_type);
 }
 
-std::shared_ptr<type> type::create_function(const std::shared_ptr<type>& return_type,
+std::shared_ptr<type> type::create_function(const std::shared_ptr<type> &return_type,
                                             const std::vector<std::shared_ptr<type>> &parameters) {
 	return std::make_shared<type_function>(return_type, parameters);
 }
@@ -62,16 +62,14 @@ std::shared_ptr<type> type::create(const ast::type &ast_type) {
 	return create(ast_type.ident.name);
 }
 
-bool type::operator==(const type &other) const {
-	return (this->get_fqn() == other.get_fqn());
-}
+bool type::operator==(const type &other) const { return (this->get_fqn() == other.get_fqn()); }
 
-bool type::operator!=(const type &other) const {
-	return (this->get_fqn() != other.get_fqn());
-}
+bool type::operator!=(const type &other) const { return (this->get_fqn() != other.get_fqn()); }
 
-std::string type::get_fqn() const {
-	return fqn;
+std::string type::get_fqn() const { return fqn; }
+
+llvm::Value *type::cast_llvm_value(state &state, llvm::Value *value, std::shared_ptr<type> to) {
+	return nullptr;
 }
 
 llvm::Type *type_undefined::get_llvm_type(state &state) const {
@@ -222,6 +220,22 @@ llvm::Value *type_fp80::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantFP::get(*state.TheContext, llvm::APFloat(0.0));
 }
 
+llvm::Value *type_primitive::cast_llvm_value(state &state, llvm::Value *value,
+                                             std::shared_ptr<type> to) {
+	auto p_to = dynamic_cast<type_primitive *>(to.get());
+	if (p_to == nullptr) {
+		state.report_error("Converting between types that aren't both primitives");
+		assert(false);
+		return nullptr;
+	}
+
+	if (is_signed) {
+		return state.Builder.CreateSExtOrTrunc(value, p_to->get_llvm_type(state));
+	} else {
+		return state.Builder.CreateZExtOrTrunc(value, p_to->get_llvm_type(state));
+	}
+}
+
 llvm::Type *type_function::get_llvm_type(state &state) const {
 	std::vector<llvm::Type *> params;
 	for (const auto &param : parameters) {
@@ -245,6 +259,5 @@ std::string type_function::get_fqn() const {
 	fqn += return_type->get_fqn();
 	return fqn;
 }
-
 
 } // namespace catalyst::compiler::codegen
