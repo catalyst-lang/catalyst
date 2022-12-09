@@ -246,10 +246,18 @@ struct expr : lexy::expression_production {
 		using operand = op_member_access;
 	};
 
+	struct op_cast : dsl::postfix_op {
+		static constexpr auto op = [] {
+			auto item = kw_as >> dsl::p<type>;
+			return dsl::op(item);
+		}();
+		using operand = prec3;
+	};
+
 	struct prec5 : dsl::infix_op_left {
 		static constexpr auto op = dsl::op<ast::expr_binary_arithmetic::times>(dsl::lit_c<'*'>) /
 		                           dsl::op<ast::expr_binary_arithmetic::div>(dsl::lit_c<'/'>);
-		using operand = prec3;
+		using operand = op_cast;
 	};
 
 	struct prec6 : dsl::infix_op_left {
@@ -275,7 +283,12 @@ struct expr : lexy::expression_production {
 		// conditional and assignment
 		lexy::new_<ast::expr_assignment, ast::expr_ptr>,
 
-		[](auto lhs, auto op, std::vector<ast::expr_ptr> params) {
+		[](auto lhs, lexy::op<dsl::op(kw_as)>, auto type) {
+			return std::make_shared<ast::expr_cast>(lhs->lexeme.end, type.lexeme.begin, lhs, type);
+		},
+
+		// call
+		[](auto lhs, lexy::op<dsl::op(dsl::lit_c<'('>)>, std::vector<ast::expr_ptr> params) {
 			return std::make_shared<ast::expr_call>(lhs->lexeme.begin, lhs->lexeme.end, lhs, params);
 		},
 

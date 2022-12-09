@@ -31,7 +31,11 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_ptr e
 		return expr_resulting_type(state, *(ast::expr_call *)expr.get());
 	} else if (typeid(*expr) == typeid(ast::expr_member_access)) {
 		return expr_resulting_type(state, *(ast::expr_member_access *)expr.get());
+	} else if (typeid(*expr) == typeid(ast::expr_cast)) {
+		return expr_resulting_type(state, *(ast::expr_cast *)expr.get());
 	}
+
+	state.report_message(report_type::error, "Expression type unsupported", *expr);
 
 	return type::create("");
 }
@@ -163,6 +167,10 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_membe
 
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_assignment &expr, std::shared_ptr<type> expecting_type) {
 	return expr_resulting_type(state, expr.lhs);
+}
+
+std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_cast &expr, std::shared_ptr<type> expecting_type) {
+	return type::create(expr.type);
 }
 
 } // namespace catalyst::compiler::codegen

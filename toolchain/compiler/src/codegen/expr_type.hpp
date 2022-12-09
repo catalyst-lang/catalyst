@@ -28,5 +28,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_call 
                                           std::shared_ptr<type> expecting_type = nullptr);
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_member_access &expr,
                                           std::shared_ptr<type> expecting_type = nullptr);
+std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_cast &expr,
+                                          std::shared_ptr<type> expecting_type = nullptr);
 
 } // namespace catalyst::compiler::codegen

@@ -13,7 +13,7 @@ struct expr : parser::ast_node {
 	using ast_node::ast_node;
 };
 using expr_ptr = std::shared_ptr<struct expr>;
-}
+} // namespace catalyst::ast
 
 #include "general.hpp"
 
@@ -126,7 +126,7 @@ struct expr_binary_arithmetic : expr {
 	expr_ptr lhs, rhs;
 
 	explicit expr_binary_arithmetic(expr_ptr lhs, op_t op, expr_ptr rhs)
-		: expr(nullptr, nullptr), op(op), lhs(lhs), rhs(rhs) {}
+		: expr(lhs->lexeme.end, rhs->lexeme.begin), op(op), lhs(lhs), rhs(rhs) {}
 };
 
 struct expr_binary_logical : expr {
@@ -134,7 +134,16 @@ struct expr_binary_logical : expr {
 	expr_ptr lhs, rhs;
 
 	explicit expr_binary_logical(expr_ptr lhs, op_t op, expr_ptr rhs)
-		: expr(nullptr, nullptr), op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
+		: expr(lhs->lexeme.end, rhs->lexeme.begin), op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
+};
+
+struct expr_cast : expr {
+	expr_ptr lhs;
+	ast::type type;
+
+	explicit expr_cast(const parser::char_type *begin, const parser::char_type *end, expr_ptr lhs,
+	                   ast::type type)
+		: expr(begin, end), lhs(lhs), type(type) {}
 };
 
 struct expr_assignment : expr {
@@ -144,7 +153,7 @@ struct expr_assignment : expr {
 	expr_ptr lhs, rhs;
 
 	explicit expr_assignment(expr_ptr lhs, op_t op, expr_ptr rhs)
-		: expr(nullptr, nullptr), op(op), lhs(lhs), rhs(rhs) {}
+		: expr(lhs->lexeme.end, rhs->lexeme.begin), op(op), lhs(lhs), rhs(rhs) {}
 };
 
 } // namespace catalyst::ast

@@ -34,7 +34,11 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ptr expr) {
 		return codegen(state, *(ast::expr_call *)expr.get());
 	} else if (typeid(*expr) == typeid(ast::expr_member_access)) {
 		return codegen(state, *(ast::expr_member_access *)expr.get());
+	} else if (typeid(*expr) == typeid(ast::expr_cast)) {
+		return codegen(state, *(ast::expr_cast *)expr.get());
 	}
+
+	state.report_message(report_type::error, "Expression type unsupported", *expr);
 
 	return {nullptr};
 }
@@ -195,6 +199,12 @@ llvm::Value *codegen(codegen::state &state, ast::expr_assignment &expr) {
 	codegen_assignment(state, lvalue, expr_resulting_type(state, expr.lhs), expr.rhs);
 
 	return lvalue;
+}
+
+llvm::Value *codegen(codegen::state &state, ast::expr_cast &expr) {
+	auto expr_type = expr_resulting_type(state, expr.lhs);
+	auto value = codegen(state, expr.lhs);
+	return expr_type->cast_llvm_value(state, value, type::create(expr.type));
 }
 
 } // namespace catalyst::compiler::codegen
