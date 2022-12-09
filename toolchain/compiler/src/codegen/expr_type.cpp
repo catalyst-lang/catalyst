@@ -157,7 +157,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_call 
 }
 
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_member_access &expr, std::shared_ptr<type> expecting_type) {
-	state.report_error("expr_member_access: Not implemented");
+	state.report_message(report_type::error, "expr_member_access: Not implemented");
 	return type::create("");
 }
 

@@ -24,12 +24,16 @@ struct state;
 #include <map>
 #include <memory>
 
+#include "../../../parser/src/parser.hpp"
 #include "../common/catalyst/ast/ast.hpp"
+#include "../common/catalyst/ast/parser.hpp"
 #include "../compiler.hpp"
 #include "scope.hpp"
 #include "symbol.hpp"
 
 namespace catalyst::compiler::codegen {
+
+using report_type = parser::report_type;
 
 struct state {
 	compiler::options options;
@@ -38,10 +42,10 @@ struct state {
 	std::unique_ptr<llvm::Module> TheModule;
 	std::unique_ptr<llvm::legacy::FunctionPassManager> FPM;
 
-	symbol* current_function_symbol = nullptr;
+	symbol *current_function_symbol = nullptr;
 	llvm::Function *current_function = nullptr;
 	llvm::AllocaInst *current_return = nullptr;
-	llvm::BasicBlock * current_return_block = nullptr;
+	llvm::BasicBlock *current_return_block = nullptr;
 
 	symbol_map symbol_table;
 
@@ -53,9 +57,10 @@ struct state {
 		: TheContext(std::make_unique<llvm::LLVMContext>()), Builder(*TheContext),
 		  scopes(&symbol_table) {}
 
-	static void report_error(const std::string &error);
-	void report_error(const std::string &error, const parser::ast_node &positional,
-	                  const std::string &pos_comment = "here") const;
+	static void report_message(report_type type, const std::string &message);
+	void report_message(report_type type, const std::string &message,
+	                    const parser::ast_node &positional,
+	                    const std::string &pos_comment = "here") const;
 
 	scope &current_scope() { return scopes.current_scope(); }
 

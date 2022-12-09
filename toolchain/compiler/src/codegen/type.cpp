@@ -224,8 +224,8 @@ llvm::Value *type_primitive::cast_llvm_value(state &state, llvm::Value *value,
                                              std::shared_ptr<type> to) {
 	auto p_to = dynamic_cast<type_primitive *>(to.get());
 	if (p_to == nullptr) {
-		state.report_error("Converting between types that aren't both primitives");
-		assert(false);
+		//state.report_message("Converting between types that aren't both primitives");
+		//assert(false);
 		return nullptr;
 	}
 

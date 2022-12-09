@@ -52,7 +52,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr) {
 	// Look this variable up in the function.
 	auto *symbol = state.scopes.find_named_symbol(expr.ident.name);
 	if (!symbol)
-		state.report_error("Unknown variable name", expr);
+		state.report_message(report_type::error, "Unknown variable name", expr);
 	llvm::AllocaInst *a = (llvm::AllocaInst *)symbol->value;
 	return state.Builder.CreateLoad(a->getAllocatedType(), a, expr.ident.name.c_str());
 }
@@ -88,7 +88,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_binary_arithmetic &expr) {
 	case ast::expr_binary_arithmetic::op_t::div:
 		return state.Builder.CreateSDiv(lhs, rhs, "divtmp");
 	default:
-		state.report_error("Operator not implemented");
+		state.report_message(report_type::error, "Operator not implemented", expr);
 		return nullptr;
 	}
 }
@@ -105,13 +105,13 @@ llvm::Value *codegen(codegen::state &state, ast::expr_unary_arithmetic &expr) {
 	case ast::expr_unary_arithmetic::op_t::negate:
 		return state.Builder.CreateNeg(rhs, "negtmp");
 	default:
-		state.report_error("Operator not implemented");
+		state.report_message(report_type::error, "Operator not implemented", expr);
 		return nullptr;
 	}
 }
 
 llvm::Value *codegen(codegen::state &state, ast::expr_binary_logical &expr) {
-	state.report_error("expr_binary_logical: Not implemented");
+	state.report_message(report_type::error, "expr_binary_logical: Not implemented", expr);
 	return nullptr;
 }
 
@@ -124,7 +124,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr) {
 		auto type = (type_function *)sym->type.get();
 		llvm::Function *CalleeF = (llvm::Function *)sym->value;
 		if (!CalleeF) {
-			state.report_error("Unknown function referenced", callee);
+			state.report_message(report_type::error, "Unknown function referenced", callee);
 			return nullptr;
 		}
 
@@ -134,7 +134,8 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr) {
 			std::stringstream str;
 			str << "expected " << CalleeF->arg_size() << ", but got " << expr.parameters.size();
 
-			state.report_error("Incorrect number of arguments passed", callee, str.str());
+			state.report_message(report_type::error, "Incorrect number of arguments passed", callee,
+			                     str.str());
 			return nullptr;
 		}
 
@@ -153,13 +154,13 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr) {
 
 		return state.Builder.CreateCall(CalleeF, ArgsV, "calltmp");
 	} else {
-		state.report_error("Virtual functions not implemented");
+		state.report_message(report_type::error, "Virtual functions not implemented", expr);
 		return nullptr;
 	}
 }
 
 llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr) {
-	state.report_error("expr_member_access: Not implemented");
+	state.report_message(report_type::error, "expr_member_access: Not implemented", expr);
 	return nullptr;
 }
 
@@ -175,7 +176,8 @@ void codegen_assignment(codegen::state &state, llvm::Value *dest_ptr,
 			rhs_value = new_rhs_value;
 		} else {
 			// TODO casting
-			state.report_error("Warning, probably failing assignment due to type mismatch");
+			state.report_message(report_type::warning,
+			                     "probably failing assignment due to type mismatch", *rhs);
 			return;
 		}
 	}
@@ -186,7 +188,7 @@ void codegen_assignment(codegen::state &state, llvm::Value *dest_ptr,
 llvm::Value *codegen(codegen::state &state, ast::expr_assignment &expr) {
 	auto lvalue = get_lvalue(state, expr.lhs);
 	if (lvalue == nullptr) {
-		state.report_error("assignment must be towards an lvalue");
+		state.report_message(report_type::error, "assignment must be towards an lvalue", expr);
 		return nullptr;
 	}
 

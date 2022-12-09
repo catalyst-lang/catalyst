@@ -24,11 +24,12 @@
 #include "catalyst/platform.hpp"
 
 #include "grammar.hpp"
+#include "parser.hpp"
 #include "state.hpp"
 
 namespace catalyst::parser {
 
-//auto _report_error = lexy_ext::report_error.opts({lexy::visualization_flags::visualize_use_color});
+//auto _report_error = lexy_ext::report_message.opts({lexy::visualization_flags::visualize_use_color});
 auto _report_error = lexy_ext::report_error.opts({});
 
 // template <typename Input>
@@ -76,19 +77,37 @@ struct production {
 	static constexpr auto rule = 0; // Need a rule member to make it a production.
 };
 
-void report_error(const std::string &error_title) {
-	std::cout << rang::fg::red << "Error" << rang::fg::reset << ": " << error_title << std::endl;
+void report_message(report_type t, const std::string &message) {
+	switch (t) {
+	case report_type::error:
+		std::cout << rang::fg::red << "Error" << rang::fg::reset << ": ";
+		break;
+	case report_type::warning:
+		std::cout << rang::fg::yellow << "Warning" << rang::fg::reset << ": ";
+		break;
+	case report_type::info:
+		std::cout << rang::fg::blue << "Info" << rang::fg::reset << ": ";
+		break;
+	case report_type::debug:
+		std::cout << "Debug" << ": ";
+		break;
+	case report_type::help:
+		std::cout << rang::fg::green << "Help" << rang::fg::reset << ": ";
+		break;
+	}
+	std::cout << message << std::endl;
 }
 
-void report_error(parser_state_ptr parser_state, const std::string &error_title,
-                  const parser::ast_node &positional, const std::string &error_positional_title) {
-	auto write = [parser_state](const auto &context, const auto &error) {
+void report_message(report_type type, parser_state_ptr parser_state,
+                    const std::string &message_title, const parser::ast_node &positional,
+                    const std::string &message_positional_title) {
+	auto write = [parser_state](const auto &context, const auto &message) {
 		std::wstring str;
-		// lexy_ext::_detail::write_error(std::back_insert_iterator(str), context, error,
+		// lexy_ext::_detail::write_error(std::back_insert_iterator(str), context, message,
 		// {lexy::visualization_flags::visualize_use_color}, nullptr);
 		const char *filename =
 			parser_state->filename == "" ? nullptr : parser_state->filename.c_str();
-		lexy_ext::_detail::write_error(std::back_insert_iterator(str), context, error, {},
+		lexy_ext::_detail::write_error(std::back_insert_iterator(str), context, message, {},
 		                               filename);
 		return str.substr(str.find_first_of('\n') + 1);
 	};
@@ -96,9 +115,9 @@ void report_error(parser_state_ptr parser_state, const std::string &error_title,
 	//	lexy::error_context(production{}, parser_state->input, parser_state->input.data());
 	auto context = lexy::error_context(production{}, parser_state->input, positional.lexeme.begin);
 	auto error = lexy::error<lexy::_pr8, void>(positional.lexeme.begin, positional.lexeme.end,
-	                                           error_positional_title.c_str());
+	                                           message_positional_title.c_str());
 
-	report_error(error_title);
+	report_message(type, message_title);
 
 	auto out = write(context, error);
 	using convert_type = std::codecvt_utf8<wchar_t>;

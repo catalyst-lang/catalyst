@@ -52,10 +52,10 @@ int locals_pass(codegen::state &state, int n, ast::statement_var &stmt) {
 
 	// if first pass and symbol is NOT introduced, this is a redefinition error
 	if (n == 0 && !symbol_introduced) {
-		state.report_error("Symbol redefined", stmt.ident);
+		state.report_message(report_type::error, "Symbol redefined", stmt.ident);
 		return 0;
 		// todo: show where first definition is
-		// state.report_error("First definition here", sym.ast_node);
+		// state.report_message("First definition here", sym.ast_node);
 	}
 
 	if (symbol_introduced)
@@ -128,7 +128,7 @@ int locals_pass(codegen::state &state, int n, ast::statement_ptr &stmt) {
 		// TODO
 		return 0;
 	}
-	state.report_error("Choices exhausted");
+	state.report_message(report_type::error, "Choices exhausted", *stmt);
 	return 0;
 }
 
@@ -140,7 +140,7 @@ int locals_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 	if (n == 0) {
 		for (auto &param : decl.parameter_list) {
 			if (!param.type.has_value()) {
-				state.report_error("Parameter has no type", param);
+				state.report_message(report_type::error, "Parameter has no type", param);
 				return 0;
 			}
 			auto key = state.scopes.get_fully_qualified_scope_name(param.ident.name);
@@ -228,7 +228,7 @@ void codegen(codegen::state &state, ast::decl_fn &decl) {
 		state.scopes.pop_back();
 	} else {
 		// Error reading body, remove function.
-		state.report_error(err, decl);
+		state.report_message(report_type::error, err, decl);
 		the_function->print(llvm::errs());
 		state.scopes.pop_back();
 		the_function->eraseFromParent();
@@ -247,7 +247,7 @@ void codegen(codegen::state &state, ast::fn_body &body) {
 	} else if (std::holds_alternative<ast::fn_body_expr>(body)) {
 		codegen(state, std::get<ast::fn_body_expr>(body));
 	} else {
-		state.report_error("unsupported body type");
+		state.report_message(report_type::error, "unsupported body type");
 	}
 }
 
@@ -275,7 +275,9 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 
 	if (n == 0 &&
 	    state.symbol_table.contains(state.scopes.get_fully_qualified_scope_name(decl.ident.name))) {
-		state.report_error("Function name already exists", decl.ident);
+		auto other = state.symbol_table[state.scopes.get_fully_qualified_scope_name(decl.ident.name)];
+		state.report_message(report_type::error, "Function name already exists", decl.ident);
+		state.report_message(report_type::info, "Previous declaration here", *other.ast_node);
 		return 0;
 	}
 
@@ -295,7 +297,7 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 	std::vector<std::shared_ptr<type>> params;
 	for (const auto &param : decl.parameter_list) {
 		if (!param.type.has_value()) {
-			state.report_error("Parameter has no type", param);
+			state.report_message(report_type::error, "Parameter has no type", param);
 			return 0;
 		}
 		params.push_back(type::create(param.type.value()));

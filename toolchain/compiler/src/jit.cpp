@@ -16,7 +16,7 @@ int64_t run_jit(codegen::state &state) {
     llvm::InitializeNativeTargetAsmParser();
     auto TheJIT = KaleidoscopeJIT::Create();
     if (TheJIT.takeError()) {
-        codegen::state::report_error("Problem while initializing JIT");
+		codegen::state::report_message(codegen::report_type::error, "Problem while initializing JIT");
         return -1;
     }
     state.TheModule->setDataLayout((*TheJIT)->getDataLayout());

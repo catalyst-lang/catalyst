@@ -30,7 +30,7 @@ void codegen(codegen::state &state, ast::statement_ptr stmt) {
 	} else if (typeid(*stmt) == typeid(ast::statement_block)) {
 		codegen(state, *(ast::statement_block *)stmt.get());
 	} else {
-		state.report_error("unsupported statement type");
+		state.report_message(report_type::error, "unsupported statement type", *stmt);
 	}
 }
 
@@ -40,8 +40,13 @@ void codegen(codegen::state &state, ast::statement_return &stmt) {
 	auto expr = codegen(state, stmt.expr);
 	auto expr_type = expr_resulting_type(state, stmt.expr);
 
-	if (*expr_type != *((type_function*)state.current_function_symbol->type.get())->return_type) {
-		state.report_error("Mixed return types", *state.current_function_symbol->ast_node);
+	if (*expr_type != *((type_function *)state.current_function_symbol->type.get())->return_type) {
+		state.report_message(report_type::error, "Mixed return types",
+		                     *state.current_function_symbol->ast_node);
+		std::string message = "expected type ";
+		message +=
+			((type_function *)state.current_function_symbol->type.get())->return_type->get_fqn();
+		state.report_message(report_type::info, message);
 		// TODO: warn (instead of error) about return type mismatch
 	}
 
@@ -57,7 +62,7 @@ void codegen(codegen::state &state, ast::statement_var &stmt) {
 }
 
 void codegen(codegen::state &state, ast::statement_const &stmt) {
-	state.report_error("statement_const: Not implemented");
+	state.report_message(report_type::error, "statement_const: Not implemented", stmt);
 }
 
 void codegen(codegen::state &state, ast::statement_block &stmt) {
@@ -86,7 +91,8 @@ void codegen(codegen::state &state, ast::statement_if &stmt) {
 	auto cond_type = expr_resulting_type(state, stmt.cond);
 	auto p_cond_type = dynamic_cast<type_primitive *>(cond_type.get());
 	if (p_cond_type == nullptr) {
-		state.report_error("condition does not result in comparable primitive type");
+		state.report_message(report_type::error,
+		                     "condition does not result in comparable primitive type", *stmt.cond);
 		return;
 	}
 
