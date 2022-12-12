@@ -3,6 +3,9 @@
 
 #pragma once
 
+#pragma warning( push )
+#pragma warning( disable : 4244 )
+#pragma warning( disable : 4624 )
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
 #include "llvm/ExecutionEngine/Orc/CompileOnDemandLayer.h"
@@ -22,6 +25,7 @@
 #include "llvm/Transforms/InstCombine/InstCombine.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
+#pragma warning( pop )
 #include <memory>
 
 #include "codegen/codegen.hpp"

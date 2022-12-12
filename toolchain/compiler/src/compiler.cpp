@@ -7,6 +7,8 @@
 #include "codegen/codegen.hpp"
 #include "codegen/expr.hpp"
 
+#pragma warning( push )
+#pragma warning( disable : 4244 )
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/InstCombine/InstCombine.h"
@@ -14,6 +16,7 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Utils.h"
 #include "jit.hpp"
+#pragma warning( pop )
 
 using namespace catalyst;
 
