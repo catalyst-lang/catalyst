@@ -127,7 +127,12 @@ class KaleidoscopeJIT {
 			cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(DL.getGlobalPrefix())));
 
 		// Required for Windows:
-		ObjectLayer.setOverrideObjectFlagsWithResponsibilityFlags(true);
+		// https://stackoverflow.com/questions/57733912/llvm-asserts-resolving-symbol-outside-this-responsibility-set
+		if (JTMB.getTargetTriple().isOSBinFormatCOFF())
+		{
+			ObjectLayer.setOverrideObjectFlagsWithResponsibilityFlags(true);
+			ObjectLayer.setAutoClaimResponsibilityForObjectSymbols(true);
+		}
 	}
 
 	inline ~KaleidoscopeJIT() {

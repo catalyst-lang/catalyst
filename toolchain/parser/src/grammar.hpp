@@ -129,10 +129,12 @@ struct expr_literal_numeric : lexy::token_production {
 			.map<LEXY_SYMBOL("i32")>(ast::numeric_classifier::signed32)
 			.map<LEXY_SYMBOL("u32")>(ast::numeric_classifier::unsigned32)
 			.map<LEXY_SYMBOL("i64")>(ast::numeric_classifier::signed64)
-			.map<LEXY_SYMBOL("d")>(ast::numeric_classifier::double_)
 			.map<LEXY_SYMBOL("f")>(ast::numeric_classifier::float_)
-			.map<LEXY_SYMBOL("f32")>(ast::numeric_classifier::float_)
-			.map<LEXY_SYMBOL("f64")>(ast::numeric_classifier::double_);
+			.map<LEXY_SYMBOL("f16")>(ast::numeric_classifier::float16)
+			.map<LEXY_SYMBOL("f32")>(ast::numeric_classifier::float32)
+			.map<LEXY_SYMBOL("f64")>(ast::numeric_classifier::float64)
+			.map<LEXY_SYMBOL("f128")>(ast::numeric_classifier::float128)
+			.map<LEXY_SYMBOL("f80")>(ast::numeric_classifier::float80);
 	// clang-format on
 
 	struct sign : lexy::transparent_production {
@@ -246,11 +248,9 @@ struct expr : lexy::expression_production {
 		using operand = op_member_access;
 	};
 
+
 	struct op_cast : dsl::postfix_op {
-		static constexpr auto op = [] {
-			auto item = kw_as >> dsl::p<type>;
-			return dsl::op(item);
-		}();
+		static constexpr auto op = dsl::op(kw_as >> dsl::p<type>);
 		using operand = prec3;
 	};
 
@@ -283,12 +283,12 @@ struct expr : lexy::expression_production {
 		// conditional and assignment
 		lexy::new_<ast::expr_assignment, ast::expr_ptr>,
 
-		[](auto lhs, lexy::op<dsl::op(kw_as)>, auto type) {
+		[](auto lhs, lexy::op<op_cast::op>, auto type) {
 			return std::make_shared<ast::expr_cast>(lhs->lexeme.end, type.lexeme.begin, lhs, type);
 		},
 
 		// call
-		[](auto lhs, lexy::op<dsl::op(dsl::lit_c<'('>)>, std::vector<ast::expr_ptr> params) {
+		[](auto lhs, lexy::op<op_call::op>, std::vector<ast::expr_ptr> params) {
 			return std::make_shared<ast::expr_call>(lhs->lexeme.begin, lhs->lexeme.end, lhs, params);
 		},
 

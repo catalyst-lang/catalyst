@@ -49,19 +49,25 @@ struct expr_literal_bool : expr_literal {
 // usually by suffixes
 enum class numeric_classifier {
 	none,
-	unsigned_,  // u
-	signed_,    // i
-	size,       // z
-	signed8,    // i8
-	unsigned8,  // u8
-	signed16,   // i16
-	unsigned16, // u16
-	signed32,   // i32
-	unsigned32, // u32
-	signed64,   // i64
-	unsigned64, // u64
-	float_,     // f
-	double_,    // d
+	unsigned_,   // u
+	signed_,     // i
+	size,        // z
+	signed8,     // i8
+	unsigned8,   // u8
+	signed16,    // i16
+	unsigned16,  // u16
+	signed32,    // i32
+	unsigned32,  // u32
+	signed64,    // i64
+	unsigned64,  // u64
+	signed128,   // i64
+	unsigned128, // u64
+	float_,      // f
+	float16,     // f16
+	float32,     // f32
+	float64,     // f64
+	float128,    // f128
+	float80,     // f80
 };
 
 struct expr_literal_numeric : expr_literal {

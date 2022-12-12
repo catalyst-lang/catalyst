@@ -37,14 +37,18 @@ struct type {
 	                std::vector<std::shared_ptr<type>> const &parameters);
 
 	virtual llvm::Type *get_llvm_type(codegen::state &state) const = 0;
-	virtual llvm::Value *cast_llvm_value(codegen::state &state, llvm::Value *value,
-	                                     std::shared_ptr<type> to);
+	virtual llvm::Value *cast_llvm_value(codegen::state &state, llvm::Value *value, type* to);
+
+	virtual llvm::Value *create_add(codegen::state &state, llvm::Value *value,
+	                                std::shared_ptr<type> rhs_type, llvm::Value *rhs);
+
+	virtual bool is_assignable_from(const std::shared_ptr<type> &type) const;
 
 	bool operator==(const type &other) const;
 	bool operator!=(const type &other) const;
 
 	inline bool equals(const type &other) const { return *this == other; }
-	inline bool equals(const type* other) const { return *this == *other; }
+	inline bool equals(const type *other) const { return *this == *other; }
 	inline bool equals(const std::shared_ptr<type> other) const { return *this == *other; }
 
   private:
@@ -64,116 +68,174 @@ struct type_primitive : type {
 		: type(fqn, specialization_score), is_signed(is_signed) {}
 
 	bool is_signed = true;
+	int bits = 0;
+	bool is_float = false;
 
 	virtual llvm::Value *get_llvm_constant_zero(codegen::state &state) const = 0;
-	llvm::Value *cast_llvm_value(codegen::state &state, llvm::Value *value,
-	                             std::shared_ptr<type> to) override;
+	llvm::Value *cast_llvm_value(codegen::state &state, llvm::Value *value, type *to) override;
+	bool is_assignable_from(const std::shared_ptr<type> &type) const override;
+	llvm::Value *create_add(codegen::state &state, llvm::Value *value,
+	                        std::shared_ptr<type> rhs_type, llvm::Value *rhs) override;
 };
 
 struct type_bool : type_primitive {
-	type_bool() : type_primitive("bool", 8, false) {}
+	type_bool() : type_primitive("bool", 8, false) {
+		bits = 1;
+		is_float = false;
+	}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_i8 : type_primitive {
-	type_i8() : type_primitive("i8", 10) {}
+	type_i8() : type_primitive("i8", 10) {
+		bits = 8;
+		is_float = false;
+	}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_i16 : type_primitive {
-	type_i16() : type_primitive("i16", 11) {}
+	type_i16() : type_primitive("i16", 11) {
+		bits = 16;
+		is_float = false;
+	}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_i32 : type_primitive {
-	type_i32() : type_primitive("i32", 12) {}
+	type_i32() : type_primitive("i32", 12) {
+		bits = 32;
+		is_float = false;
+	}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_i64 : type_primitive {
-	type_i64() : type_primitive("i64", 13) {}
+	type_i64() : type_primitive("i64", 13) {
+		bits = 64;
+		is_float = false;
+	}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_i128 : type_primitive {
-	type_i128() : type_primitive("i128", 14) {}
+	type_i128() : type_primitive("i128", 14) {
+		bits = 128;
+		is_float = false;
+	}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_isize : type_primitive {
-	type_isize() : type_primitive("isize", 13) {}
+	type_isize() : type_primitive("isize", 13) {
+		bits = 64;
+		is_float = false;
+	}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_u8 : type_primitive {
-	type_u8() : type_primitive("u8", 10, false) {}
+	type_u8() : type_primitive("u8", 10, false) {
+		bits = 8;
+		is_float = false;
+	}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_u16 : type_primitive {
-	type_u16() : type_primitive("u16", 11, false) {}
+	type_u16() : type_primitive("u16", 11, false) {
+		bits = 16;
+		is_float = false;
+	}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_u32 : type_primitive {
-	type_u32() : type_primitive("u32", 12, false) {}
+	type_u32() : type_primitive("u32", 12, false) {
+		bits = 32;
+		is_float = false;
+	}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_u64 : type_primitive {
-	type_u64() : type_primitive("u64", 13, false) {}
+	type_u64() : type_primitive("u64", 13, false) {
+		bits = 64;
+		is_float = false;
+	}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_u128 : type_primitive {
-	type_u128() : type_primitive("u128", 14, false) {}
+	type_u128() : type_primitive("u128", 14, false) {
+		bits = 128;
+		is_float = false;
+	}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
 struct type_usize : type_primitive {
-	type_usize() : type_primitive("usize", 13, false) {}
+	type_usize() : type_primitive("usize", 13, false) {
+		bits = 64;
+		is_float = false;
+	}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
-struct type_fp16 : type_primitive {
-	type_fp16() : type_primitive("fp16", 20) {}
+struct type_f16 : type_primitive {
+	type_f16() : type_primitive("f16", 20) {
+		bits = 16;
+		is_float = true;
+	}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
-struct type_fp32 : type_primitive {
-	type_fp32() : type_primitive("fp32", 21) {}
+struct type_f32 : type_primitive {
+	type_f32() : type_primitive("f32", 21) {
+		bits = 32;
+		is_float = true;
+	}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
-struct type_fp64 : type_primitive {
-	type_fp64() : type_primitive("fp64", 22) {}
+struct type_f64 : type_primitive {
+	type_f64() : type_primitive("f64", 22) {
+		bits = 64;
+		is_float = true;
+	}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
-struct type_fp128 : type_primitive {
-	type_fp128() : type_primitive("fp128", 24) {}
+struct type_f128 : type_primitive {
+	type_f128() : type_primitive("f128", 24) {
+		bits = 128;
+		is_float = true;
+	}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
-struct type_fp80 : type_primitive {
-	type_fp80() : type_primitive("fp80", 23) {}
+struct type_f80 : type_primitive {
+	type_f80() : type_primitive("f80", 23) {
+		bits = 80;
+		is_float = true;
+	}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Value *get_llvm_constant_zero(codegen::state &state) const override;
 };

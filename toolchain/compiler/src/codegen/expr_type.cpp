@@ -53,20 +53,24 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_liter
 	case ast::numeric_classifier::unsigned32: return type::create("u32");
 	case ast::numeric_classifier::signed64: return type::create("i64");
 	case ast::numeric_classifier::unsigned64: return type::create("u64");
-	case ast::numeric_classifier::float_: return type::create("float");
-	case ast::numeric_classifier::double_: return type::create("double");
+	case ast::numeric_classifier::float_: return type::create("f64");
+	case ast::numeric_classifier::float16: return type::create("f16");
+	case ast::numeric_classifier::float32: return type::create("f32");
+	case ast::numeric_classifier::float64: return type::create("f64");
+	case ast::numeric_classifier::float128: return type::create("f128");
+	case ast::numeric_classifier::float80: return type::create("f80");
 
 	case ast::numeric_classifier::none:
 		// fallthrough
 	default:
 		if (expr.fraction.has_value() || (expr.exponent.has_value() && expr.exponent < 0)) {
 			// floating point type, default to double
-			if (expecting_type == nullptr) return type::create("fp64");
-			if (expecting_type->get_fqn() == "fp16") return type::create("fp16");
-			if (expecting_type->get_fqn() == "fp32") return type::create("fp32");
-			if (expecting_type->get_fqn() == "fp64") return type::create("fp64");
-			if (expecting_type->get_fqn() == "fp80") return type::create("fp80");
-			if (expecting_type->get_fqn() == "fp128") return type::create("fp128");
+			if (expecting_type == nullptr) return type::create("f64");
+			if (expecting_type->get_fqn() == "f16") return type::create("f16");
+			if (expecting_type->get_fqn() == "f32") return type::create("f32");
+			if (expecting_type->get_fqn() == "f64") return type::create("f64");
+			if (expecting_type->get_fqn() == "f80") return type::create("f80");
+			if (expecting_type->get_fqn() == "f128") return type::create("f128");
 		} else {
 			// integer type, default to i64
 			if (expecting_type == nullptr) return type::create("i64");

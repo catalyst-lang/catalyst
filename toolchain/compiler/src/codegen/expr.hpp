@@ -8,17 +8,17 @@
 
 namespace catalyst::compiler::codegen {
 
-llvm::Value * codegen(codegen::state &state, ast::expr_ptr expr);
-llvm::Value * codegen(codegen::state &state, ast::expr_literal_numeric &expr);
-llvm::Value * codegen(codegen::state &state, ast::expr_literal_bool &expr);
-llvm::Value * codegen(codegen::state &state, ast::expr_ident &expr);
-llvm::Value * codegen(codegen::state &state, ast::expr_binary_arithmetic &expr);
-llvm::Value * codegen(codegen::state &state, ast::expr_unary_arithmetic &expr);
-llvm::Value * codegen(codegen::state &state, ast::expr_binary_logical &expr);
-llvm::Value * codegen(codegen::state &state, ast::expr_assignment &expr);
-llvm::Value * codegen(codegen::state &state, ast::expr_cast &expr);
-llvm::Value * codegen(codegen::state &state, ast::expr_call &expr);
-llvm::Value * codegen(codegen::state &state, ast::expr_member_access &expr);
+llvm::Value * codegen(codegen::state &state, ast::expr_ptr expr, std::shared_ptr<type> expecting_type = nullptr);
+llvm::Value * codegen(codegen::state &state, ast::expr_literal_numeric &expr, std::shared_ptr<type> expecting_type = nullptr);
+llvm::Value * codegen(codegen::state &state, ast::expr_literal_bool &expr, std::shared_ptr<type> expecting_type = nullptr);
+llvm::Value * codegen(codegen::state &state, ast::expr_ident &expr, std::shared_ptr<type> expecting_type = nullptr);
+llvm::Value * codegen(codegen::state &state, ast::expr_binary_arithmetic &expr, std::shared_ptr<type> expecting_type = nullptr);
+llvm::Value * codegen(codegen::state &state, ast::expr_unary_arithmetic &expr, std::shared_ptr<type> expecting_type = nullptr);
+llvm::Value * codegen(codegen::state &state, ast::expr_binary_logical &expr, std::shared_ptr<type> expecting_type = nullptr);
+llvm::Value * codegen(codegen::state &state, ast::expr_assignment &expr, std::shared_ptr<type> expecting_type = nullptr);
+llvm::Value * codegen(codegen::state &state, ast::expr_cast &expr, std::shared_ptr<type> expecting_type = nullptr);
+llvm::Value * codegen(codegen::state &state, ast::expr_call &expr, std::shared_ptr<type> expecting_type = nullptr);
+llvm::Value * codegen(codegen::state &state, ast::expr_member_access &expr, std::shared_ptr<type> expecting_type = nullptr);
 
 void codegen_assignment(codegen::state &state, llvm::Value* dest_ptr,
                         std::shared_ptr<type> dest_type, ast::expr_ptr rhs);

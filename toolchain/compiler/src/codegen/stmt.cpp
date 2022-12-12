@@ -41,12 +41,15 @@ void codegen(codegen::state &state, ast::statement_return &stmt) {
 	auto expr_type = expr_resulting_type(state, stmt.expr);
 
 	if (*expr_type != *((type_function *)state.current_function_symbol->type.get())->return_type) {
-		state.report_message(report_type::error, "Mixed return types",
-		                     *state.current_function_symbol->ast_node);
-		std::string message = "expected type ";
+		state.report_message(report_type::error, "Conflicting return type", stmt);
+		std::string message = "Got ";
+		message += expr_type->get_fqn();
+		message += ", but expected type ";
 		message +=
 			((type_function *)state.current_function_symbol->type.get())->return_type->get_fqn();
 		state.report_message(report_type::info, message);
+		state.report_message(report_type::info, "For function starting here",
+		                     *state.current_function_symbol->ast_node);
 		// TODO: warn (instead of error) about return type mismatch
 	}
 

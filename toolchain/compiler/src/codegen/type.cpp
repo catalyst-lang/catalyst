@@ -30,16 +30,16 @@ std::shared_ptr<type> type::create(const std::string &name) {
 		return std::make_shared<type_u128>();
 	if (name == "usize")
 		return std::make_shared<type_usize>();
-	if (name == "fp16")
-		return std::make_shared<type_fp16>();
-	if (name == "fp32")
-		return std::make_shared<type_fp32>();
-	if (name == "fp64")
-		return std::make_shared<type_fp64>();
-	if (name == "fp128")
-		return std::make_shared<type_fp128>();
-	if (name == "fp80")
-		return std::make_shared<type_fp80>();
+	if (name == "f16")
+		return std::make_shared<type_f16>();
+	if (name == "f32")
+		return std::make_shared<type_f32>();
+	if (name == "f64")
+		return std::make_shared<type_f64>();
+	if (name == "f128")
+		return std::make_shared<type_f128>();
+	if (name == "f80")
+		return std::make_shared<type_f80>();
 	if (name == "bool")
 		return std::make_shared<type_bool>();
 
@@ -68,7 +68,13 @@ bool type::operator!=(const type &other) const { return (this->get_fqn() != othe
 
 std::string type::get_fqn() const { return fqn; }
 
-llvm::Value *type::cast_llvm_value(state &state, llvm::Value *value, std::shared_ptr<type> to) {
+llvm::Value *type::cast_llvm_value(state &state, llvm::Value *value, type* to) {
+	return nullptr;
+}
+
+bool type::is_assignable_from(const std::shared_ptr<type> &type) const { return false; }
+llvm::Value *type::create_add(state &state, llvm::Value *lhs, std::shared_ptr<type> rhs_type,
+                              llvm::Value *rhs) {
 	return nullptr;
 }
 
@@ -180,59 +186,109 @@ llvm::Value *type_usize::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(64, 0));
 }
 
-llvm::Type *type_fp16::get_llvm_type(state &state) const {
+llvm::Type *type_f16::get_llvm_type(state &state) const {
 	return llvm::Type::getHalfTy(*state.TheContext);
 }
 
-llvm::Value *type_fp16::get_llvm_constant_zero(codegen::state &state) const {
+llvm::Value *type_f16::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantFP::get(*state.TheContext, llvm::APFloat(0.0));
 }
 
-llvm::Type *type_fp32::get_llvm_type(state &state) const {
+llvm::Type *type_f32::get_llvm_type(state &state) const {
 	return llvm::Type::getFloatTy(*state.TheContext);
 }
 
-llvm::Value *type_fp32::get_llvm_constant_zero(codegen::state &state) const {
+llvm::Value *type_f32::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantFP::get(*state.TheContext, llvm::APFloat(0.0));
 }
 
-llvm::Type *type_fp64::get_llvm_type(state &state) const {
+llvm::Type *type_f64::get_llvm_type(state &state) const {
 	return llvm::Type::getDoubleTy(*state.TheContext);
 }
 
-llvm::Value *type_fp64::get_llvm_constant_zero(codegen::state &state) const {
+llvm::Value *type_f64::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantFP::get(*state.TheContext, llvm::APFloat(0.0));
 }
 
-llvm::Type *type_fp128::get_llvm_type(state &state) const {
+llvm::Type *type_f128::get_llvm_type(state &state) const {
 	return llvm::Type::getFP128Ty(*state.TheContext);
 }
 
-llvm::Value *type_fp128::get_llvm_constant_zero(codegen::state &state) const {
+llvm::Value *type_f128::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantFP::get(*state.TheContext, llvm::APFloat(0.0));
 }
 
-llvm::Type *type_fp80::get_llvm_type(state &state) const {
+llvm::Type *type_f80::get_llvm_type(state &state) const {
 	return llvm::Type::getX86_FP80Ty(*state.TheContext);
 }
 
-llvm::Value *type_fp80::get_llvm_constant_zero(codegen::state &state) const {
+llvm::Value *type_f80::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantFP::get(*state.TheContext, llvm::APFloat(0.0));
 }
 
-llvm::Value *type_primitive::cast_llvm_value(state &state, llvm::Value *value,
-                                             std::shared_ptr<type> to) {
-	auto p_to = dynamic_cast<type_primitive *>(to.get());
+llvm::Value *type_primitive::cast_llvm_value(state &state, llvm::Value *value, type* to) {
+	auto p_to = dynamic_cast<type_primitive*>(to);
 	if (p_to == nullptr) {
-		//state.report_message("Converting between types that aren't both primitives");
-		//assert(false);
+		// state.report_message("Converting between types that aren't both primitives");
+		// assert(false);
+		return nullptr;
+	}
+	if (!is_float && !p_to->is_float) {
+		if (is_signed) {
+			return state.Builder.CreateSExtOrTrunc(value, p_to->get_llvm_type(state));
+		} else {
+			return state.Builder.CreateZExtOrTrunc(value, p_to->get_llvm_type(state));
+		}
+	} else if (!is_float && p_to->is_float) {
+		if (is_signed) {
+			return state.Builder.CreateSIToFP(value, p_to->get_llvm_type(state));
+		} else {
+			return state.Builder.CreateUIToFP(value, p_to->get_llvm_type(state));
+		}
+	} else if (is_float && !p_to->is_float) {
+		if (p_to->is_signed) {
+			return state.Builder.CreateFPToSI(value, p_to->get_llvm_type(state));
+		} else {
+			return state.Builder.CreateFPToUI(value, p_to->get_llvm_type(state));
+		}
+	} else if (is_float && p_to->is_float) {
+		if (bits > p_to->bits) {
+			// Sign extend
+			return state.Builder.CreateFPExt(value, p_to->get_llvm_type(state));
+		} else {
+			return state.Builder.CreateFPTrunc(value, p_to->get_llvm_type(state));
+		}
+	}
+
+	assert(false);
+	return nullptr;
+}
+
+llvm::Value *type_primitive::create_add(codegen::state &state, llvm::Value *value,
+                                        std::shared_ptr<type> rhs_type, llvm::Value *rhs) {
+	auto p_rhs = dynamic_cast<type_primitive *>(rhs_type.get());
+	if (p_rhs == nullptr) {
 		return nullptr;
 	}
 
-	if (is_signed) {
-		return state.Builder.CreateSExtOrTrunc(value, p_to->get_llvm_type(state));
+	if (!is_float && !p_rhs->is_float) {
+		return state.Builder.CreateAdd(value, rhs, "add");
 	} else {
-		return state.Builder.CreateZExtOrTrunc(value, p_to->get_llvm_type(state));
+		// at least one of us is a fp
+		if (!is_float)
+			value = cast_llvm_value(state, value, rhs_type.get());
+		if (!p_rhs->is_float)
+			rhs = rhs_type->cast_llvm_value(state, rhs, this);
+		return state.Builder.CreateFAdd(value, rhs, "add");
+	}
+}
+
+bool type_primitive::is_assignable_from(const std::shared_ptr<type> &type) const {
+	auto p_type = dynamic_cast<type_primitive *>(type.get());
+	if (p_type != nullptr) {
+		return true;
+	} else {
+		return type::is_assignable_from(type);
 	}
 }
 
