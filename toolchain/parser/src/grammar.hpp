@@ -283,16 +283,16 @@ struct expr : lexy::expression_production {
 		// conditional and assignment
 		lexy::new_<ast::expr_assignment, ast::expr_ptr>,
 
-		[](auto lhs, lexy::op<dsl::op(kw_as)>, auto type) {
+		[](auto lhs, lexy::op<op_cast::op>, auto type) {
 			return std::make_shared<ast::expr_cast>(lhs->lexeme.end, type.lexeme.begin, lhs, type);
 		},
 
 		// call
-		[](auto lhs, lexy::op<dsl::op(dsl::lit_c<'('>)>, std::vector<ast::expr_ptr> params) {
+		[](auto lhs, const lexy::op<op_call::op>, std::vector<ast::expr_ptr> params) {
 			return std::make_shared<ast::expr_call>(lhs->lexeme.begin, lhs->lexeme.end, lhs, params);
 		},
 
-		[](auto lhs, lexy::op<op_member_access::op>, auto rhs) {
+		[](auto lhs, const lexy::op<op_member_access::op>, auto rhs) {
 			return std::make_shared<ast::expr_member_access>(lhs->lexeme.end, lhs, rhs);
 		}
 
