@@ -67,6 +67,8 @@ struct fn_body_block : parser::ast_node {
 
 namespace catalyst::ast {
 
+using decl_ptr = std::shared_ptr<decl>;
+
 struct fn_body_expr : parser::ast_node {
 	fn_body_expr(expr_ptr expr)
 		: parser::ast_node(expr->lexeme.begin, expr->lexeme.end), expr(expr) {}
@@ -85,7 +87,31 @@ struct decl_fn : decl {
 	fn_body body;
 };
 
-using decl_ptr = std::shared_ptr<decl>;
+struct decl_var : decl {
+	decl_var(const parser::char_type *begin, const parser::char_type *end, ast::ident ident,
+	              std::optional<ast::type> type, std::optional<ast::expr_ptr> expr)
+		: decl(begin, end, ident), type(type), expr(expr) {}
+
+	std::optional<ast::type> type = std::nullopt;
+	std::optional<ast::expr_ptr> expr = std::nullopt;
+	bool is_const = false;
+};
+
+struct decl_const : decl_var {
+	decl_const(const parser::char_type *begin, const parser::char_type *end, ast::ident ident,
+	                std::optional<ast::type> type, std::optional<ast::expr_ptr> expr)
+		: decl_var(begin, end, ident, type, expr) {
+		is_const = true;
+	}
+};
+
+struct decl_struct : decl {
+	decl_struct(const parser::char_type *begin, const parser::char_type *end, ast::ident &ident)
+		: decl(begin, end, ident) {}
+
+	std::vector<decl_ptr> declarations;
+};
+
 
 struct translation_unit {
 	std::vector<decl_ptr> declarations;

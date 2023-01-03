@@ -26,23 +26,11 @@ struct statement : parser::ast_node {
 	using ast_node::ast_node;
 };
 
-struct statement_var : statement {
-	statement_var(const parser::char_type *begin, const parser::char_type *end, ident ident,
-	              std::optional<type> type, std::optional<expr_ptr> expr)
-		: statement(begin, end), ident(ident), type(type), expr(expr) {}
+struct statement_decl : statement {
+	statement_decl(decl_ptr decl)
+		: statement(decl->lexeme.begin, decl->lexeme.end), decl(decl) {}
 
-	ident ident;
-	std::optional<type> type = std::nullopt;
-	std::optional<expr_ptr> expr = std::nullopt;
-	bool is_const = false;
-};
-
-struct statement_const : statement_var {
-	statement_const(const parser::char_type *begin, const parser::char_type *end, ast::ident ident,
-	                std::optional<ast::type> type, std::optional<expr_ptr> expr)
-		: statement_var(begin, end, ident, type, expr) {
-		is_const = true;
-	}
+	decl_ptr decl;
 };
 
 struct statement_expr : statement {

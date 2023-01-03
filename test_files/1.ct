@@ -10,6 +10,8 @@ fn main() {
     //return test(i)
 }
 
+var ikh: i128// = 98i16
+
 fn test(a: i64) {
     if a {
         var o = a / 3

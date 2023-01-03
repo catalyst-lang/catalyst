@@ -248,7 +248,6 @@ struct expr : lexy::expression_production {
 		using operand = op_member_access;
 	};
 
-
 	struct op_cast : dsl::postfix_op {
 		static constexpr auto op = dsl::op(kw_as >> dsl::p<type>);
 		using operand = prec3;
@@ -289,7 +288,8 @@ struct expr : lexy::expression_production {
 
 		// call
 		[](auto lhs, const lexy::op<op_call::op>, std::vector<ast::expr_ptr> params) {
-			return std::make_shared<ast::expr_call>(lhs->lexeme.begin, lhs->lexeme.end, lhs, params);
+			return std::make_shared<ast::expr_call>(lhs->lexeme.begin, lhs->lexeme.end, lhs,
+		                                            params);
 		},
 
 		[](auto lhs, const lexy::op<op_member_access::op>, auto rhs) {
@@ -300,59 +300,6 @@ struct expr : lexy::expression_production {
 	    //  lexy::forward<ast::expr_if>,
 	    //  lexy::forward<ast::expr_assignment>
 	);
-};
-
-// struct expr : lexy::transparent_production {
-// 	static constexpr auto rule = LEXY_LIT("EXPR");
-// 	static constexpr auto value = lexy::forward<void>;
-// };
-
-//struct statement_sep : lexy::transparent_production {
-//	static constexpr auto rule = dsl::newline | dsl::semicolon;
-//	static constexpr auto value = lexy::forward<void>;
-//};
-
-struct statement_var {
-	static constexpr auto rule = kw_var >> dsl::p<ident> +
-	                                           dsl::opt(dsl::colon >> dsl::p<type>) + dsl::position
-	                                           + dsl::opt(dsl::equal_sign >> dsl::p<expr>);
-
-	static constexpr auto value = lexy::callback<ast::statement_ptr>(
-		[](auto ident, lexy::nullopt type, auto end, lexy::nullopt expr) {
-			return std::make_shared<ast::statement_var>(nullptr, end, ident, std::nullopt,
-		                                                std::nullopt);
-		},
-		[](auto ident, auto type, auto end, lexy::nullopt expr) {
-			return std::make_shared<ast::statement_var>(nullptr, end, ident, type, std::nullopt);
-		},
-		[](auto ident, lexy::nullopt type, auto end, auto expr) {
-			return std::make_shared<ast::statement_var>(nullptr, end, ident, std::nullopt, expr);
-		},
-		[](auto ident, auto type, auto end, auto expr) {
-			return std::make_shared<ast::statement_var>(nullptr, end, ident, type, expr);
-		});
-};
-
-struct statement_const {
-	static constexpr auto rule = kw_const >>
-	                             dsl::p<ident> +
-	                                 dsl::opt(dsl::colon >> dsl::p<type>) + dsl::position
-	                                 + dsl::opt(dsl::equal_sign >> dsl::p<expr>);
-
-	static constexpr auto value = lexy::callback<ast::statement_ptr>(
-		[](auto ident, lexy::nullopt type, auto end, lexy::nullopt expr) {
-			return std::make_shared<ast::statement_const>(nullptr, end, ident, std::nullopt,
-		                                                  std::nullopt);
-		},
-		[](auto ident, auto type, auto end, lexy::nullopt expr) {
-			return std::make_shared<ast::statement_const>(nullptr, end, ident, type, std::nullopt);
-		},
-		[](auto ident, lexy::nullopt type, auto end, auto expr) {
-			return std::make_shared<ast::statement_const>(nullptr, end, ident, std::nullopt, expr);
-		},
-		[](auto ident, auto type, auto end, auto expr) {
-			return std::make_shared<ast::statement_const>(nullptr, end, ident, type, expr);
-		});
 };
 
 struct statement_return {
@@ -367,6 +314,14 @@ struct statement_expr {
 	static constexpr auto rule = dsl::p<expr>;
 	static constexpr auto value = lexy::callback<ast::statement_ptr>(
 		[](auto expr) { return std::make_shared<ast::statement_expr>(expr); });
+};
+
+struct decl;
+
+struct statement_decl {
+	static constexpr auto rule = dsl::recurse_branch<decl>;
+	static constexpr auto value = lexy::callback<ast::statement_ptr>(
+		[](auto decl) { return std::make_shared<ast::statement_decl>(decl); });
 };
 
 // TODO: if statement is now always a block, this should optionally be a single statement
@@ -418,8 +373,8 @@ struct statement : lexy::transparent_production {
 	static constexpr auto name = "statement";
 	static constexpr auto rule =
 		dsl::position +
-		(dsl::p<statement_var> | dsl::p<statement_const> | dsl::p<statement_return> |
-	     dsl::p<statement_if> | dsl::p<statement_for> | dsl::p<statement_block> |
+		(dsl::p<statement_decl> | dsl::p<statement_return> | dsl::p<statement_if> |
+	     dsl::p<statement_for> | dsl::p<statement_block> |
 	     dsl::else_ >> dsl::p<statement_expr>)+dsl::position +
 		dsl::peek(dsl::semicolon | dsl::newline | dsl::lit_c<'}'>).error<expected_nl_sc>;
 	// static constexpr auto value = lexy::forward<ast::statement_ptr>;
@@ -442,11 +397,11 @@ struct fn_body_block {
 			dsl::brackets(dsl::lit_c<'{'> >> dsl::whitespace(whitespace_incl_nl), dsl::lit_c<'}'>);
 		return bracketed.opt_list(item, sep);
 	}();
-	static constexpr auto value =
-		lexy::as_list<std::vector<ast::statement_ptr>> >>
-		lexy::callback<ast::fn_body_block>(
-			[](auto list) { return ast::fn_body_block(nullptr, nullptr, list); },
-	        [](lexy::nullopt &&) { return ast::fn_body_block(nullptr, nullptr, {}); });
+	static constexpr auto
+		value = lexy::as_list<std::vector<ast::statement_ptr>> >>
+	            lexy::callback<ast::fn_body_block>(
+					[](auto list) { return ast::fn_body_block(nullptr, nullptr, list); },
+					[](lexy::nullopt &&) { return ast::fn_body_block(nullptr, nullptr, {}); });
 };
 
 struct fn_body_expr {
@@ -483,15 +438,67 @@ struct parameter_list {
 struct decl_fn {
 	static constexpr auto name = "function declaration";
 
-	static constexpr auto rule = dsl::position + kw_fn + dsl::p<ident> + dsl::p<parameter_list> +
-	                             dsl::opt(LEXY_LIT("->") >> dsl::p<type>) + dsl::position +
-	                             dsl::p<fn_body>;
+	static constexpr auto rule = kw_fn >>
+	                             dsl::p<ident> + dsl::p<parameter_list> +
+	                                 dsl::opt(LEXY_LIT("->") >> dsl::p<type>) + dsl::position
+	                                 + dsl::p<fn_body>;
 
 	// static constexpr auto value = lexy::construct<ast::decl_fn>;
 	static constexpr auto value = lexy::callback<ast::decl_ptr>(
-		[](auto begin, auto ident, auto parameter_list, auto type, auto end, auto body) {
-			return std::make_shared<ast::decl_fn>(begin, end, ident, parameter_list, type, body);
+		[](auto ident, auto parameter_list, auto type, auto end, auto body) {
+			return std::make_shared<ast::decl_fn>(nullptr, end, ident, parameter_list, type, body);
 		});
+};
+
+struct decl_var {
+	static constexpr auto name = "variable declaration";
+
+	static constexpr auto rule = kw_var >> dsl::p<ident> +
+	                                           dsl::opt(dsl::colon >> dsl::p<type>) + dsl::position
+	                                           + dsl::opt(dsl::equal_sign >> dsl::p<expr>);
+
+	static constexpr auto value = lexy::callback<ast::decl_ptr>(
+		[](auto ident, lexy::nullopt type, auto end, lexy::nullopt expr) {
+			return std::make_shared<ast::decl_var>(ident.lexeme.begin, end, ident, std::nullopt, std::nullopt);
+		},
+		[](auto ident, auto type, auto end, lexy::nullopt expr) {
+			return std::make_shared<ast::decl_var>(ident.lexeme.begin, end, ident, type, std::nullopt);
+		},
+		[](auto ident, lexy::nullopt type, auto end, auto expr) {
+			return std::make_shared<ast::decl_var>(ident.lexeme.begin, end, ident, std::nullopt, expr);
+		},
+		[](auto ident, auto type, auto end, auto expr) {
+			return std::make_shared<ast::decl_var>(ident.lexeme.begin, end, ident, type, expr);
+		});
+};
+
+// TODO: refactor this into decl_var
+struct decl_const {
+	static constexpr auto rule = kw_const >>
+	                             dsl::p<ident> +
+	                                 dsl::opt(dsl::colon >> dsl::p<type>) + dsl::position
+	                                 + dsl::opt(dsl::equal_sign >> dsl::p<expr>);
+
+	static constexpr auto value = lexy::callback<ast::decl_ptr>(
+		[](auto ident, lexy::nullopt type, auto end, lexy::nullopt expr) {
+			return std::make_shared<ast::decl_const>(nullptr, end, ident, std::nullopt,
+		                                             std::nullopt);
+		},
+		[](auto ident, auto type, auto end, lexy::nullopt expr) {
+			return std::make_shared<ast::decl_const>(nullptr, end, ident, type, std::nullopt);
+		},
+		[](auto ident, lexy::nullopt type, auto end, auto expr) {
+			return std::make_shared<ast::decl_const>(nullptr, end, ident, std::nullopt, expr);
+		},
+		[](auto ident, auto type, auto end, auto expr) {
+			return std::make_shared<ast::decl_const>(nullptr, end, ident, type, expr);
+		});
+};
+
+struct decl : lexy::transparent_production {
+	static constexpr auto name = "declaration";
+	static constexpr auto rule = (dsl::p<decl_fn> | dsl::p<decl_var> | dsl::p<decl_const>);
+	static constexpr auto value = lexy::forward<ast::decl_ptr>;
 };
 
 struct decl_sep : lexy::transparent_production {
@@ -499,18 +506,12 @@ struct decl_sep : lexy::transparent_production {
 	static constexpr auto value = lexy::forward<void>;
 };
 
-struct decl : lexy::transparent_production {
-	static constexpr auto name = "declaration";
-	static constexpr auto rule = dsl::p<decl_sep> + dsl::p<decl_fn>;
-	static constexpr auto value = lexy::forward<ast::decl_ptr>;
-};
-
 // Entry point of the production.
 struct translation_unit {
 	static constexpr auto whitespace = whitespace_normal;
 
 	static constexpr auto rule = dsl::terminator(dsl::eof).list(
-		dsl::p<decl>, dsl::trailing_sep(dsl::while_one(dsl::newline)));
+		(dsl::p<decl_sep> + dsl::p<decl>), dsl::trailing_sep(dsl::while_one(dsl::newline)));
 	static constexpr auto value =
 		lexy::as_list<std::vector<ast::decl_ptr>> >> lexy::construct<ast::translation_unit>;
 };

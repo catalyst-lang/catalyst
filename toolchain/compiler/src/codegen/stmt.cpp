@@ -19,12 +19,10 @@ namespace catalyst::compiler::codegen {
 void codegen(codegen::state &state, ast::statement_ptr stmt) {
 	if (typeid(*stmt) == typeid(ast::statement_expr)) {
 		codegen(state, *(ast::statement_expr *)stmt.get());
-	} else if (typeid(*stmt) == typeid(ast::statement_var)) {
-		codegen(state, *(ast::statement_var *)stmt.get());
+	} else if (typeid(*stmt) == typeid(ast::statement_decl)) {
+		codegen(state, *(ast::statement_decl *)stmt.get());
 	} else if (typeid(*stmt) == typeid(ast::statement_return)) {
 		codegen(state, *(ast::statement_return *)stmt.get());
-	} else if (typeid(*stmt) == typeid(ast::statement_const)) {
-		codegen(state, *(ast::statement_const *)stmt.get());
 	} else if (typeid(*stmt) == typeid(ast::statement_if)) {
 		codegen(state, *(ast::statement_if *)stmt.get());
 	} else if (typeid(*stmt) == typeid(ast::statement_block)) {
@@ -56,18 +54,6 @@ void codegen(codegen::state &state, ast::statement_return &stmt) {
 	state.Builder.CreateStore(expr, state.current_return);
 }
 
-void codegen(codegen::state &state, ast::statement_var &stmt) {
-	// the locals pass already made sure there is a value in the symbol table
-	auto var = state.scopes.find_named_symbol(stmt.ident.name);
-	if (stmt.expr.has_value() && stmt.expr.value() != nullptr) {
-		codegen_assignment(state, var->value, var->type, stmt.expr.value());
-	}
-}
-
-void codegen(codegen::state &state, ast::statement_const &stmt) {
-	state.report_message(report_type::error, "statement_const: Not implemented", stmt);
-}
-
 void codegen(codegen::state &state, ast::statement_block &stmt) {
 	// llvm::BasicBlock *BB = llvm::BasicBlock::Create(*state.TheContext, "stmt_block",
 	//                                                 state.current_scope().current_function);
@@ -80,6 +66,10 @@ void codegen(codegen::state &state, ast::statement_block &stmt) {
 		codegen(state, stmt);
 	}
 	state.scopes.leave();
+}
+
+void codegen(codegen::state &state, ast::statement_decl &stmt) {
+	codegen(state, stmt.decl);
 }
 
 void codegen(codegen::state &state, ast::statement_if &stmt) {

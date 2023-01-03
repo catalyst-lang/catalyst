@@ -22,23 +22,27 @@ int64_t run_jit(codegen::state &state) {
 		                               "Could not load create JIT");
 		return -1;
 	}
+	ExitOnError err;
 	state.TheModule->setDataLayout((*TheJIT)->getDataLayout());
 
-	if (auto ret = (*TheJIT)->addModule(
+	 err((*TheJIT)->addModule(
+			ThreadSafeModule(std::move(state.TheModule), std::move(state.TheContext))));
+
+	/*if (auto ret = (*TheJIT)->addModule(
 			ThreadSafeModule(std::move(state.TheModule), std::move(state.TheContext)));
 	    !ret) {
 		codegen::state::report_message(codegen::report_type::error,
 		                               "Problem while initializing JIT");
 		codegen::state::report_message(codegen::report_type::info,
 		                               "Could not load compiled code");
-	}
+	}*/
 
 	auto ExprSymbol = (*TheJIT)->lookup("main");
 	assert(ExprSymbol && "Entry function not found");
 
 	// Get the symbol's address and cast it to the right type (takes no
 	// arguments, returns a double) so we can call it as a native function.
-	int64_t (*FP)() = (int64_t(*)())(intptr_t)(*ExprSymbol).getAddress();
+	auto (*FP)() = (int64_t(*)())(intptr_t)(*ExprSymbol).getAddress();
 	return FP();
 }
 

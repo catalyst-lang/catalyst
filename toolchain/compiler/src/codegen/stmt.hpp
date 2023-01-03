@@ -9,8 +9,7 @@
 namespace catalyst::compiler::codegen {
 
 void codegen(codegen::state &state, ast::statement_ptr stmt);
-void codegen(codegen::state &state, ast::statement_var &stmt);
-void codegen(codegen::state &state, ast::statement_const &stmt);
+void codegen(codegen::state &state, ast::statement_decl &stmt);
 void codegen(codegen::state &state, ast::statement_return &stmt);
 void codegen(codegen::state &state, ast::statement_expr &stmt);
 void codegen(codegen::state &state, ast::statement_if &stmt);

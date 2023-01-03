@@ -25,12 +25,19 @@ void codegen(codegen::state &state, ast::decl_ptr decl) {
 	//	}
 	if (typeid(*decl) == typeid(ast::decl_fn)) {
 		codegen(state, *(ast::decl_fn *)decl.get());
+	} else if (typeid(*decl) == typeid(ast::decl_var)) {
+		codegen(state, *(ast::decl_var *)decl.get());
+	} else if (typeid(*decl) == typeid(ast::decl_const)) {
+		codegen(state, *(ast::decl_var *)decl.get());
+	} else {
+		state.report_message(report_type::error, "Decl type not implemented", *decl.get());
 	}
 }
 
 /// Recursively go over all nested local variables in an AST node and add them to the symbol_table
 /// @return number of locals added or changed in this pass
 int locals_pass(codegen::state &state, int n, ast::statement_ptr &stmt);
+int locals_pass(codegen::state &state, int n, ast::decl_ptr &decl);
 
 int locals_pass(codegen::state &state, int n,
                 std::vector<catalyst::ast::statement_ptr> &statements) {
@@ -41,7 +48,11 @@ int locals_pass(codegen::state &state, int n,
 	return locals_changed;
 }
 
-int locals_pass(codegen::state &state, int n, ast::statement_var &stmt) {
+int locals_pass(codegen::state &state, int n, ast::statement_decl &stmt) {
+	return locals_pass(state, n, stmt.decl);
+}
+
+int locals_pass(codegen::state &state, int n, ast::decl_var &stmt) {
 	auto key = state.scopes.get_fully_qualified_scope_name(stmt.ident.name);
 	int locals_changed = 0;
 
@@ -114,10 +125,8 @@ int locals_pass(codegen::state &state, int n, ast::statement_return &stmt) {
 }
 
 int locals_pass(codegen::state &state, int n, ast::statement_ptr &stmt) {
-	if (typeid(*stmt) == typeid(ast::statement_var)) {
-		return locals_pass(state, n, *(ast::statement_var *)stmt.get());
-	} else if (typeid(*stmt) == typeid(ast::statement_const)) {
-		return locals_pass(state, n, *(ast::statement_var *)stmt.get());
+	if (typeid(*stmt) == typeid(ast::statement_decl)) {
+		return locals_pass(state, n, *(ast::statement_decl *)stmt.get());
 	} else if (typeid(*stmt) == typeid(ast::statement_if)) {
 		return locals_pass(state, n, *(ast::statement_if *)stmt.get());
 	} else if (typeid(*stmt) == typeid(ast::statement_block)) {
@@ -157,6 +166,21 @@ int locals_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 
 	state.scopes.leave();
 	return pass_changes;
+}
+
+int locals_pass(codegen::state &state, int n, ast::decl_ptr &decl) {
+	if (typeid(*decl) == typeid(ast::decl_var)) {
+		return locals_pass(state, n, *(ast::decl_var *)decl.get());
+	} else if (typeid(*decl) == typeid(ast::decl_const)) {
+		return locals_pass(state, n, *(ast::decl_var *)decl.get());
+	} else if (typeid(*decl) == typeid(ast::decl_fn)) {
+		return locals_pass(state, n, *(ast::decl_fn *)decl.get());
+	} else if (typeid(*decl) == typeid(ast::decl_struct)) {
+		// TODO
+		//return 0;
+	}
+	state.report_message(report_type::error, "Choices exhausted", *decl);
+	return 0;
 }
 
 /// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
@@ -265,6 +289,10 @@ void codegen(codegen::state &state, ast::fn_body_block &body) {
 int proto_pass(codegen::state &state, int n, ast::decl_ptr decl) {
 	if (typeid(*decl) == typeid(ast::decl_fn)) {
 		return proto_pass(state, n, *(ast::decl_fn *)decl.get());
+	} else if (typeid(*decl) == typeid(ast::decl_var)) {
+		return proto_pass(state, n, *(ast::decl_var *)decl.get());
+	} else if (typeid(*decl) == typeid(ast::decl_const)) {
+		return proto_pass(state, n, *(ast::decl_var *)decl.get());
 	}
 	return 0;
 }
@@ -340,5 +368,46 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 
 	return changed_num;
 }
+
+int proto_pass(codegen::state &state, int n, ast::decl_var &decl) {
+	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
+	if (n == 0 &&
+	    state.symbol_table.contains(key)) {
+		auto other = state.symbol_table[key];
+		state.report_message(report_type::error, "Variable name already exists", decl.ident);
+		state.report_message(report_type::info, "Previous declaration here", *other.ast_node);
+		return 0;
+	}
+
+	std::shared_ptr<codegen::type> type;
+	if (decl.type.has_value()) {
+		type = type::create(decl.type.value());
+	} else if (decl.expr.has_value()) {
+		type = expr_resulting_type(state, decl.expr.value());
+	} else {
+		state.report_message(report_type::error, "Global variable must have explicit type set or the type must be inferrable from a direct assignment", decl);
+		return 0;
+	}
+	const auto [res, symbol_introduced] =
+		state.symbol_table.try_emplace(key, &decl, nullptr, type);
+	auto &sym = res->second;
+
+	if (n == 0) return 1;
+	if (*sym.type != *type) return 1;
+	return 0;
+}
+
+void codegen(codegen::state &state, ast::decl_var &decl) {
+	// the locals pass already made sure there is a value in the symbol table
+	auto var = state.scopes.find_named_symbol(decl.ident.name);
+	if (decl.expr.has_value() && decl.expr.value() != nullptr) {
+		codegen_assignment(state, var->value, var->type, decl.expr.value());
+	}
+}
+
+void codegen(codegen::state &state, ast::decl_const &decl) {
+	state.report_message(report_type::error, "decl_const: Not implemented", decl);
+}
+
 
 } // namespace catalyst::compiler::codegen
