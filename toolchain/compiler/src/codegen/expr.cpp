@@ -227,8 +227,6 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr, std::shared_pt
 				return nullptr;
 		}
 
-		sym->value->dump();
-
 		if (llvm::isa<llvm::Function>(sym->value)) {
 			// This is a straight function value
 			return state.Builder.CreateCall(CalleeF, ArgsV, "calltmp");
