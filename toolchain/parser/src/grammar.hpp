@@ -495,9 +495,31 @@ struct decl_const {
 		});
 };
 
+struct decl_list_sep : lexy::transparent_production {
+	static constexpr auto rule = dsl::opt(dsl::while_one(dsl::newline));
+	static constexpr auto value = lexy::forward<void>;
+};
+
+struct decl_list {
+	//static constexpr auto whitespace = whitespace_incl_nl;
+	static constexpr auto rule = dsl::curly_bracketed.opt_list(dsl::p<decl_list_sep> + dsl::recurse<decl>, dsl::ignore_trailing_sep(dsl::while_one(dsl::newline | dsl::semicolon)));
+	static constexpr auto value = lexy::as_list<std::vector<ast::decl_ptr>>;
+};
+
+struct decl_struct {
+	static constexpr auto rule = kw_struct >>
+	                             dsl::p<ident> + dsl::p<decl_list> + dsl::position;
+
+	static constexpr auto value = lexy::callback<ast::decl_ptr>(
+		[](auto ident, auto decls, auto end) {
+			return std::make_shared<ast::decl_struct>(ident.lexeme.begin, end, ident, decls);
+		}
+	);
+};
+
 struct decl : lexy::transparent_production {
 	static constexpr auto name = "declaration";
-	static constexpr auto rule = (dsl::p<decl_fn> | dsl::p<decl_var> | dsl::p<decl_const>);
+	static constexpr auto rule = (dsl::p<decl_fn> | dsl::p<decl_var> | dsl::p<decl_const> | dsl::p<decl_struct>);
 	static constexpr auto value = lexy::forward<ast::decl_ptr>;
 };
 

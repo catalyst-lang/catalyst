@@ -197,7 +197,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr, std::shared_pt
 		// llvm::Function *CalleeF = state.TheModule->getFunction(callee.name);
 		auto sym = state.scopes.find_named_symbol(callee.ident.name);
 		auto type = (type_function *)sym->type.get();
-		llvm::Function *CalleeF = (llvm::Function *)sym->value;
+		auto CalleeF = (llvm::Function *)sym->value;
 		if (!CalleeF) {
 			state.report_message(report_type::error, "Unknown function referenced", callee);
 			return nullptr;

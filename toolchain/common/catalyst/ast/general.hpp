@@ -106,8 +106,8 @@ struct decl_const : decl_var {
 };
 
 struct decl_struct : decl {
-	decl_struct(const parser::char_type *begin, const parser::char_type *end, ast::ident &ident)
-		: decl(begin, end, ident) {}
+	decl_struct(const parser::char_type *begin, const parser::char_type *end, ast::ident &ident, std::vector<decl_ptr> declarations)
+		: decl(begin, end, ident), declarations(declarations) {}
 
 	std::vector<decl_ptr> declarations;
 };

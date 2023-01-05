@@ -45,6 +45,7 @@ struct options {
 };
 
 int main(const options &opts) {
+	((options*)&opts)->dump_ast = true;
 	if (opts.dump_ast) {
 		auto file = lexy::read_file<lexy::deduce_encoding<parser::char_type>>(opts.input.c_str());
 		if (!file) {
@@ -72,8 +73,8 @@ int main(const options &opts) {
 
 	auto ast = parse_filename(opts.input.c_str());
 	if (ast.has_value()) {
-		auto fn = (ast::decl_fn*) ast.value().declarations[0].get();
-        auto body = std::get<ast::fn_body_block>(fn->body);
+		//auto fn = (ast::decl_fn*) ast.value().declarations[0].get();
+        //auto body = std::get<ast::fn_body_block>(fn->body);
 
 		/*auto il = ast.value().declarations[0]->ident.get_input_location(file.buffer());
 		auto ila = ast.value().declarations[0].ident.get_input_line_annotation(file.buffer());

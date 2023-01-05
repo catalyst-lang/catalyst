@@ -1,21 +1,14 @@
-
-
-// this is a test
-fn main
-(
-    ij, 
-ljk: jklj) {
-    
-    STMT ;; ;;;STMT;
-
-    var i = EXPR;
-    
-    STMT;
-;
-;
-
-STMT
-
+fn main() {
+     ikh = 6.4
+    var fk = test
+    var ksf = fk
+    return nacho(78.91 + pizza() + foo() + ikh + ksf(43))
+    // return 1234567891011121314
+    //return ikh
 }
 
-fn double(a, b){}// => b
+fn test(i: i32) {
+    return 2 + i;
+}
+
+var ikh = 8.6f80
