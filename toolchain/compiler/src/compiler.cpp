@@ -6,6 +6,7 @@
 #include "../../parser/src/parser.hpp"
 #include "codegen/codegen.hpp"
 #include "codegen/expr.hpp"
+#include "codegen/type.hpp"
 
 #pragma warning( push )
 #pragma warning( disable : 4244 )
@@ -15,6 +16,8 @@
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Utils.h"
+#include "llvm/Transforms/IPO/AlwaysInliner.h"
+#include "llvm/Transforms/IPO/Inliner.h"
 #include "jit.hpp"
 #pragma warning( pop )
 
@@ -29,6 +32,10 @@ compile_result compile(catalyst::ast::translation_unit &tu, options options) {
 	state->TheModule = std::make_unique<llvm::Module>(tu.parser_state->filename, *state->TheContext);
 	state->FPM = std::make_unique<llvm::legacy::FunctionPassManager>(state->TheModule.get());
 
+	state->runtime->register_symbols();
+
+	options.optimizer_level = 2;
+
 	if (options.optimizer_level >= 1) {
 		// Standard mem2reg pass to construct SSA form from alloca's and stores.
 		state->FPM->add(llvm::createPromoteMemoryToRegisterPass());
@@ -42,11 +49,16 @@ compile_result compile(catalyst::ast::translation_unit &tu, options options) {
 		state->FPM->add(llvm::createGVNPass());
 		// Simplify the control flow graph (deleting unreachable blocks, etc).
 		state->FPM->add(llvm::createCFGSimplificationPass());
+
+		state->FPM->add(llvm::createConstantHoistingPass());
+		state->FPM->add(llvm::createDeadCodeEliminationPass());
+
+		state->FPM->add(llvm::createPartiallyInlineLibCallsPass());
 	}
 
 	state->FPM->doInitialization();
 
-	auto v = codegen::codegen(*state);
+	codegen::codegen(*state);
 	printf("Read module:\n");
 	state->TheModule->print(llvm::outs(), nullptr);
 	printf("\n");

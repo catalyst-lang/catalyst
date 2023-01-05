@@ -30,6 +30,7 @@ struct state;
 #include "../compiler.hpp"
 #include "scope.hpp"
 #include "symbol.hpp"
+#include "../runtime.hpp"
 
 namespace catalyst::compiler::codegen {
 
@@ -47,15 +48,17 @@ struct state {
 	llvm::AllocaInst *current_return = nullptr;
 	llvm::BasicBlock *current_return_block = nullptr;
 
+	llvm::Function *init_function = nullptr;
+
 	symbol_map symbol_table;
 
 	catalyst::ast::translation_unit *translation_unit{};
 
 	scope_stack scopes;
 
-	state()
-		: TheContext(std::make_unique<llvm::LLVMContext>()), Builder(*TheContext),
-		  scopes(&symbol_table) {}
+	runtime *runtime;
+
+	state();
 
 	static void report_message(report_type type, const std::string &message);
 	void report_message(report_type type, const std::string &message,
@@ -69,7 +72,7 @@ struct state {
 	bool is_root_scope() { return scopes.is_root_scope(); }
 };
 
-llvm::Value *codegen(codegen::state &state, ast::translation_unit &tu);
-llvm::Value *codegen(codegen::state &state);
+void codegen(codegen::state &state, ast::translation_unit &tu);
+void codegen(codegen::state &state);
 
 } // namespace catalyst::compiler::codegen

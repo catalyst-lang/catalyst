@@ -11,22 +11,20 @@ using namespace llvm;
 using namespace llvm::orc;
 
 int64_t run_jit(codegen::state &state) {
+	ExitOnError ExitOnErr;
+
 	llvm::InitializeNativeTarget();
 	llvm::InitializeNativeTargetAsmPrinter();
 	llvm::InitializeNativeTargetAsmParser();
-	auto TheJIT = KaleidoscopeJIT::Create();
-	if (TheJIT.takeError()) {
-		codegen::state::report_message(codegen::report_type::error,
-		                               "Problem while initializing JIT");
-		codegen::state::report_message(codegen::report_type::info,
-		                               "Could not load create JIT");
-		return -1;
-	}
-	ExitOnError err;
-	state.TheModule->setDataLayout((*TheJIT)->getDataLayout());
+	std::unique_ptr<KaleidoscopeJIT> TheJIT = ExitOnErr(KaleidoscopeJIT::Create());
 
-	 err((*TheJIT)->addModule(
+	state.TheModule->setDataLayout(TheJIT->getDataLayout());
+
+	 ExitOnErr(TheJIT->addModule(
 			ThreadSafeModule(std::move(state.TheModule), std::move(state.TheContext))));
+
+	for(const auto& [key, value] : state.runtime->functions)
+        TheJIT->define_symbol(key.c_str(), value);
 
 	/*if (auto ret = (*TheJIT)->addModule(
 			ThreadSafeModule(std::move(state.TheModule), std::move(state.TheContext)));
@@ -37,74 +35,13 @@ int64_t run_jit(codegen::state &state) {
 		                               "Could not load compiled code");
 	}*/
 
-	auto ExprSymbol = (*TheJIT)->lookup("main");
+	auto ExprSymbol = TheJIT->lookup("main");
 	assert(ExprSymbol && "Entry function not found");
 
 	// Get the symbol's address and cast it to the right type (takes no
 	// arguments, returns a double) so we can call it as a native function.
-	auto (*FP)() = (int64_t(*)())(intptr_t)(*ExprSymbol).getAddress();
+	auto (*FP)() = (int64_t(*)())(*ExprSymbol).getAddress();
 	return FP();
-}
-
-Expected<std::unique_ptr<KaleidoscopeJIT>> KaleidoscopeJIT::Create() {
-	auto EPC = SelfExecutorProcessControl::Create();
-	if (!EPC)
-		return EPC.takeError();
-
-	auto ES = std::make_unique<ExecutionSession>(std::move(*EPC));
-
-	auto EPCIU = EPCIndirectionUtils::Create(ES->getExecutorProcessControl());
-	if (!EPCIU)
-		return EPCIU.takeError();
-
-	(*EPCIU)->createLazyCallThroughManager(*ES,
-	                                       pointerToJITTargetAddress(&handleLazyCallThroughError));
-
-	if (auto Err = setUpInProcessLCTMReentryViaEPCIU(**EPCIU))
-		return std::move(Err);
-
-	JITTargetMachineBuilder JTMB(ES->getExecutorProcessControl().getTargetTriple());
-
-	auto DL = JTMB.getDefaultDataLayoutForTarget();
-	if (!DL)
-		return DL.takeError();
-
-	return std::make_unique<KaleidoscopeJIT>(std::move(ES), std::move(*EPCIU), std::move(JTMB),
-	                                         std::move(*DL));
-}
-
-Expected<ThreadSafeModule> KaleidoscopeJIT::optimizeModule(ThreadSafeModule TSM,
-                                                           const MaterializationResponsibility &R) {
-	TSM.withModuleDo([](Module &M) {
-		// Create a function pass manager.
-		auto FPM = std::make_unique<legacy::FunctionPassManager>(&M);
-
-		// Add some optimizations.
-		FPM->add(createInstructionCombiningPass());
-		FPM->add(createReassociatePass());
-		FPM->add(createGVNPass());
-		FPM->add(createCFGSimplificationPass());
-		FPM->doInitialization();
-
-		// Run the optimizations over all functions in the module being added to
-		// the JIT.
-		for (auto &F : M)
-			FPM->run(F);
-	});
-
-	return std::move(TSM);
-}
-
-Error KaleidoscopeJIT::addModule(ThreadSafeModule TSM, ResourceTrackerSP RT) {
-	if (!RT)
-		RT = MainJD.getDefaultResourceTracker();
-
-	return OptimizeLayer.add(RT, std::move(TSM));
-}
-
-Expected<JITEvaluatedSymbol> KaleidoscopeJIT::lookup(StringRef Name) {
-	auto mangled = Mangle(Name.str());
-	return ES->lookup({&MainJD}, mangled);
 }
 
 } // namespace catalyst::compiler

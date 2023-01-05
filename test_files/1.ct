@@ -1,22 +1,14 @@
-
 fn main() {
-    var decimal: f64 = 129.89897876f32
-    return 3 + decimal + 4 + 6u8
-
-    //var i = 85 as i8
-    //var b: i64 = true
-    //i = 5 + 7
-    //return b
-    //return test(i)
+     ikh = 6.4
+    var fk = test
+    var ksf = fk
+    return nacho(78.91 + pizza() + foo() + ikh + ksf())
+    // return 1234567891011121314
+    //return ikh
 }
 
-var ikh: i128// = 98i16
-
-fn test(a: i64) {
-    if a {
-        var o = a / 3
-        return a + 10 / o
-    } else {
-        return 5
-    }
+fn test() {
+    return 2;
 }
+
+var ikh = 8.6f80

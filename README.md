@@ -49,7 +49,7 @@ $ ./build/toolchain/compiler/test-compiler
 ## Goals
 
 1. **Modern syntax and idoms**\
-   C++ syntax is a [mess](https://medium.com/@mujjingun_23509/full-proof-that-c-grammar-is-undecidable-34e22dd8b664). While C++ painstakinly aims to remain backwards compatible (foor good reasons), we can start with a clean slate. Also, we do not aim for backwards compatibility across major iterations.
+   C++ syntax is a [mess](https://medium.com/@mujjingun_23509/full-proof-that-c-grammar-is-undecidable-34e22dd8b664). While C++ painstakinly aims to remain backwards compatible (for good reasons), we can start with a clean slate. Also, we do not aim for backwards compatibility across major iterations.
 2. **Memory safety**\
    One of the biggest challenges with low-level programming is preventing memory leaks and working with pointers in general. C and C++ is notorious for leaving the responsibilty to the programmer, while Rust is the exact opposite leaving developers to [fight the borrow checker](https://kerkour.com/life-is-short-rust-borrow-checker). We believe a programmer is more than capable of working in a safe way by giving him or her the right tools.
 3. **Developer productivity**\

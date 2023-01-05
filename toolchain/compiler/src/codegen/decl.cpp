@@ -188,7 +188,10 @@ int locals_pass(codegen::state &state, int n, ast::decl_ptr &decl) {
 static llvm::AllocaInst *CreateEntryBlockAlloca(codegen::state &state, llvm::Function *TheFunction,
                                                 const std::string &VarName, const type &type) {
 	llvm::IRBuilder<> TmpB(&TheFunction->getEntryBlock(), TheFunction->getEntryBlock().begin());
-	return TmpB.CreateAlloca(type.get_llvm_type(state), 0, VarName.c_str());
+	if (typeid(type) == typeid(type_function)) {
+		return TmpB.CreateAlloca(TmpB.getPtrTy(), nullptr, VarName.c_str());
+	}
+	return TmpB.CreateAlloca(type.get_llvm_type(state), nullptr, VarName.c_str());
 }
 
 void codegen(codegen::state &state, ast::decl_fn &decl) {
@@ -227,6 +230,10 @@ void codegen(codegen::state &state, ast::decl_fn &decl) {
 
 		// Add arguments to variable symbol table.
 		// state.scopes.back().named_values[std::string(Arg.getName())] = arg_local.value;
+	}
+
+	if (key == "root.main") {
+		state.Builder.CreateCall(state.init_function);
 	}
 
 	codegen(state, decl.body);
@@ -374,7 +381,7 @@ int proto_pass(codegen::state &state, int n, ast::decl_var &decl) {
 	if (n == 0 &&
 	    state.symbol_table.contains(key)) {
 		auto other = state.symbol_table[key];
-		state.report_message(report_type::error, "Variable name already exists", decl.ident);
+		state.report_message(report_type::error, "Global variable name already exists", decl.ident);
 		state.report_message(report_type::info, "Previous declaration here", *other.ast_node);
 		return 0;
 	}
@@ -388,9 +395,21 @@ int proto_pass(codegen::state &state, int n, ast::decl_var &decl) {
 		state.report_message(report_type::error, "Global variable must have explicit type set or the type must be inferrable from a direct assignment", decl);
 		return 0;
 	}
+	
 	const auto [res, symbol_introduced] =
 		state.symbol_table.try_emplace(key, &decl, nullptr, type);
 	auto &sym = res->second;
+
+	if (type->is_valid && sym.value == nullptr) {
+		llvm::IRBuilder<> TmpB(&state.init_function->getEntryBlock(), state.init_function->getEntryBlock().begin());
+		state.TheModule->getOrInsertGlobal(key.c_str(), type->get_llvm_type(state));
+		llvm::GlobalVariable *gVar = state.TheModule->getNamedGlobal(key.c_str());
+		gVar->setDSOLocal(true);
+		//gVar->setAlignment(llvm::MaybeAlign(4));
+		gVar->setInitializer(type->get_default_llvm_value(state));
+		//gVar->setLinkage(llvm::GlobalValue::InternalLinkage);
+		sym.value = gVar;//TmpB.CreateAlloca(type->get_llvm_type(state), 0, key.c_str());
+	}
 
 	if (n == 0) return 1;
 	if (*sym.type != *type) return 1;

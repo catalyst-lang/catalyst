@@ -111,7 +111,9 @@
         "future": "cpp",
         "random": "cpp",
         "queue": "cpp",
-        "shared_mutex": "cpp"
+        "shared_mutex": "cpp",
+        "*.inc": "cpp",
+        "*.def": "cpp"
     },
     "files.insertFinalNewline": true,
 

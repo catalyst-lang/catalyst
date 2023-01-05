@@ -157,6 +157,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_call 
 		if (sym == nullptr) {
 			return type::create();
 		}
+		if (!sym->type.get()->is_valid) return type::create();
 		auto type = (type_function*)sym->type.get();
 		return type->return_type;
 	} else {

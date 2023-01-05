@@ -19,13 +19,17 @@ void state::report_message(report_type type, const std::string &message,
 	                       pos_comment);
 }
 
-llvm::Value *codegen(codegen::state &state, ast::translation_unit &tu) {
+state::state()
+		: TheContext(std::make_unique<llvm::LLVMContext>()), Builder(*TheContext),
+		  scopes(&symbol_table), runtime(new compiler::runtime(*this)) {}
+
+void codegen(codegen::state &state, ast::translation_unit &tu) {
 	// fill prototypes
 	int pass_n = 0;
 	int pass_changes = 1;
 	while (pass_changes > 0) {
 		pass_changes = 0;
-		for (auto decl : tu.declarations) {
+		for (const auto &decl : tu.declarations) {
 			pass_changes += proto_pass(state, pass_n, decl);
 		}
 		pass_n++;
@@ -39,13 +43,30 @@ llvm::Value *codegen(codegen::state &state, ast::translation_unit &tu) {
 		std::cout << k << ": " << v.type->get_fqn() << std::endl;
 	}
 
-	for (auto decl : tu.declarations) {
+	for (const auto &decl : tu.declarations) {
+		state.Builder.SetInsertPoint(&state.init_function->getEntryBlock());
+		
 		codegen(state, decl);
 	}
-
-	return nullptr;
 }
 
-llvm::Value *codegen(codegen::state &state) { return codegen(state, *state.translation_unit); }
+void codegen(codegen::state &state) {
+	assert(state.init_function == nullptr);
+	
+	// create init function
+	std::vector<llvm::Type *> args(0);
+	auto *FT = llvm::FunctionType::get(llvm::Type::getVoidTy(*state.TheContext), false);
+	state.init_function = 
+		llvm::Function::Create(FT, llvm::Function::ExternalLinkage, ".__CATA_INIT", state.TheModule.get());
+	state.init_function->addFnAttr(llvm::Attribute::AlwaysInline);
+	state.init_function->setDSOLocal(true);
+	auto *BB = llvm::BasicBlock::Create(*state.TheContext, "init", state.init_function);
+	state.Builder.SetInsertPoint(BB);
+
+	codegen(state, *state.translation_unit); 
+
+	state.Builder.SetInsertPoint(BB);
+	state.Builder.CreateRetVoid();
+}
 
 } // namespace catalyst::compiler::codegen

@@ -9,6 +9,7 @@
 #include "expr.hpp"
 #include "expr_type.hpp"
 #include "value.hpp"
+#include "llvm/IR/Value.h"
 
 namespace catalyst::compiler::codegen {
 
@@ -87,6 +88,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_literal_numeric &expr, std
 	else if (definitive_type->get_fqn() == "f32") semantics = &llvm::APFloat::IEEEsingle();
 	else if (definitive_type->get_fqn() == "f64") semantics = &llvm::APFloat::IEEEdouble();
 	else if (definitive_type->get_fqn() == "f128") semantics = &llvm::APFloat::IEEEquad();
+	else if (definitive_type->get_fqn() == "f80") semantics = &llvm::APFloat::x87DoubleExtended();
 	f = llvm::APFloat(*semantics, fstr.str());
 
 	if (expr.sign < 0) f.changeSign();
@@ -110,8 +112,21 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr, std::shared_p
 	auto *symbol = state.scopes.find_named_symbol(expr.ident.name);
 	if (!symbol)
 		state.report_message(report_type::error, "Unknown variable name", expr);
-	llvm::AllocaInst *a = (llvm::AllocaInst *)symbol->value;
-	return state.Builder.CreateLoad(a->getAllocatedType(), a, expr.ident.name.c_str());
+		
+
+	if (llvm::isa<llvm::Function>(symbol->value)) {
+		auto *a = (llvm::Function *)symbol->value;
+		//return state.Builder.CreateLoad(a->getType(), a, expr.ident.name.c_str());
+		auto *container = state.Builder.CreateAlloca(llvm::PointerType::get(*state.TheContext, 0));
+		state.Builder.CreateStore(a, container);
+		return state.Builder.CreateLoad(container->getAllocatedType(), container, expr.ident.name.c_str());
+	} if (llvm::isa<llvm::GlobalVariable>(symbol->value)) {
+		auto *a = (llvm::GlobalVariable *)symbol->value;
+		return state.Builder.CreateLoad(a->getValueType(), a, expr.ident.name.c_str());
+	} else {
+		auto *a = (llvm::AllocaInst *)symbol->value;
+		return state.Builder.CreateLoad(a->getAllocatedType(), a, expr.ident.name.c_str());
+	}
 }
 
 llvm::Value *codegen(codegen::state &state, ast::expr_binary_arithmetic &expr, std::shared_ptr<type> expecting_type) {
@@ -189,13 +204,13 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr, std::shared_pt
 		}
 
 		// If argument mismatch error.
-		if (CalleeF->arg_size() != expr.parameters.size()) {
+		if (type->parameters.size() != expr.parameters.size()) {
 			// TODO, make ast_node from parameters for reporting errors
 			std::stringstream str;
-			str << "expected " << CalleeF->arg_size() << ", but got " << expr.parameters.size();
+			str << "expected " << type->parameters.size() << ", but got " << expr.parameters.size();
 
 			state.report_message(report_type::error, "Incorrect number of arguments passed", callee,
-			                     str.str());
+								str.str());
 			return nullptr;
 		}
 
@@ -212,7 +227,20 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr, std::shared_pt
 				return nullptr;
 		}
 
-		return state.Builder.CreateCall(CalleeF, ArgsV, "calltmp");
+		sym->value->dump();
+
+		if (llvm::isa<llvm::Function>(sym->value)) {
+			// This is a straight function value
+			return state.Builder.CreateCall(CalleeF, ArgsV, "calltmp");
+		} else if (llvm::isa<llvm::AllocaInst>(sym->value)) {
+			// This is a function pointer
+			llvm::Value* ptr = state.Builder.CreateLoad(sym->value->getType(), sym->value);
+			llvm::FunctionType* fty = (llvm::FunctionType*)sym->type->get_llvm_type(state);
+			return state.Builder.CreateCall(fty, ptr, ArgsV, "ptrcalltmp");
+		} else {
+			state.report_message(report_type::error, "unsupported base type for function call", expr);
+			return nullptr;
+		}
 	} else {
 		state.report_message(report_type::error, "Virtual functions not implemented", expr);
 		return nullptr;
