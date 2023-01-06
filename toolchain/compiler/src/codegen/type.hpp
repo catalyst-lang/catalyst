@@ -29,12 +29,16 @@ struct type {
 	type(std::string fqn, int specialization_score)
 		: fqn(std::move(fqn)), specialization_score(specialization_score) {}
 
-	static std::shared_ptr<type> create(const std::string &name = "");
-	static std::shared_ptr<type> create(const catalyst::ast::type &ast_type);
+	static std::shared_ptr<type> create_builtin(const std::string &name = "");
+	static std::shared_ptr<type> create_builtin(const catalyst::ast::type &ast_type);
+	static std::shared_ptr<type> create(codegen::state &state, const std::string &name = "");
+	static std::shared_ptr<type> create(codegen::state &state, const catalyst::ast::type &ast_type);
 	static std::shared_ptr<type> create_function(const std::shared_ptr<type> &return_type);
 	static std::shared_ptr<type>
 	create_function(const std::shared_ptr<type> &return_type,
 	                std::vector<std::shared_ptr<type>> const &parameters);
+		static std::shared_ptr<type>
+	create_struct(const std::string &name, std::map<std::string, std::shared_ptr<type>> const &members);
 
 	virtual llvm::Type *get_llvm_type(codegen::state &state) const = 0;
 	virtual llvm::Value *cast_llvm_value(codegen::state &state, llvm::Value *value, type* to);
@@ -254,6 +258,31 @@ struct type_function : type {
 		: type("function"), return_type(std::move(return_type)), parameters(parameters) {}
 	std::shared_ptr<type> return_type;
 	std::vector<std::shared_ptr<type>> parameters;
+	llvm::Type *get_llvm_type(codegen::state &state) const override;
+
+	virtual std::string get_fqn() const override;
+};
+
+struct type_custom : type {
+	type_custom(std::string fqn, std::string name) : type(fqn), name(name) {}
+	std::string name;
+};
+
+struct type_struct : type_custom {
+	explicit type_struct(const std::string &name, std::map<std::string, std::shared_ptr<type>> const &members);
+
+	std::map<std::string, std::shared_ptr<type>> members;
+
+	llvm::Type *get_llvm_type(codegen::state &state) const override;
+
+	virtual std::string get_fqn() const override;
+};
+
+struct type_object : type {
+	explicit type_object(std::shared_ptr<type_custom> object_type);
+
+	std::shared_ptr<type_custom> object_type;
+
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 
 	virtual std::string get_fqn() const override;

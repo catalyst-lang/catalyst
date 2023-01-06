@@ -1,5 +1,10 @@
 struct bla { 
        var i = 4 ; 
-        var j = 9.8
-        
-        }
+       var j = 9.8
+       //fn lskd() {}
+}
+
+fn main() {
+       var ix: bla;
+       return 0;
+}

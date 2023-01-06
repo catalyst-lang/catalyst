@@ -15,9 +15,11 @@ void codegen(codegen::state &state, ast::fn_body_block &body);
 void codegen(codegen::state &state, ast::fn_body_expr &body);
 void codegen(codegen::state &state, ast::decl_var &decl);
 void codegen(codegen::state &state, ast::decl_const &decl);
+void codegen(codegen::state &state, ast::decl_struct &decl);
 
 int proto_pass(codegen::state &state, int n, ast::decl_ptr decl);
 int proto_pass(codegen::state &state, int n, ast::decl_fn &decl);
 int proto_pass(codegen::state &state, int n, ast::decl_var &decl);
+int proto_pass(codegen::state &state, int n, ast::decl_struct &decl);
 
 } // namespace catalyst::compiler::codegen

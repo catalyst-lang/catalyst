@@ -286,7 +286,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_assignment &expr, std::sha
 llvm::Value *codegen(codegen::state &state, ast::expr_cast &expr, std::shared_ptr<type> expecting_type) {
 	auto expr_type = expr_resulting_type(state, expr.lhs);
 	auto value = codegen(state, expr.lhs);
-	return expr_type->cast_llvm_value(state, value, type::create(expr.type).get());
+	return expr_type->cast_llvm_value(state, value, type::create(state, expr.type).get());
 }
 
 } // namespace catalyst::compiler::codegen

@@ -37,11 +37,11 @@ runtime::runtime(codegen::state &state) : state(&state) {
 }
 
 void runtime::register_symbols() {
-    insert_function("foo", llvm::pointerToJITTargetAddress(&foo), type::create("i32"));
-    insert_function("bar", llvm::pointerToJITTargetAddress(&bar), type::create("i32"));
-    insert_function("baz", llvm::pointerToJITTargetAddress(&baz), type::create("i32"), { type::create("i64") });
-    insert_function("nacho", llvm::pointerToJITTargetAddress(&nacho), type::create("i32"), { type::create("f64") });
-    insert_function("pizza", llvm::pointerToJITTargetAddress(&pizza), type::create("f32"));
+    insert_function("foo", llvm::pointerToJITTargetAddress(&foo), type::create_builtin("i32"));
+    insert_function("bar", llvm::pointerToJITTargetAddress(&bar), type::create_builtin("i32"));
+    insert_function("baz", llvm::pointerToJITTargetAddress(&baz), type::create_builtin("i32"), { type::create_builtin("i64") });
+    insert_function("nacho", llvm::pointerToJITTargetAddress(&nacho), type::create_builtin("i32"), { type::create_builtin("f64") });
+    insert_function("pizza", llvm::pointerToJITTargetAddress(&pizza), type::create_builtin("f32"));
 }
 
 void runtime::insert_function(const char* name, llvm::JITTargetAddress target, const std::shared_ptr<type> &return_type) {

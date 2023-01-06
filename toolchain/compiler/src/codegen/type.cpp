@@ -5,7 +5,7 @@
 
 namespace catalyst::compiler::codegen {
 
-std::shared_ptr<type> type::create(const std::string &name) {
+std::shared_ptr<type> type::create_builtin(const std::string &name) {
 	if (name == "i8")
 		return std::make_shared<type_i8>();
 	if (name == "i16")
@@ -49,6 +49,25 @@ std::shared_ptr<type> type::create(const std::string &name) {
 	return std::make_shared<type_undefined>();
 }
 
+std::shared_ptr<type> type::create_builtin(const ast::type &ast_type) {
+	return create_builtin(ast_type.ident.name);
+}
+
+std::shared_ptr<type> type::create(codegen::state &state, const std::string &name) {
+	auto sym = state.scopes.find_named_symbol(name);
+	if (sym != nullptr) {
+		if (typeid(*sym->type) == typeid(type_struct)) {
+			return std::make_shared<type_object>(std::dynamic_pointer_cast<type_struct>(sym->type));
+		}
+	}
+
+	return create_builtin(name);
+}
+
+std::shared_ptr<type> type::create(codegen::state &state, const ast::type &ast_type) {
+	return create(state, ast_type.ident.name);
+}
+
 std::shared_ptr<type> type::create_function(const std::shared_ptr<type> &return_type) {
 	return std::make_shared<type_function>(return_type);
 }
@@ -58,19 +77,13 @@ std::shared_ptr<type> type::create_function(const std::shared_ptr<type> &return_
 	return std::make_shared<type_function>(return_type, parameters);
 }
 
-std::shared_ptr<type> type::create(const ast::type &ast_type) {
-	return create(ast_type.ident.name);
-}
-
 bool type::operator==(const type &other) const { return (this->get_fqn() == other.get_fqn()); }
 
 bool type::operator!=(const type &other) const { return (this->get_fqn() != other.get_fqn()); }
 
 std::string type::get_fqn() const { return fqn; }
 
-llvm::Value *type::cast_llvm_value(state &state, llvm::Value *value, type* to) {
-	return nullptr;
-}
+llvm::Value *type::cast_llvm_value(state &state, llvm::Value *value, type *to) { return nullptr; }
 
 bool type::is_assignable_from(const std::shared_ptr<type> &type) const { return false; }
 llvm::Value *type::create_add(state &state, llvm::Value *lhs, std::shared_ptr<type> rhs_type,
@@ -226,8 +239,8 @@ llvm::Constant *type_f80::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantFP::get(llvm::Type::getX86_FP80Ty(*state.TheContext), 0.0);
 }
 
-llvm::Value *type_primitive::cast_llvm_value(state &state, llvm::Value *value, type* to) {
-	auto p_to = dynamic_cast<type_primitive*>(to);
+llvm::Value *type_primitive::cast_llvm_value(state &state, llvm::Value *value, type *to) {
+	auto p_to = dynamic_cast<type_primitive *>(to);
 	if (p_to == nullptr) {
 		// state.report_message("Converting between types that aren't both primitives");
 		// assert(false);
@@ -300,6 +313,7 @@ llvm::Type *type_function::get_llvm_type(state &state) const {
 
 	return llvm::FunctionType::get(return_type->get_llvm_type(state), params, false);
 }
+
 std::string type_function::get_fqn() const {
 	std::string fqn = "fn(";
 	bool first = true;
@@ -315,5 +329,53 @@ std::string type_function::get_fqn() const {
 	fqn += return_type->get_fqn();
 	return fqn;
 }
+
+type_struct::type_struct(const std::string &name, std::map<std::string, std::shared_ptr<type>> const &members)
+	: type_custom("struct", name) {
+	this->members.insert(members.begin(), members.end());
+}
+
+std::shared_ptr<type> type::create_struct(const std::string &name, std::map<std::string, std::shared_ptr<type>> const &members) {
+	return std::make_shared<type_struct>(name, members);
+}
+
+llvm::Type *type_struct::get_llvm_type(state &state) const {
+	std::vector<llvm::Type *> fields;
+	for (const auto &member : members) {
+		fields.push_back(member.second->get_llvm_type(state));
+	}
+
+	return llvm::StructType::create(*state.TheContext, fields, name);
+}
+
+std::string type_struct::get_fqn() const {
+	std::string fqn = "struct(" + name + "){";
+	bool first = true;
+	for (const auto &[name, type] : members) {
+		if (!first) {
+			fqn += ",";
+		} else {
+			first = false;
+		}
+		fqn += name;
+		fqn += ":";
+		fqn += type->get_fqn();
+	}
+	fqn += "}";
+	return fqn;
+}
+
+type_object::type_object(std::shared_ptr<type_custom> object_type)
+	: type("object"), object_type(object_type) {
+}
+
+llvm::Type *type_object::get_llvm_type(state &state) const {
+	return nullptr;
+}
+
+std::string type_object::get_fqn() const {
+	return object_type->name;
+}
+
 
 } // namespace catalyst::compiler::codegen

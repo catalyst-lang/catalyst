@@ -37,67 +37,67 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_ptr e
 
 	state.report_message(report_type::error, "Expression type unsupported", *expr);
 
-	return type::create("");
+	return type::create_builtin();
 }
 
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_literal_numeric &expr, std::shared_ptr<type> expecting_type) {
 	switch (expr.classifier) {
-	case ast::numeric_classifier::unsigned_: return type::create("u64");
-	case ast::numeric_classifier::signed_: return type::create("i64");
-	case ast::numeric_classifier::size: return type::create("usize");
-	case ast::numeric_classifier::signed8: return type::create("i8");
-	case ast::numeric_classifier::unsigned8: return type::create("u8");
-	case ast::numeric_classifier::signed16: return type::create("i16");
-	case ast::numeric_classifier::unsigned16: return type::create("u16");
-	case ast::numeric_classifier::signed32: return type::create("i32");
-	case ast::numeric_classifier::unsigned32: return type::create("u32");
-	case ast::numeric_classifier::signed64: return type::create("i64");
-	case ast::numeric_classifier::unsigned64: return type::create("u64");
-	case ast::numeric_classifier::float_: return type::create("f64");
-	case ast::numeric_classifier::float16: return type::create("f16");
-	case ast::numeric_classifier::float32: return type::create("f32");
-	case ast::numeric_classifier::float64: return type::create("f64");
-	case ast::numeric_classifier::float128: return type::create("f128");
-	case ast::numeric_classifier::float80: return type::create("f80");
+	case ast::numeric_classifier::unsigned_: return type::create_builtin("u64");
+	case ast::numeric_classifier::signed_: return type::create_builtin("i64");
+	case ast::numeric_classifier::size: return type::create_builtin("usize");
+	case ast::numeric_classifier::signed8: return type::create_builtin("i8");
+	case ast::numeric_classifier::unsigned8: return type::create_builtin("u8");
+	case ast::numeric_classifier::signed16: return type::create_builtin("i16");
+	case ast::numeric_classifier::unsigned16: return type::create_builtin("u16");
+	case ast::numeric_classifier::signed32: return type::create_builtin("i32");
+	case ast::numeric_classifier::unsigned32: return type::create_builtin("u32");
+	case ast::numeric_classifier::signed64: return type::create_builtin("i64");
+	case ast::numeric_classifier::unsigned64: return type::create_builtin("u64");
+	case ast::numeric_classifier::float_: return type::create_builtin("f64");
+	case ast::numeric_classifier::float16: return type::create_builtin("f16");
+	case ast::numeric_classifier::float32: return type::create_builtin("f32");
+	case ast::numeric_classifier::float64: return type::create_builtin("f64");
+	case ast::numeric_classifier::float128: return type::create_builtin("f128");
+	case ast::numeric_classifier::float80: return type::create_builtin("f80");
 
 	case ast::numeric_classifier::none:
 		// fallthrough
 	default:
 		if (expr.fraction.has_value() || (expr.exponent.has_value() && expr.exponent < 0)) {
 			// floating point type, default to double
-			if (expecting_type == nullptr) return type::create("f64");
-			if (expecting_type->get_fqn() == "f16") return type::create("f16");
-			if (expecting_type->get_fqn() == "f32") return type::create("f32");
-			if (expecting_type->get_fqn() == "f64") return type::create("f64");
-			if (expecting_type->get_fqn() == "f80") return type::create("f80");
-			if (expecting_type->get_fqn() == "f128") return type::create("f128");
+			if (expecting_type == nullptr) return type::create_builtin("f64");
+			if (expecting_type->get_fqn() == "f16") return type::create_builtin("f16");
+			if (expecting_type->get_fqn() == "f32") return type::create_builtin("f32");
+			if (expecting_type->get_fqn() == "f64") return type::create_builtin("f64");
+			if (expecting_type->get_fqn() == "f80") return type::create_builtin("f80");
+			if (expecting_type->get_fqn() == "f128") return type::create_builtin("f128");
 		} else {
 			// integer type, default to i64
-			if (expecting_type == nullptr) return type::create("i64");
-			if (expecting_type->get_fqn() == "i8") return type::create("i8");
-			if (expecting_type->get_fqn() == "i16") return type::create("i16");
-			if (expecting_type->get_fqn() == "i32") return type::create("i32");
-			if (expecting_type->get_fqn() == "i64") return type::create("i64");
-			if (expecting_type->get_fqn() == "i128") return type::create("i128");
-			if (expecting_type->get_fqn() == "u8") return type::create("u8");
-			if (expecting_type->get_fqn() == "u16") return type::create("u16");
-			if (expecting_type->get_fqn() == "u32") return type::create("u32");
-			if (expecting_type->get_fqn() == "u64") return type::create("u64");
-			if (expecting_type->get_fqn() == "u128") return type::create("u128");
+			if (expecting_type == nullptr) return type::create_builtin("i64");
+			if (expecting_type->get_fqn() == "i8") return type::create_builtin("i8");
+			if (expecting_type->get_fqn() == "i16") return type::create_builtin("i16");
+			if (expecting_type->get_fqn() == "i32") return type::create_builtin("i32");
+			if (expecting_type->get_fqn() == "i64") return type::create_builtin("i64");
+			if (expecting_type->get_fqn() == "i128") return type::create_builtin("i128");
+			if (expecting_type->get_fqn() == "u8") return type::create_builtin("u8");
+			if (expecting_type->get_fqn() == "u16") return type::create_builtin("u16");
+			if (expecting_type->get_fqn() == "u32") return type::create_builtin("u32");
+			if (expecting_type->get_fqn() == "u64") return type::create_builtin("u64");
+			if (expecting_type->get_fqn() == "u128") return type::create_builtin("u128");
 		}
-		return type::create("i64");
+		return type::create_builtin("i64");
 	}
 }
 
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_literal_bool &expr, std::shared_ptr<type> expecting_type) {
-	return type::create("bool");
+	return type::create_builtin("bool");
 }
 
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_ident &expr, std::shared_ptr<type> expecting_type) {
 	// Look this variable up in the function.
 	auto *symbol = state.scopes.find_named_symbol(expr.ident.name);
 	if (!symbol)
-		return type::create("");
+		return type::create_builtin();
 	return symbol->type;
 }
 
@@ -116,7 +116,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_binar
 	auto rhs = expr_resulting_type(state, expr.rhs);
 
 	if (!lhs->is_valid || !rhs->is_valid)
-		return type::create("");
+		return type::create_builtin();
 
 	auto result_type = get_most_specialized_type(lhs, rhs);
 
@@ -127,7 +127,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_binar
 	case ast::expr_binary_arithmetic::op_t::div:
 		 return result_type;
 	default:
-		return type::create("");
+		return type::create_builtin();
 	}
 }
 
@@ -135,19 +135,19 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_unary
 	auto rhs = expr_resulting_type(state, expr.rhs);
 
 	if (!rhs->is_valid)
-		return type::create("");
+		return type::create_builtin();
 
 	switch (expr.op) {
 	case ast::expr_unary_arithmetic::op_t::complement:
 	case ast::expr_unary_arithmetic::op_t::negate:
-		return type::create("bool");
+		return type::create_builtin("bool");
 	default:
-		return type::create("");
+		return type::create_builtin();
 	}
 }
 
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_binary_logical &expr, std::shared_ptr<type> expecting_type) {
-	return type::create("bool");
+	return type::create_builtin("bool");
 }
 
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_call &expr, std::shared_ptr<type> expecting_type) {
@@ -155,19 +155,19 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_call 
 		auto &callee = *(ast::expr_ident *)expr.lhs.get();
 		auto sym = state.scopes.find_named_symbol(callee.ident.name);
 		if (sym == nullptr) {
-			return type::create();
+			return type::create_builtin();
 		}
-		if (!sym->type.get()->is_valid) return type::create();
+		if (!sym->type.get()->is_valid) return type::create_builtin();
 		auto type = (type_function*)sym->type.get();
 		return type->return_type;
 	} else {
-		return type::create();
+		return type::create_builtin();
 	}
 }
 
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_member_access &expr, std::shared_ptr<type> expecting_type) {
 	state.report_message(report_type::error, "expr_member_access: Not implemented");
-	return type::create("");
+	return type::create_builtin();
 }
 
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_assignment &expr, std::shared_ptr<type> expecting_type) {
@@ -175,7 +175,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_assig
 }
 
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_cast &expr, std::shared_ptr<type> expecting_type) {
-	return type::create(expr.type);
+	return type::create(state, expr.type);
 }
 
 } // namespace catalyst::compiler::codegen
