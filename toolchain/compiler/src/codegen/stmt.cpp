@@ -35,8 +35,9 @@ void codegen(codegen::state &state, ast::statement_ptr stmt) {
 void codegen(codegen::state &state, ast::statement_expr &stmt) { codegen(state, stmt.expr); }
 
 void codegen(codegen::state &state, ast::statement_return &stmt) {
-	auto expr = codegen(state, stmt.expr);
-	auto expr_type = expr_resulting_type(state, stmt.expr);
+	auto expecting_type = ((type_function*)state.current_function_symbol->type.get())->return_type;
+	auto expr = codegen(state, stmt.expr, expecting_type);
+	auto expr_type = expr_resulting_type(state, stmt.expr, expecting_type);
 
 	if (*expr_type != *((type_function *)state.current_function_symbol->type.get())->return_type) {
 		state.report_message(report_type::error, "Conflicting return type", stmt);

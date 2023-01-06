@@ -114,11 +114,11 @@ int locals_pass(codegen::state &state, int n, ast::statement_return &stmt) {
 
 	type_function *fn_type = (type_function *)state.current_function_symbol->type.get();
 
-	if (!fn_type->return_type->is_valid && expr_type->is_valid) {
+	if (!fn_type->return_type->is_valid() && expr_type->is_valid()) {
 		fn_type->return_type = expr_type;
 		return 1;
 	}
-	if (fn_type->return_type->is_valid && expr_type->is_valid &&
+	if (fn_type->return_type->is_valid() && expr_type->is_valid() &&
 	    *fn_type->return_type != *expr_type) {
 		// Mixed return types, codegen will check if this is legal
 		return 0;
@@ -190,7 +190,7 @@ int locals_pass(codegen::state &state, int n, ast::decl_ptr &decl) {
 /// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
 /// the function.  This is used for mutable variables etc.
 static llvm::AllocaInst *CreateEntryBlockAlloca(codegen::state &state, llvm::Function *the_function,
-                                                const std::string &var_name, const type &type) {
+                                                const std::string &var_name, type &type) {
 	llvm::IRBuilder<> TmpB(&the_function->getEntryBlock(), the_function->getEntryBlock().begin());
 	if (typeid(type) == typeid(type_function)) {
 		return TmpB.CreateAlloca(TmpB.getPtrTy(), nullptr, var_name);
@@ -337,7 +337,7 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 	state.current_function_symbol = &sym;
 
 	auto current_fn_type = (type_function *)sym.type.get();
-	if (!((type_function *)fn_type.get())->return_type->is_valid)
+	if (!((type_function *)fn_type.get())->return_type->is_valid())
 		((type_function *)fn_type.get())->return_type = current_fn_type->return_type;
 	if (*current_fn_type != *fn_type) {
 		sym.type = fn_type;
@@ -390,7 +390,7 @@ int proto_pass(codegen::state &state, int n, ast::decl_var &decl) {
 		state.symbol_table.try_emplace(key, &decl, nullptr, type);
 	auto &sym = res->second;
 
-	if (type->is_valid && sym.value == nullptr) {
+	if (type->is_valid() && sym.value == nullptr) {
 		llvm::IRBuilder<> TmpB(&state.init_function->getEntryBlock(), state.init_function->getEntryBlock().begin());
 		state.TheModule->getOrInsertGlobal(key.c_str(), type->get_llvm_type(state));
 		llvm::GlobalVariable *gVar = state.TheModule->getNamedGlobal(key.c_str());
@@ -411,6 +411,12 @@ void codegen(codegen::state &state, ast::decl_var &decl) {
 	auto var = state.scopes.find_named_symbol(decl.ident.name);
 	if (decl.expr.has_value() && decl.expr.value() != nullptr) {
 		codegen_assignment(state, var->value, var->type, decl.expr.value());
+	} else {
+		// set default value
+		auto default_val = var->type->get_default_llvm_value(state);
+		if (default_val) {
+			state.Builder.CreateStore(default_val, var->value);
+		}
 	}
 }
 

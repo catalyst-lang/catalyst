@@ -5,6 +5,12 @@ struct bla {
 }
 
 fn main() {
-       var ix: bla;
-       return 0;
+       var b: i32;
+       //var ix: bla;
+
+       //ix.i = 12;
+       //ix.j = 1.2;
+
+       //return ix.j;
+       return b;
 }

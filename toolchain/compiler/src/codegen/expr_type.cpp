@@ -115,7 +115,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_binar
 	auto lhs = expr_resulting_type(state, expr.lhs);
 	auto rhs = expr_resulting_type(state, expr.rhs);
 
-	if (!lhs->is_valid || !rhs->is_valid)
+	if (!lhs->is_valid() || !rhs->is_valid())
 		return type::create_builtin();
 
 	auto result_type = get_most_specialized_type(lhs, rhs);
@@ -134,7 +134,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_binar
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_unary_arithmetic &expr, std::shared_ptr<type> expecting_type) {
 	auto rhs = expr_resulting_type(state, expr.rhs);
 
-	if (!rhs->is_valid)
+	if (!rhs->is_valid())
 		return type::create_builtin();
 
 	switch (expr.op) {
@@ -157,7 +157,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_call 
 		if (sym == nullptr) {
 			return type::create_builtin();
 		}
-		if (!sym->type.get()->is_valid) return type::create_builtin();
+		if (!sym->type.get()->is_valid()) return type::create_builtin();
 		auto type = (type_function*)sym->type.get();
 		return type->return_type;
 	} else {
@@ -166,8 +166,24 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_call 
 }
 
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_member_access &expr, std::shared_ptr<type> expecting_type) {
-	state.report_message(report_type::error, "expr_member_access: Not implemented");
-	return type::create_builtin();
+	auto lhs_type = expr_resulting_type(state, expr.lhs);
+
+	if (typeid(*lhs_type) != typeid(type_object)) {
+		state.report_message(report_type::error, "Member access can only be performed on an object", *expr.lhs);
+		return nullptr;
+	}
+
+	auto lhs_object = (type_object*)lhs_type.get();
+	auto lhs_struct = lhs_object->object_type;
+
+	if (typeid(*expr.rhs) != typeid(ast::expr_ident)) {
+		state.report_message(report_type::error, "Identifier expected", *expr.rhs);
+		return nullptr;
+	}
+
+	auto ident = &((ast::expr_ident*)expr.rhs.get())->ident;
+
+	return lhs_struct->members[ident->name];
 }
 
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_assignment &expr, std::shared_ptr<type> expecting_type) {

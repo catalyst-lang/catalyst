@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <typeinfo>
+#include <iterator>
 #include <cmath>
 
 #include "expr.hpp"
@@ -123,9 +124,14 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr, std::shared_p
 	} if (llvm::isa<llvm::GlobalVariable>(symbol->value)) {
 		auto *a = (llvm::GlobalVariable *)symbol->value;
 		return state.Builder.CreateLoad(a->getValueType(), a, expr.ident.name.c_str());
-	} else {
+	}  else {
 		auto *a = (llvm::AllocaInst *)symbol->value;
-		return state.Builder.CreateLoad(a->getAllocatedType(), a, expr.ident.name.c_str());
+		if (llvm::isa<llvm::StructType>(a->getAllocatedType())) {
+			// return the pointer
+			return a;
+		} else {
+			return state.Builder.CreateLoad(a->getAllocatedType(), a, expr.ident.name.c_str());
+		}
 	}
 }
 
@@ -246,8 +252,28 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr, std::shared_pt
 }
 
 llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr, std::shared_ptr<type> expecting_type) {
-	state.report_message(report_type::error, "expr_member_access: Not implemented", expr);
-	return nullptr;
+	auto lhs_value = codegen(state, expr.lhs);
+	auto lhs_type = expr_resulting_type(state, expr.lhs);
+
+	if (typeid(*lhs_type) != typeid(type_object)) {
+		state.report_message(report_type::error, "Member access can only be performed on an object", *expr.lhs);
+		return nullptr;
+	}
+
+	auto lhs_object = (type_object*)lhs_type.get();
+	auto lhs_struct = lhs_object->object_type;
+
+	if (typeid(*expr.rhs) != typeid(ast::expr_ident)) {
+		state.report_message(report_type::error, "Identifier expected", *expr.rhs);
+		return nullptr;
+	}
+
+	auto ident = &((ast::expr_ident*)expr.rhs.get())->ident;
+	
+	int index = std::distance(std::begin(lhs_struct->members), lhs_struct->members.find(ident->name));
+
+	auto ptr = state.Builder.CreateStructGEP(lhs_struct->get_llvm_type(state), lhs_value, index);
+	return state.Builder.CreateLoad(lhs_struct->members[ident->name]->get_llvm_type(state), ptr);
 }
 
 void codegen_assignment(codegen::state &state, llvm::Value *dest_ptr,
@@ -270,6 +296,7 @@ void codegen_assignment(codegen::state &state, llvm::Value *dest_ptr,
 
 	state.Builder.CreateStore(rhs_value, dest_ptr);
 }
+
 
 llvm::Value *codegen(codegen::state &state, ast::expr_assignment &expr, std::shared_ptr<type> expecting_type) {
 	auto lvalue = get_lvalue(state, expr.lhs);
