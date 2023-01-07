@@ -127,8 +127,13 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr, std::shared_p
 	}  else {
 		auto *a = (llvm::AllocaInst *)symbol->value;
 		if (llvm::isa<llvm::StructType>(a->getAllocatedType())) {
-			// return the pointer
-			return a;
+			if (expecting_type == nullptr) {
+				// return the pointer
+				return a;
+			} else if (typeid(*expecting_type) == typeid(type_object)) {
+				auto *a_struct = (type_struct*)symbol->type.get();
+				return state.Builder.CreateLoad(a_struct->get_llvm_type(state), a);
+			}
 		} else {
 			return state.Builder.CreateLoad(a->getAllocatedType(), a, expr.ident.name.c_str());
 		}
@@ -269,10 +274,18 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr, std::
 	}
 
 	auto ident = &((ast::expr_ident*)expr.rhs.get())->ident;
-	
+
 	int index = std::distance(std::begin(lhs_struct->members), lhs_struct->members.find(ident->name));
 
 	auto ptr = state.Builder.CreateStructGEP(lhs_struct->get_llvm_type(state), lhs_value, index);
+	
+	auto rhs_type = lhs_struct->members[ident->name];
+	if (typeid(*rhs_type) == typeid(type_object) && (!expecting_type || typeid(*expecting_type) != typeid(type_object))) {
+		// member is a struct or class, return the pointer if we don't request the
+		// object value itself
+		return ptr;
+	}
+	
 	return state.Builder.CreateLoad(lhs_struct->members[ident->name]->get_llvm_type(state), ptr);
 }
 

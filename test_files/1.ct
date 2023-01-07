@@ -1,16 +1,36 @@
 struct bla { 
-       var i = 4 ; 
+       var i = 4
        var j = 9.8
        //fn lskd() {}
+       var g: gleam
 }
 
-fn main() {
-       var b: i32;
-       //var ix: bla;
+struct gleam {
+       var io = true
+       var poeder = 3
+       var zz: test1
+}
 
-       //ix.i = 12;
-       //ix.j = 1.2;
+struct test1{ var b: i8; var c: i8; var d: i32; var e: i16 }
+
+fn main() {
+       //var b: i32;
+       var ix: bla;
+
+       //var ksdfj: gleam
+
+       ix.g.poeder = 888;
+       ix.j = 1.2;
+       ix.g.zz.b = 16
+       ix.g.zz.c = 32
+       ix.g.zz.d = 0
+       ix.g.zz.e = 0
+
+       var k = ix.j;
+
+       //ksdfj.poeder = 9
 
        //return ix.j;
-       return b;
+       //return ix.g.poeder;
+       return ix.g.zz;
 }

@@ -34,7 +34,10 @@ int proto_pass(codegen::state &state, int n, ast::decl_struct &decl) {
 	auto &sym = res->second;
 
 	if (*sym.type != *struct_type) {
-		sym.type = struct_type;
+		// We can't just reassign sym.type to struct_type, as there might be references to the
+		// structure pointed to by sym.type at this point.
+		// We only want one instance of type_struct to ever exist per definition.
+		((type_struct*)sym.type.get())->copy_from(*(type_struct*)struct_type.get());
 		changed_num = 1;
 	}
 

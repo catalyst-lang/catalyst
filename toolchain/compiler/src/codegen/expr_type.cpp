@@ -169,8 +169,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_membe
 	auto lhs_type = expr_resulting_type(state, expr.lhs);
 
 	if (typeid(*lhs_type) != typeid(type_object)) {
-		state.report_message(report_type::error, "Member access can only be performed on an object", *expr.lhs);
-		return nullptr;
+		return type::create_builtin();
 	}
 
 	auto lhs_object = (type_object*)lhs_type.get();
@@ -178,7 +177,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_membe
 
 	if (typeid(*expr.rhs) != typeid(ast::expr_ident)) {
 		state.report_message(report_type::error, "Identifier expected", *expr.rhs);
-		return nullptr;
+		return type::create_builtin();
 	}
 
 	auto ident = &((ast::expr_ident*)expr.rhs.get())->ident;

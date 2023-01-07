@@ -354,7 +354,7 @@ llvm::Type *type_struct::get_llvm_type(state &state) {
 			fields.push_back(member.second->get_llvm_type(state));
 		}
 
-		structType = llvm::StructType::create(*state.TheContext, fields, name);
+		structType = llvm::StructType::create(*state.TheContext, fields, name, true);
 	}
 	return structType;
 }
@@ -383,13 +383,19 @@ bool type_struct::is_valid() {
 	return true;
 }
 
+void type_struct::copy_from(type_struct &other) {
+	this->name = other.name;
+	this->members.clear();
+	this->members.insert(other.members.begin(), other.members.end());
+}
+
 
 type_object::type_object(std::shared_ptr<type_custom> object_type)
 	: type("object"), object_type(object_type) {
 }
 
 llvm::Type *type_object::get_llvm_type(state &state) {
-	return nullptr;
+	return object_type->get_llvm_type(state);
 }
 
 std::string type_object::get_fqn() const {

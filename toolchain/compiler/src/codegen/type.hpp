@@ -281,6 +281,8 @@ struct type_struct : type_custom {
 
 	virtual std::string get_fqn() const override;
 
+	void copy_from(type_struct &other);
+
 	private:
 	llvm::StructType* structType = nullptr; 
 };
