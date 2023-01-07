@@ -13,12 +13,19 @@ struct gleam {
 
 struct test1{ var b: i8; var c: i8; var d: i32; var e: i16 }
 
-fn main() {
+fn get() {
        var a: bla;
 
        a.i = 3
        a.j = 1.1
        a.g.poeder = 7779
+
+       return a
+}
+
+fn main() {
+      
+      var a = get()
 
        var b = a
 

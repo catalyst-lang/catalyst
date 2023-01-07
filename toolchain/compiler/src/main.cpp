@@ -40,7 +40,7 @@ struct cli_options {
 };
 
 int main(const cli_options &opts) {
-	auto result = compile(opts.input.c_str(), opts.compiler_options);
+	auto result = compile_file(opts.input.c_str(), opts.compiler_options);
 
 	if (opts.run) {
 		auto ret = run(result);
