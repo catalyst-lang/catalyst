@@ -17,6 +17,7 @@ struct type;
 namespace catalyst::compiler::codegen {
 
 struct member {
+	member(const std::string &name, std::shared_ptr<type> type) : name(name), type(type) {}
 	std::string name;
 	std::shared_ptr<type> type;
 };
