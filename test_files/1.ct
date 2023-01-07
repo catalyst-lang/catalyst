@@ -14,34 +14,17 @@ struct gleam {
 struct test1{ var b: i8; var c: i8; var d: i32; var e: i16 }
 
 fn main() {
-       //var b: i32;
-       var ix: bla;
+       var a: bla;
 
-       //var ksdfj: gleam
+       a.i = 3
+       a.j = 1.1
+       a.g.poeder = 7779
 
-       ix.i = 777
+       var b = a
 
-       ix.g.poeder = 888;
-       ix.j = 1.2;
-       ix.g.zz.b = 16
-       ix.g.zz.c = 32
-       ix.g.zz.d = 0
-       ix.g.zz.e = 0
+       b.i = 10
+       b.j = 44.44
+       b.g.poeder = 6669
 
-       var k = ix.j;
-
-       //ksdfj.poeder = 9
-
-       //return ix.j;
-       //return ix.g.poeder;
-       //return ix.g.zz.c;
-
-       if (ix.i) {
-              return ix.i
-       } else {
-              ix.i = 12345
-              return 3
-       }
-
-       return 31
+       return b.g.poeder
 }

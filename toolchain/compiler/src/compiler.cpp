@@ -69,7 +69,16 @@ compile_result compile(catalyst::ast::translation_unit &tu, options options) {
 	return result;
 }
 
-compile_result compile(const std::string &filename, options options) {
+compile_result compile_string(const std::string &string, options options) {
+	auto ast = parser::parse_string(string);
+	if (ast.has_value()) {
+		return compile(ast.value(), options);
+	} else {
+		return compile_result::create_failed();
+	}
+}
+
+compile_result compile_file(const std::string &filename, options options) {
 	auto ast = parser::parse_filename(filename);
 	if (ast.has_value()) {
 		return compile(ast.value(), options);

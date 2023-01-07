@@ -35,7 +35,8 @@ struct compile_result {
 	}
 };
 
-compile_result compile(const std::string &string, options);
+compile_result compile_file(const std::string &filename, options);
+compile_result compile_string(const std::string &string, options);
 compile_result compile(catalyst::ast::translation_unit &tu, options);
 
 uint64_t run(compile_result &);

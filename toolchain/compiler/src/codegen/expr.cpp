@@ -111,9 +111,10 @@ llvm::Value *codegen(codegen::state &state, ast::expr_literal_bool &expr, std::s
 llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr, std::shared_ptr<type> expecting_type) {
 	// Look this variable up in the function.
 	auto *symbol = state.scopes.find_named_symbol(expr.ident.name);
-	if (!symbol)
+	if (!symbol) {
 		state.report_message(report_type::error, "Unknown variable name", expr);
-		
+		return nullptr;
+	}
 
 	if (llvm::isa<llvm::Function>(symbol->value)) {
 		auto *a = (llvm::Function *)symbol->value;
@@ -121,7 +122,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr, std::shared_p
 		auto *container = state.Builder.CreateAlloca(llvm::PointerType::get(*state.TheContext, 0));
 		state.Builder.CreateStore(a, container);
 		return state.Builder.CreateLoad(container->getAllocatedType(), container, expr.ident.name.c_str());
-	} if (llvm::isa<llvm::GlobalVariable>(symbol->value)) {
+	} else if (llvm::isa<llvm::GlobalVariable>(symbol->value)) {
 		auto *a = (llvm::GlobalVariable *)symbol->value;
 		return state.Builder.CreateLoad(a->getValueType(), a, expr.ident.name.c_str());
 	}  else {
@@ -133,6 +134,9 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr, std::shared_p
 			} else if (typeid(*expecting_type) == typeid(type_object)) {
 				auto *a_struct = (type_struct*)symbol->type.get();
 				return state.Builder.CreateLoad(a_struct->get_llvm_type(state), a);
+			} else {
+				state.report_message(report_type::error, "Unknown cast expected", expr);
+				return nullptr;
 			}
 		} else {
 			return state.Builder.CreateLoad(a->getAllocatedType(), a, expr.ident.name.c_str());
