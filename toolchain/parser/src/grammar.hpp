@@ -330,9 +330,14 @@ struct statement_if {
 	                                          dsl::recurse<struct statement_block> +
 	                                          dsl::opt(kw_else >> dsl::recurse<struct statement>);
 	static constexpr auto value =
-		lexy::callback<ast::statement_ptr>([](auto cond, auto end, auto then, auto else_) {
-			return std::make_shared<ast::statement_if>(nullptr, end, cond, then, else_);
-		});
+		lexy::callback<ast::statement_ptr>(
+			[](auto cond, auto end, auto then, lexy::nullopt &&else_) {
+				return std::make_shared<ast::statement_if>(nullptr, end, cond, then, std::nullopt);
+			},
+			[](auto cond, auto end, auto then, auto else_) {
+				return std::make_shared<ast::statement_if>(nullptr, end, cond, then, else_);
+			}
+		);
 };
 
 struct statement_for {

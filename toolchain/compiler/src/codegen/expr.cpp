@@ -275,18 +275,18 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr, std::
 
 	auto ident = &((ast::expr_ident*)expr.rhs.get())->ident;
 
-	int index = std::distance(std::begin(lhs_struct->members), lhs_struct->members.find(ident->name));
+	int index = lhs_struct->index_of(ident->name);
 
 	auto ptr = state.Builder.CreateStructGEP(lhs_struct->get_llvm_type(state), lhs_value, index);
 	
-	auto rhs_type = lhs_struct->members[ident->name];
+	auto rhs_type = lhs_struct->members[index].type;
 	if (typeid(*rhs_type) == typeid(type_object) && (!expecting_type || typeid(*expecting_type) != typeid(type_object))) {
 		// member is a struct or class, return the pointer if we don't request the
 		// object value itself
 		return ptr;
 	}
 	
-	return state.Builder.CreateLoad(lhs_struct->members[ident->name]->get_llvm_type(state), ptr);
+	return state.Builder.CreateLoad(rhs_type->get_llvm_type(state), ptr);
 }
 
 void codegen_assignment(codegen::state &state, llvm::Value *dest_ptr,

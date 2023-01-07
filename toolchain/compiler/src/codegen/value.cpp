@@ -29,8 +29,7 @@ llvm::Value *get_lvalue(codegen::state &state, ast::expr_ptr expr) {
 
 		auto ident = &((ast::expr_ident *)expr_ma->rhs.get())->ident;
 
-		int index =
-			std::distance(std::begin(lhs_struct->members), lhs_struct->members.find(ident->name));
+		int index = lhs_struct->index_of(ident->name);
 
 		auto ptr =
 			state.Builder.CreateStructGEP(lhs_struct->get_llvm_type(state), lhs_value, index);

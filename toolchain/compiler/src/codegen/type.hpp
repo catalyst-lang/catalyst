@@ -16,6 +16,11 @@ struct type;
 
 namespace catalyst::compiler::codegen {
 
+struct member {
+	std::string name;
+	std::shared_ptr<type> type;
+};
+
 struct type {
 	/// Specialization score is a comparable score that specifies the amount of specialization
 	/// of this type. For instance, i32 has a higher score than i16.
@@ -38,7 +43,7 @@ struct type {
 	create_function(const std::shared_ptr<type> &return_type,
 	                std::vector<std::shared_ptr<type>> const &parameters);
 		static std::shared_ptr<type>
-	create_struct(const std::string &name, std::map<std::string, std::shared_ptr<type>> const &members);
+	create_struct(const std::string &name, std::vector<member> const &members);
 
 	virtual llvm::Type *get_llvm_type(codegen::state &state) = 0;
 	virtual llvm::Value *cast_llvm_value(codegen::state &state, llvm::Value *value, type* to);
@@ -268,12 +273,15 @@ struct type_function : type {
 
 struct type_custom : type {
 	type_custom(std::string fqn, std::string name) : type(fqn), name(name) {}
+
 	std::string name;
-	std::map<std::string, std::shared_ptr<type>> members;
+	std::vector<member> members;
+
+	int index_of(const std::string &name);
 };
 
 struct type_struct : type_custom {
-	explicit type_struct(const std::string &name, std::map<std::string, std::shared_ptr<type>> const &members);
+	explicit type_struct(const std::string &name, std::vector<member> const &members);
 
 	bool is_valid() override;
 

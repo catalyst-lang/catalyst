@@ -53,7 +53,18 @@ void codegen(codegen::state &state, ast::statement_return &stmt) {
 	}
 
 	state.Builder.CreateStore(expr, state.current_return);
+	state.Builder.CreateBr(state.current_return_block);
 }
+
+void codegen(codegen::state &state, std::vector<ast::statement_ptr> const &statements) {
+	for (auto &stmt : statements) {
+		if (state.Builder.GetInsertBlock()->getTerminator()) {
+			state.report_message(report_type::warning, "Statements after return", *stmt);
+		} else {
+			codegen(state, stmt);
+		}
+	}
+} 
 
 void codegen(codegen::state &state, ast::statement_block &stmt) {
 	// llvm::BasicBlock *BB = llvm::BasicBlock::Create(*state.TheContext, "stmt_block",
@@ -63,9 +74,7 @@ void codegen(codegen::state &state, ast::statement_block &stmt) {
 	std::stringstream sstream;
 	sstream << std::hex << (size_t)(&stmt);
 	state.scopes.enter(sstream.str());
-	for (auto &stmt : stmt.statements) {
-		codegen(state, stmt);
-	}
+	codegen(state, stmt.statements);
 	state.scopes.leave();
 }
 
@@ -97,8 +106,8 @@ void codegen(codegen::state &state, ast::statement_if &stmt) {
 	// eend of the function.
 	llvm::BasicBlock *ThenBB =
 		llvm::BasicBlock::Create(*state.TheContext, "then", state.current_function);
-	llvm::BasicBlock *ElseBB = llvm::BasicBlock::Create(*state.TheContext, "else");
 	llvm::BasicBlock *MergeBB = llvm::BasicBlock::Create(*state.TheContext, "ifcont");
+	llvm::BasicBlock *ElseBB = llvm::BasicBlock::Create(*state.TheContext, "else");
 
 	state.Builder.CreateCondBr(cond_val, ThenBB, ElseBB);
 
@@ -109,19 +118,19 @@ void codegen(codegen::state &state, ast::statement_if &stmt) {
 	// if (!ThenV)
 	//	return;
 
-	state.Builder.CreateBr(MergeBB);
+	if (!state.Builder.GetInsertBlock()->getTerminator())
+		state.Builder.CreateBr(MergeBB);
 	// Codegen of 'Then' can change the current block, update ThenBB for the PHI.
 	ThenBB = state.Builder.GetInsertBlock();
 
 	// Emit else block.
 	state.current_function->getBasicBlockList().push_back(ElseBB);
 	state.Builder.SetInsertPoint(ElseBB);
-
-	codegen(state, stmt.else_.value());
-	// if (!ElseV)
-	//	return;
-
-	state.Builder.CreateBr(MergeBB);
+	if (stmt.else_.has_value()) {
+		codegen(state, stmt.else_.value());
+	}
+	if (!state.Builder.GetInsertBlock()->getTerminator())
+		state.Builder.CreateBr(MergeBB);
 	// codegen of 'Else' can change the current block, update ElseBB for the PHI.
 	ElseBB = state.Builder.GetInsertBlock();
 

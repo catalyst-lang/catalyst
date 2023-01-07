@@ -35,9 +35,9 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_va
 }
 
 std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_struct &decl) {
-    std::map<std::string, std::shared_ptr<type>> members;
+    std::vector<member> members;
 	for (const auto &mmbr : decl.declarations) {
-		members[mmbr->ident.name] = decl_get_type(state, mmbr);
+		members.emplace_back(mmbr->ident.name, decl_get_type(state, mmbr));
 	}
     return type::create_struct(decl.ident.name, members);
 }

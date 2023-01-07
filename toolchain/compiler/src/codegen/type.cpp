@@ -338,12 +338,19 @@ bool type_function::is_valid() {
 	return true;
 }
 
-type_struct::type_struct(const std::string &name, std::map<std::string, std::shared_ptr<type>> const &members)
-	: type_custom("struct", name) {
-	this->members.insert(members.begin(), members.end());
+int type_custom::index_of(const std::string &name) {
+	for (int i = 0; i < members.size(); i++) {
+		if (members[i].name == name) return i;
+	}
+	return -1;	
 }
 
-std::shared_ptr<type> type::create_struct(const std::string &name, std::map<std::string, std::shared_ptr<type>> const &members) {
+type_struct::type_struct(const std::string &name, std::vector<member> const &members)
+	: type_custom("struct", name) {
+	this->members = members;
+}
+
+std::shared_ptr<type> type::create_struct(const std::string &name, std::vector<member> const &members) {
 	return std::make_shared<type_struct>(name, members);
 }
 
@@ -351,7 +358,7 @@ llvm::Type *type_struct::get_llvm_type(state &state) {
 	if (structType == nullptr) {
 		std::vector<llvm::Type *> fields;
 		for (const auto &member : members) {
-			fields.push_back(member.second->get_llvm_type(state));
+			fields.push_back(member.type->get_llvm_type(state));
 		}
 
 		structType = llvm::StructType::create(*state.TheContext, fields, name, true);
@@ -386,7 +393,7 @@ bool type_struct::is_valid() {
 void type_struct::copy_from(type_struct &other) {
 	this->name = other.name;
 	this->members.clear();
-	this->members.insert(other.members.begin(), other.members.end());
+	this->members = other.members;
 }
 
 

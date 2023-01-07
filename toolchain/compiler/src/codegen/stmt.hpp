@@ -14,5 +14,6 @@ void codegen(codegen::state &state, ast::statement_return &stmt);
 void codegen(codegen::state &state, ast::statement_expr &stmt);
 void codegen(codegen::state &state, ast::statement_if &stmt);
 void codegen(codegen::state &state, ast::statement_block &stmt);
+void codegen(codegen::state &state, std::vector<ast::statement_ptr> const &statements);
 
 } // namespace catalyst::compiler::codegen

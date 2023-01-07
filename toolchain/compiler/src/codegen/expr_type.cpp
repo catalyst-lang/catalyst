@@ -181,8 +181,9 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_membe
 	}
 
 	auto ident = &((ast::expr_ident*)expr.rhs.get())->ident;
+	int index = lhs_struct->index_of(ident->name);
 
-	return lhs_struct->members[ident->name];
+	return lhs_struct->members[index].type;
 }
 
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_assignment &expr, std::shared_ptr<type> expecting_type) {

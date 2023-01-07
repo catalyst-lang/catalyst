@@ -246,7 +246,9 @@ void codegen(codegen::state &state, ast::decl_fn &decl) {
 
 	codegen(state, decl.body);
 
-	state.Builder.CreateBr(state.current_return_block);
+	if (!state.Builder.GetInsertBlock()->getTerminator()) {
+		state.Builder.CreateBr(state.current_return_block);
+	}
 
 	state.current_return_block->insertInto(the_function);
 	state.Builder.SetInsertPoint(state.current_return_block);
@@ -295,9 +297,7 @@ void codegen(codegen::state &state, ast::fn_body_expr &body) {
 }
 
 void codegen(codegen::state &state, ast::fn_body_block &body) {
-	for (auto &stmt : body.statements) {
-		codegen(state, stmt);
-	}
+	codegen(state, body.statements);
 }
 
 int proto_pass(codegen::state &state, int n, ast::decl_ptr decl) {
