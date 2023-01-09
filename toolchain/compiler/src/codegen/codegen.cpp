@@ -36,7 +36,7 @@ void codegen(codegen::state &state, ast::translation_unit &tu) {
 	}
 
 	for (const auto &[k, v] : state.symbol_table) {
-		std::cout << k << ": " << v.type->get_fqn() << std::endl;
+		//std::cout << k << ": " << v.type->get_fqn() << std::endl;
 		if (v.type == nullptr || !v.type->is_valid()) {
 			state.report_message(report_type::error,
 			                     "No type has been defined and can't be inferred", *v.ast_node);

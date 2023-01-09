@@ -39,6 +39,8 @@ compile_result compile_file(const std::string &filename, options);
 compile_result compile_string(const std::string &string, options);
 compile_result compile(catalyst::ast::translation_unit &tu, options);
 
+void compiler_debug_print(compile_result &);
+
 uint64_t run(compile_result &);
 
 } // namespace catalyst

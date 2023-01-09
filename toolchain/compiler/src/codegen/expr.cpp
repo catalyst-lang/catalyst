@@ -1,11 +1,11 @@
 // Copyright (c) 2021-2022 Bas du Pré and Catalyst contributors
 // SPDX-License-Identifier: MIT
 
+#include <cmath>
 #include <iostream>
+#include <iterator>
 #include <sstream>
 #include <typeinfo>
-#include <iterator>
-#include <cmath>
 
 #include "expr.hpp"
 #include "expr_type.hpp"
@@ -18,7 +18,8 @@ namespace catalyst::compiler::codegen {
 // but the way that would work in C++ is so ugly, it introduces more overhead
 // and bloat to the codebase than just this one ugly dispatch function.
 // Feel free to refactor the AST and introduce an _elegant_ visitation pattern.
-llvm::Value *codegen(codegen::state &state, ast::expr_ptr expr, std::shared_ptr<type> expecting_type) {
+llvm::Value *codegen(codegen::state &state, ast::expr_ptr expr,
+                     std::shared_ptr<type> expecting_type) {
 	if (typeid(*expr) == typeid(ast::expr_ident)) {
 		return codegen(state, *(ast::expr_ident *)expr.get(), expecting_type);
 	} else if (typeid(*expr) == typeid(ast::expr_literal_numeric)) {
@@ -46,7 +47,8 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ptr expr, std::shared_ptr<
 	return {nullptr};
 }
 
-llvm::Value *codegen(codegen::state &state, ast::expr_literal_numeric &expr, std::shared_ptr<type> expecting_type) {
+llvm::Value *codegen(codegen::state &state, ast::expr_literal_numeric &expr,
+                     std::shared_ptr<type> expecting_type) {
 	auto expr_type = expr_resulting_type(state, expr);
 	std::shared_ptr<type> definitive_type;
 	if (expecting_type != nullptr && expecting_type->is_assignable_from(expr_type)) {
@@ -84,15 +86,21 @@ llvm::Value *codegen(codegen::state &state, ast::expr_literal_numeric &expr, std
 		fstr << expr.fraction.value();
 	}
 	llvm::APFloat f = llvm::APFloat(0.0);
-	auto* semantics = &llvm::APFloat::IEEEhalf();
-	if (definitive_type->get_fqn() == "f16") semantics = &llvm::APFloat::IEEEhalf();
-	else if (definitive_type->get_fqn() == "f32") semantics = &llvm::APFloat::IEEEsingle();
-	else if (definitive_type->get_fqn() == "f64") semantics = &llvm::APFloat::IEEEdouble();
-	else if (definitive_type->get_fqn() == "f128") semantics = &llvm::APFloat::IEEEquad();
-	else if (definitive_type->get_fqn() == "f80") semantics = &llvm::APFloat::x87DoubleExtended();
+	auto *semantics = &llvm::APFloat::IEEEhalf();
+	if (definitive_type->get_fqn() == "f16")
+		semantics = &llvm::APFloat::IEEEhalf();
+	else if (definitive_type->get_fqn() == "f32")
+		semantics = &llvm::APFloat::IEEEsingle();
+	else if (definitive_type->get_fqn() == "f64")
+		semantics = &llvm::APFloat::IEEEdouble();
+	else if (definitive_type->get_fqn() == "f128")
+		semantics = &llvm::APFloat::IEEEquad();
+	else if (definitive_type->get_fqn() == "f80")
+		semantics = &llvm::APFloat::x87DoubleExtended();
 	f = llvm::APFloat(*semantics, fstr.str());
 
-	if (expr.sign < 0) f.changeSign();
+	if (expr.sign < 0)
+		f.changeSign();
 	if (expr.exponent.has_value()) {
 		auto apexp = llvm::APFloat(pow(10, (double)expr.exponent.value()));
 		bool losesInfo;
@@ -101,14 +109,15 @@ llvm::Value *codegen(codegen::state &state, ast::expr_literal_numeric &expr, std
 	}
 
 	return llvm::ConstantFP::get(*state.TheContext, f);
-
 }
 
-llvm::Value *codegen(codegen::state &state, ast::expr_literal_bool &expr, std::shared_ptr<type> expecting_type) {
+llvm::Value *codegen(codegen::state &state, ast::expr_literal_bool &expr,
+                     std::shared_ptr<type> expecting_type) {
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(1, expr.value));
 }
 
-llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr, std::shared_ptr<type> expecting_type) {
+llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr,
+                     std::shared_ptr<type> expecting_type) {
 	// Look this variable up in the function.
 	auto *symbol = state.scopes.find_named_symbol(expr.ident.name);
 	if (!symbol) {
@@ -118,33 +127,35 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr, std::shared_p
 
 	if (llvm::isa<llvm::Function>(symbol->value)) {
 		auto *a = (llvm::Function *)symbol->value;
-		//return state.Builder.CreateLoad(a->getType(), a, expr.ident.name.c_str());
+		// return state.Builder.CreateLoad(a->getType(), a, expr.ident.name.c_str());
 		auto *container = state.Builder.CreateAlloca(llvm::PointerType::get(*state.TheContext, 0));
 		state.Builder.CreateStore(a, container);
-		return state.Builder.CreateLoad(container->getAllocatedType(), container, expr.ident.name.c_str());
+		return state.Builder.CreateLoad(container->getAllocatedType(), container,
+		                                expr.ident.name.c_str());
 	} else if (llvm::isa<llvm::GlobalVariable>(symbol->value)) {
 		auto *a = (llvm::GlobalVariable *)symbol->value;
 		return state.Builder.CreateLoad(a->getValueType(), a, expr.ident.name.c_str());
-	}  else {
+	} else {
 		auto *a = (llvm::AllocaInst *)symbol->value;
 		if (llvm::isa<llvm::StructType>(a->getAllocatedType())) {
-			if (expecting_type == nullptr) {
-				// return the pointer
-				return a;
-			} else if (typeid(*expecting_type) == typeid(type_object)) {
-				auto *a_struct = (type_struct*)symbol->type.get();
-				return state.Builder.CreateLoad(a_struct->get_llvm_type(state), a);
-			} else {
-				state.report_message(report_type::error, "Unknown cast expected", expr);
-				return nullptr;
-			}
+			// if (expecting_type == nullptr) {
+			//  return the pointer
+			return a;
+			//} else if (typeid(*expecting_type) == typeid(type_object)) {
+			//	auto *a_struct = (type_struct*)symbol->type.get();
+			//	return state.Builder.CreateLoad(a_struct->get_llvm_type(state), a);
+			//} else {
+			//	state.report_message(report_type::error, "Unknown cast expected", expr);
+			//	return nullptr;
+			//}
 		} else {
 			return state.Builder.CreateLoad(a->getAllocatedType(), a, expr.ident.name.c_str());
 		}
 	}
 }
 
-llvm::Value *codegen(codegen::state &state, ast::expr_binary_arithmetic &expr, std::shared_ptr<type> expecting_type) {
+llvm::Value *codegen(codegen::state &state, ast::expr_binary_arithmetic &expr,
+                     std::shared_ptr<type> expecting_type) {
 	auto lhs = codegen(state, expr.lhs);
 	auto rhs = codegen(state, expr.rhs);
 
@@ -183,7 +194,8 @@ llvm::Value *codegen(codegen::state &state, ast::expr_binary_arithmetic &expr, s
 	}
 }
 
-llvm::Value *codegen(codegen::state &state, ast::expr_unary_arithmetic &expr, std::shared_ptr<type> expecting_type) {
+llvm::Value *codegen(codegen::state &state, ast::expr_unary_arithmetic &expr,
+                     std::shared_ptr<type> expecting_type) {
 	auto rhs = codegen(state, expr.rhs);
 
 	if (rhs == nullptr)
@@ -200,12 +212,14 @@ llvm::Value *codegen(codegen::state &state, ast::expr_unary_arithmetic &expr, st
 	}
 }
 
-llvm::Value *codegen(codegen::state &state, ast::expr_binary_logical &expr, std::shared_ptr<type> expecting_type) {
+llvm::Value *codegen(codegen::state &state, ast::expr_binary_logical &expr,
+                     std::shared_ptr<type> expecting_type) {
 	state.report_message(report_type::error, "expr_binary_logical: Not implemented", expr);
 	return nullptr;
 }
 
-llvm::Value *codegen(codegen::state &state, ast::expr_call &expr, std::shared_ptr<type> expecting_type) {
+llvm::Value *codegen(codegen::state &state, ast::expr_call &expr,
+                     std::shared_ptr<type> expecting_type) {
 	if (typeid(*expr.lhs) == typeid(ast::expr_ident)) {
 		auto &callee = *(ast::expr_ident *)expr.lhs.get();
 		// Look up the name in the global module table.
@@ -225,7 +239,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr, std::shared_pt
 			str << "expected " << type->parameters.size() << ", but got " << expr.parameters.size();
 
 			state.report_message(report_type::error, "Incorrect number of arguments passed", callee,
-								str.str());
+			                     str.str());
 			return nullptr;
 		}
 
@@ -237,39 +251,56 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr, std::shared_pt
 				// TODO: warn if casting happens
 				arg = arg_type->cast_llvm_value(state, arg, type->parameters[i].get());
 			}
+
 			ArgsV.push_back(arg);
 			if (!ArgsV.back())
 				return nullptr;
 		}
 
+		llvm::CallInst *callinstr = nullptr;
 		if (llvm::isa<llvm::Function>(sym->value)) {
 			// This is a straight function value
-			return state.Builder.CreateCall(CalleeF, ArgsV, "calltmp");
+			callinstr = state.Builder.CreateCall(CalleeF, ArgsV, "calltmp");
 		} else if (llvm::isa<llvm::AllocaInst>(sym->value)) {
 			// This is a function pointer
-			llvm::Value* ptr = state.Builder.CreateLoad(sym->value->getType(), sym->value);
-			llvm::FunctionType* fty = (llvm::FunctionType*)sym->type->get_llvm_type(state);
-			return state.Builder.CreateCall(fty, ptr, ArgsV, "ptrcalltmp");
+			llvm::Value *ptr = state.Builder.CreateLoad(sym->value->getType(), sym->value);
+			llvm::FunctionType *fty = (llvm::FunctionType *)sym->type->get_llvm_type(state);
+			callinstr = state.Builder.CreateCall(fty, ptr, ArgsV, "ptrcalltmp");
 		} else {
-			state.report_message(report_type::error, "unsupported base type for function call", expr);
+			state.report_message(report_type::error, "unsupported base type for function call",
+			                     expr);
 			return nullptr;
 		}
+
+		for (unsigned i = 0, e = expr.parameters.size(); i != e; ++i) {
+			auto arg_type = expr_resulting_type(state, expr.parameters[i], type->parameters[i]);
+			if (typeid(*arg_type) == typeid(type_object)) {
+				auto to = (type_object *)arg_type.get();
+				if (typeid(*to->object_type) == typeid(type_struct)) {
+					callinstr->addParamAttr(i, llvm::Attribute::NoUndef);
+					callinstr->addParamAttr(i, llvm::Attribute::getWithByValType(*state.TheContext, to->object_type->get_llvm_type(state)));
+				}
+			}
+		}
+		return callinstr;
 	} else {
 		state.report_message(report_type::error, "Virtual functions not implemented", expr);
 		return nullptr;
 	}
 }
 
-llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr, std::shared_ptr<type> expecting_type) {
+llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
+                     std::shared_ptr<type> expecting_type) {
 	auto lhs_value = codegen(state, expr.lhs);
 	auto lhs_type = expr_resulting_type(state, expr.lhs);
 
 	if (typeid(*lhs_type) != typeid(type_object)) {
-		state.report_message(report_type::error, "Member access can only be performed on an object", *expr.lhs);
+		state.report_message(report_type::error, "Member access can only be performed on an object",
+		                     *expr.lhs);
 		return nullptr;
 	}
 
-	auto lhs_object = (type_object*)lhs_type.get();
+	auto lhs_object = (type_object *)lhs_type.get();
 	auto lhs_struct = lhs_object->object_type;
 
 	if (typeid(*expr.rhs) != typeid(ast::expr_ident)) {
@@ -277,19 +308,20 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr, std::
 		return nullptr;
 	}
 
-	auto ident = &((ast::expr_ident*)expr.rhs.get())->ident;
+	auto ident = &((ast::expr_ident *)expr.rhs.get())->ident;
 
 	int index = lhs_struct->index_of(ident->name);
 
 	auto ptr = state.Builder.CreateStructGEP(lhs_struct->get_llvm_type(state), lhs_value, index);
-	
+
 	auto rhs_type = lhs_struct->members[index].type;
-	if (typeid(*rhs_type) == typeid(type_object) && (!expecting_type || typeid(*expecting_type) != typeid(type_object))) {
+	if (typeid(*rhs_type) == typeid(type_object) &&
+	    (!expecting_type || typeid(*expecting_type) != typeid(type_object))) {
 		// member is a struct or class, return the pointer if we don't request the
 		// object value itself
 		return ptr;
 	}
-	
+
 	return state.Builder.CreateLoad(rhs_type->get_llvm_type(state), ptr);
 }
 
@@ -311,11 +343,21 @@ void codegen_assignment(codegen::state &state, llvm::Value *dest_ptr,
 		}
 	}
 
+	if (typeid(*rhs_type) == typeid(type_object)) {
+		auto to = (type_object *)rhs_type.get();
+		if (typeid(*to->object_type) == typeid(type_struct)) {	
+			auto size = to->object_type->get_sizeof(state);
+			state.Builder.CreateMemCpy(dest_ptr, llvm::MaybeAlign(0), rhs_value, 
+				llvm::MaybeAlign(0), size);
+			return;
+		}
+	}
+
 	state.Builder.CreateStore(rhs_value, dest_ptr);
 }
 
-
-llvm::Value *codegen(codegen::state &state, ast::expr_assignment &expr, std::shared_ptr<type> expecting_type) {
+llvm::Value *codegen(codegen::state &state, ast::expr_assignment &expr,
+                     std::shared_ptr<type> expecting_type) {
 	auto lvalue = get_lvalue(state, expr.lhs);
 	if (lvalue == nullptr) {
 		state.report_message(report_type::error, "assignment must be towards an lvalue", expr);
@@ -327,7 +369,8 @@ llvm::Value *codegen(codegen::state &state, ast::expr_assignment &expr, std::sha
 	return lvalue;
 }
 
-llvm::Value *codegen(codegen::state &state, ast::expr_cast &expr, std::shared_ptr<type> expecting_type) {
+llvm::Value *codegen(codegen::state &state, ast::expr_cast &expr,
+                     std::shared_ptr<type> expecting_type) {
 	auto expr_type = expr_resulting_type(state, expr.lhs);
 	auto value = codegen(state, expr.lhs);
 	return expr_type->cast_llvm_value(state, value, type::create(state, expr.type).get());

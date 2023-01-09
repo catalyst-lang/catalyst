@@ -363,8 +363,17 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 
 		// Set names for all arguments.
 		unsigned i = 0;
-		for (auto &Arg : the_function->args())
-			Arg.setName(decl.parameter_list[i++].ident.name);
+		for (auto &Arg : the_function->args()) {
+			Arg.setName(decl.parameter_list[i].ident.name);
+			if (typeid(*current_fn_type->parameters[i]) == typeid(type_object)) {
+				auto to = (type_object *)current_fn_type->parameters[i].get();
+				if (typeid(*to->object_type) == typeid(type_struct)) {
+					Arg.addAttr(llvm::Attribute::NoUndef);
+					Arg.addAttr(llvm::Attribute::getWithByValType(*state.TheContext, current_fn_type->parameters[i]->get_llvm_type(state)));
+				}
+			}
+			i++;
+		}
 
 		sym.value = the_function;
 	}

@@ -91,8 +91,17 @@ llvm::Value *type::create_add(state &state, llvm::Value *lhs, std::shared_ptr<ty
 	return nullptr;
 }
 
+llvm::Value* type_primitive::get_sizeof(catalyst::compiler::codegen::state &state) {
+	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(32, get_llvm_type(state)->getPrimitiveSizeInBits() / 8));
+}
+
+
 llvm::Type *type_undefined::get_llvm_type(state &state) {
 	return llvm::Type::getVoidTy(*state.TheContext);
+}
+
+llvm::Value *type_undefined::get_sizeof(codegen::state &state) {
+	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(32, 0));
 }
 
 llvm::Type *type_bool::get_llvm_type(state &state) {
@@ -308,10 +317,25 @@ bool type_primitive::is_assignable_from(const std::shared_ptr<type> &type) const
 llvm::Type *type_function::get_llvm_type(state &state) {
 	std::vector<llvm::Type *> params;
 	for (const auto &param : parameters) {
-		params.push_back(param->get_llvm_type(state));
+		auto type = param->get_llvm_type(state);
+
+		if (typeid(*param) == typeid(type_object)) {
+			auto to = (type_object*)param.get();
+			// always pointers (even with structs, as they are augmented with byval)
+			type = llvm::PointerType::get(*state.TheContext, 0);
+		}
+		
+		params.push_back(type);
+		
 	}
 
 	return llvm::FunctionType::get(return_type->get_llvm_type(state), params, false);
+}
+
+llvm::Value* type_function::get_sizeof(catalyst::compiler::codegen::state &state) {
+	auto ptrty = llvm::PointerType::get(*state.TheContext, 0);
+	auto size = state.Builder.CreateGEP(ptrty, nullptr, { llvm::ConstantInt::get(*state.TheContext, llvm::APInt(32, 1)) }, "sizep");
+	return state.Builder.CreatePtrToInt(size, llvm::IntegerType::get(*state.TheContext, 32), "sizei");
 }
 
 std::string type_function::get_fqn() const {
@@ -396,6 +420,14 @@ void type_struct::copy_from(type_struct &other) {
 	this->members = other.members;
 }
 
+llvm::Value* type_struct::get_sizeof(catalyst::compiler::codegen::state &state) {
+	// Use trick from http://nondot.org/sabre/LLVMNotes/SizeOf-OffsetOf-VariableSizedStructs.txt
+	// to mimic a sizeof()
+	
+	auto constant = llvm::Constant::getNullValue(get_llvm_type(state)->getPointerTo());
+	auto size = state.Builder.CreateConstGEP1_64(get_llvm_type(state), constant, 1, "sizep");
+	return state.Builder.CreatePtrToInt(size, llvm::IntegerType::get(*state.TheContext, 32), "sizei");
+}
 
 type_object::type_object(std::shared_ptr<type_custom> object_type)
 	: type("object"), object_type(object_type) {

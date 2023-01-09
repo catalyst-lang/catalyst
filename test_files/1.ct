@@ -1,37 +1,20 @@
 struct bla { 
-       var i = 4
-       var j = 9.8
-       //fn lskd() {}
-       var g: gleam
-}
+            var i = 4
+            var j = 9.8
+            var k = 9i32
+        }
 
-struct gleam {
-       var io = true
-       var poeder = 3
-       var zz: test1
-}
+        fn main() {
+            var a: bla;
+            a.i = 10
+            a.j = 44.44
+            a.k = 9i32
 
-struct test1{ var b: i8; var c: i8; var d: i32; var e: i16 }
+            var b = a
 
-fn get() {
-       var a: bla;
+            a.i = 1
+            a.j = 3.4
+            a.k = 13
 
-       a.i = 3
-       a.j = 1.1
-       a.g.poeder = 7779
-
-       return a
-}
-
-fn main() {
-      
-      var a = get()
-
-       var b = a
-
-       b.i = 10
-       b.j = 44.44
-       b.g.poeder = 6669
-
-       return b.g.poeder
-}
+            return b.i + b.k
+        }

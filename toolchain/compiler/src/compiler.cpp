@@ -59,9 +59,6 @@ compile_result compile(catalyst::ast::translation_unit &tu, options options) {
 	state->FPM->doInitialization();
 
 	codegen::codegen(*state);
-	printf("Read module:\n");
-	state->TheModule->print(llvm::outs(), nullptr);
-	printf("\n");
 
 	compile_result result;
 	result.state = std::move(state);
@@ -89,6 +86,13 @@ compile_result compile_file(const std::string &filename, options options) {
 
 uint64_t run(compile_result &result) {
 	return run_jit(*std::static_pointer_cast<codegen::state>(result.state));
+}
+
+void compiler_debug_print(compile_result &result) {
+	auto state = std::static_pointer_cast<codegen::state>(result.state);
+	printf("Read module:\n");
+	state->TheModule->print(llvm::outs(), nullptr);
+	printf("\n");
 }
 
 } // namespace catalyst::compiler

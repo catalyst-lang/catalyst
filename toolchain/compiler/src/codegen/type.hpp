@@ -48,6 +48,7 @@ struct type {
 
 	virtual llvm::Type *get_llvm_type(codegen::state &state) = 0;
 	virtual llvm::Value *cast_llvm_value(codegen::state &state, llvm::Value *value, type* to);
+	virtual llvm::Value *get_sizeof(codegen::state &state) = 0;
 
 	virtual llvm::Value *create_add(codegen::state &state, llvm::Value *value,
 	                                std::shared_ptr<type> rhs_type, llvm::Value *rhs);
@@ -58,6 +59,7 @@ struct type {
 
 	bool operator==(const type &other) const;
 	bool operator!=(const type &other) const;
+
 
 	inline bool equals(const type &other) const { return *this == other; }
 	inline bool equals(const type *other) const { return *this == *other; }
@@ -74,6 +76,7 @@ struct type_undefined : type {
 	type_undefined() : type("<undefined>") {}
 	llvm::Type *get_llvm_type(codegen::state &state) override;
 	bool is_valid() override { return false; }
+	llvm::Value *get_sizeof(codegen::state &) override;
 };
 
 struct type_primitive : type {
@@ -93,6 +96,8 @@ struct type_primitive : type {
 	inline virtual llvm::Constant* get_default_llvm_value(catalyst::compiler::codegen::state &state) const override { 
 		return get_llvm_constant_zero(state);
 	}
+
+	virtual llvm::Value* get_sizeof(catalyst::compiler::codegen::state &state) override;
 };
 
 struct type_bool : type_primitive {
@@ -268,6 +273,8 @@ struct type_function : type {
 	llvm::Type *get_llvm_type(codegen::state &state) override;
 
 	virtual std::string get_fqn() const override;
+
+	virtual llvm::Value* get_sizeof(catalyst::compiler::codegen::state &state) override;
 	
 	bool is_valid() override;
 };
@@ -292,6 +299,8 @@ struct type_struct : type_custom {
 
 	void copy_from(type_struct &other);
 
+	inline virtual llvm::Value* get_sizeof(catalyst::compiler::codegen::state &state) override;
+
 	private:
 	llvm::StructType* structType = nullptr; 
 };
@@ -306,6 +315,10 @@ struct type_object : type {
 	virtual std::string get_fqn() const override;
 
 	bool is_valid() override;
+
+	inline llvm::Value* get_sizeof(codegen::state &state) override {
+		return object_type->get_sizeof(state);
+	}
 };
 
 } // namespace catalyst::compiler::codegen
