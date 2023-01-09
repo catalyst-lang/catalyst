@@ -204,6 +204,8 @@ static llvm::AllocaInst *CreateEntryBlockAlloca(codegen::state &state, llvm::Fun
 	} else if (typeid(type) == typeid(type_object)) {
 		auto *to = (type_object *)&type;
 		return TmpB.CreateAlloca(to->object_type->get_llvm_type(state), nullptr, var_name);
+	} else if (typeid(type) == typeid(type_void)) {
+		return nullptr;
 	} else {
 		return TmpB.CreateAlloca(type.get_llvm_type(state), nullptr, var_name);
 	}
