@@ -59,6 +59,10 @@ constexpr auto kw_async = LEXY_KEYWORD("async", id);
 constexpr auto kw_await = LEXY_KEYWORD("await", id);
 constexpr auto kw_yield = LEXY_KEYWORD("yield", id);
 
+struct expected_nl_sc {
+	static constexpr auto name = "expected newline or semicolon";
+};
+
 struct ident : lexy::token_production {
 	static constexpr auto name = "identifier";
 
@@ -103,7 +107,7 @@ struct expr_literal_bool : lexy::token_production {
 
 	static constexpr auto name = "boolean";
 	static constexpr auto rule = dsl::peek(kw_true | kw_false) >>
-	                             dsl::position + (dsl::p<true_> | dsl::p<false_>)+dsl::position;
+	                             dsl::position + (dsl::p<true_> | dsl::p<false_>) + dsl::position;
 	static constexpr auto value =
 		lexy::callback<ast::expr_ptr>([](auto begin, auto value, auto end) {
 			return std::make_shared<ast::expr_literal_bool>(begin, end, value);
@@ -303,11 +307,18 @@ struct expr : lexy::expression_production {
 };
 
 struct statement_return {
-	static constexpr auto rule = kw_return >> dsl::p<expr>;
-	// static constexpr auto value = lexy::new_<ast::statement_return, ast::statement_ptr>;
-	static constexpr auto value = lexy::callback<ast::statement_ptr>([](ast::expr_ptr expr) {
-		return std::make_shared<ast::statement_return>(nullptr, nullptr, expr);
-	});
+	static constexpr auto rule = 
+	dsl::peek(kw_return) >> 
+		dsl::position + kw_return >> (dsl::peek(dsl::semicolon | dsl::newline | dsl::lit_c<'}'>).error<expected_nl_sc> | dsl::else_ >> dsl::p<expr>) + dsl::position;
+
+	static constexpr auto value = lexy::callback<ast::statement_ptr>(
+		[](auto begin, auto end) {
+			return std::make_shared<ast::statement_return>(begin, end, std::nullopt);
+		},
+		[](auto begin, ast::expr_ptr expr, auto end) {
+			return std::make_shared<ast::statement_return>(begin, end, expr);
+		}
+	);
 };
 
 struct statement_expr {
@@ -371,9 +382,7 @@ struct statement_block {
 };
 
 struct statement : lexy::transparent_production {
-	struct expected_nl_sc {
-		static constexpr auto name = "expected newline or semicolon";
-	};
+	
 
 	static constexpr auto name = "statement";
 	static constexpr auto rule =
@@ -444,14 +453,14 @@ struct decl_fn {
 	static constexpr auto name = "function declaration";
 
 	static constexpr auto rule = kw_fn >>
-	                             dsl::p<ident> + dsl::p<parameter_list> +
+	                             dsl::position + dsl::p<ident> + dsl::p<parameter_list> +
 	                                 dsl::opt(LEXY_LIT("->") >> dsl::p<type>) + dsl::position
 	                                 + dsl::p<fn_body>;
 
 	// static constexpr auto value = lexy::construct<ast::decl_fn>;
 	static constexpr auto value = lexy::callback<ast::decl_ptr>(
-		[](auto ident, auto parameter_list, auto type, auto end, auto body) {
-			return std::make_shared<ast::decl_fn>(nullptr, end, ident, parameter_list, type, body);
+		[](auto begin, auto ident, auto parameter_list, auto type, auto end, auto body) {
+			return std::make_shared<ast::decl_fn>(begin, end, ident, parameter_list, type, body);
 		});
 };
 

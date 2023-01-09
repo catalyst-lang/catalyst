@@ -42,6 +42,9 @@ std::shared_ptr<type> type::create_builtin(const std::string &name) {
 		return std::make_shared<type_f80>();
 	if (name == "bool")
 		return std::make_shared<type_bool>();
+	
+	if (name == "void")
+		return std::make_shared<type_void>();
 
 	if (name.empty())
 		return std::make_shared<type_undefined>();
@@ -95,12 +98,19 @@ llvm::Value* type_primitive::get_sizeof(catalyst::compiler::codegen::state &stat
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(32, get_llvm_type(state)->getPrimitiveSizeInBits() / 8));
 }
 
-
 llvm::Type *type_undefined::get_llvm_type(state &state) {
 	return llvm::Type::getVoidTy(*state.TheContext);
 }
 
 llvm::Value *type_undefined::get_sizeof(codegen::state &state) {
+	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(32, 0));
+}
+
+llvm::Type *type_void::get_llvm_type(state &state) {
+	return llvm::Type::getVoidTy(*state.TheContext);
+}
+
+llvm::Value *type_void::get_sizeof(codegen::state &state) {
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(32, 0));
 }
 

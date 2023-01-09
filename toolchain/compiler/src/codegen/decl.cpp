@@ -110,7 +110,14 @@ int locals_pass(codegen::state &state, int n, ast::statement_block &stmt) {
 }
 
 int locals_pass(codegen::state &state, int n, ast::statement_return &stmt) {
-	std::shared_ptr<type> expr_type = expr_resulting_type(state, stmt.expr);
+	state.current_function_has_return = true;
+
+	std::shared_ptr<type> expr_type;
+	if (stmt.expr.has_value()) {
+		expr_type = expr_resulting_type(state, stmt.expr.value());
+	} else {
+		expr_type = type::create(state, "void");
+	}
 
 	type_function *fn_type = (type_function *)state.current_function_symbol->type.get();
 
@@ -181,7 +188,7 @@ int locals_pass(codegen::state &state, int n, ast::decl_ptr &decl) {
 	} else if (typeid(*decl) == typeid(ast::decl_struct)) {
 		state.report_message(report_type::error, "Local structs not supported (yet)", *decl);
 		return 0;
-		//return locals_pass(state, n, *(ast::decl_struct *)decl.get());
+		// return locals_pass(state, n, *(ast::decl_struct *)decl.get());
 	}
 	state.report_message(report_type::error, "Choices exhausted", *decl);
 	return 0;
@@ -195,7 +202,7 @@ static llvm::AllocaInst *CreateEntryBlockAlloca(codegen::state &state, llvm::Fun
 	if (typeid(type) == typeid(type_function)) {
 		return TmpB.CreateAlloca(TmpB.getPtrTy(), nullptr, var_name);
 	} else if (typeid(type) == typeid(type_object)) {
-		auto *to = (type_object*)&type;
+		auto *to = (type_object *)&type;
 		return TmpB.CreateAlloca(to->object_type->get_llvm_type(state), nullptr, var_name);
 	} else {
 		return TmpB.CreateAlloca(type.get_llvm_type(state), nullptr, var_name);
@@ -220,7 +227,12 @@ void codegen(codegen::state &state, ast::decl_fn &decl) {
 
 	auto previous_return = state.current_return;
 	auto previous_return_block = state.current_return_block;
-	state.current_return = CreateEntryBlockAlloca(state, the_function, "ret", *type->return_type);
+	if (typeid(*type->return_type) == typeid(type_void)) {
+		state.current_return = nullptr;
+	} else {
+		state.current_return =
+			CreateEntryBlockAlloca(state, the_function, "ret", *type->return_type);
+	}
 	state.current_return_block = llvm::BasicBlock::Create(*state.TheContext, "return");
 
 	for (auto &[name, variable] : state.scopes.get_locals()) {
@@ -252,8 +264,13 @@ void codegen(codegen::state &state, ast::decl_fn &decl) {
 
 	state.current_return_block->insertInto(the_function);
 	state.Builder.SetInsertPoint(state.current_return_block);
-	state.Builder.CreateRet(
-		state.Builder.CreateLoad(state.current_return->getAllocatedType(), state.current_return));
+
+	if (typeid(*type->return_type) == typeid(type_void)) {
+		state.Builder.CreateRetVoid();
+	} else {
+		state.Builder.CreateRet(state.Builder.CreateLoad(state.current_return->getAllocatedType(),
+		                                                 state.current_return));
+	}
 
 	// Validate the generated code, checking for consistency.
 	std::string err;
@@ -296,9 +313,7 @@ void codegen(codegen::state &state, ast::fn_body_expr &body) {
 	state.Builder.CreateRet(expr);
 }
 
-void codegen(codegen::state &state, ast::fn_body_block &body) {
-	codegen(state, body.statements);
-}
+void codegen(codegen::state &state, ast::fn_body_block &body) { codegen(state, body.statements); }
 
 int proto_pass(codegen::state &state, int n, ast::decl_ptr decl) {
 	if (typeid(*decl) == typeid(ast::decl_fn)) {
@@ -316,9 +331,9 @@ int proto_pass(codegen::state &state, int n, ast::decl_ptr decl) {
 int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 	// First, check for an existing function from a previous 'extern' declaration.
 	// llvm::Function *the_function = state.TheModule->getFunction(decl.ident.name);
-	
+
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
-	
+
 	if (n == 0 && state.symbol_table.contains(key)) {
 		auto other = state.symbol_table[key];
 		state.report_message(report_type::error, "Function name already exists", decl.ident);
@@ -330,11 +345,13 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 
 	auto fn_type = decl_get_type(state, decl);
 
-	const auto [res, symbol_introduced] = state.symbol_table.try_emplace(key, &decl, nullptr, fn_type);
+	const auto [res, symbol_introduced] =
+		state.symbol_table.try_emplace(key, &decl, nullptr, fn_type);
 	auto &sym = res->second;
 
 	symbol *prev_fn_sym = state.current_function_symbol;
 	state.current_function_symbol = &sym;
+	state.current_function_has_return = false;
 
 	auto current_fn_type = (type_function *)sym.type.get();
 	if (!((type_function *)fn_type.get())->return_type->is_valid())
@@ -352,10 +369,21 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 		changed_num += locals_updated;
 	}
 
+	if (!state.current_function_has_return) {
+		if (!decl.type.has_value() || (decl.type.has_value() && decl.type.value().ident.name == "void")) {
+			if (typeid(*current_fn_type->return_type) != typeid(type_void)) {
+				current_fn_type->return_type = type::create(state, "void");
+				changed_num++;
+			}
+		} else {
+			state.report_message(report_type::error, "control reaches end of non-void function", decl);
+		}
+	}
+
 	if (changed_num) {
 		// redefine the llvm type
 		if (sym.value) {
-			((llvm::Function*)sym.value)->eraseFromParent();
+			((llvm::Function *)sym.value)->eraseFromParent();
 		}
 		auto the_function = llvm::Function::Create(
 			(llvm::FunctionType *)current_fn_type->get_llvm_type(state),
@@ -369,7 +397,8 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 				auto to = (type_object *)current_fn_type->parameters[i].get();
 				if (typeid(*to->object_type) == typeid(type_struct)) {
 					Arg.addAttr(llvm::Attribute::NoUndef);
-					Arg.addAttr(llvm::Attribute::getWithByValType(*state.TheContext, current_fn_type->parameters[i]->get_llvm_type(state)));
+					Arg.addAttr(llvm::Attribute::getWithByValType(
+						*state.TheContext, current_fn_type->parameters[i]->get_llvm_type(state)));
 				}
 			}
 			i++;
@@ -385,8 +414,7 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 
 int proto_pass(codegen::state &state, int n, ast::decl_var &decl) {
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
-	if (n == 0 &&
-	    state.symbol_table.contains(key)) {
+	if (n == 0 && state.symbol_table.contains(key)) {
 		auto other = state.symbol_table[key];
 		state.report_message(report_type::error, "Global variable name already exists", decl.ident);
 		state.report_message(report_type::info, "Previous declaration here", *other.ast_node);
@@ -394,24 +422,26 @@ int proto_pass(codegen::state &state, int n, ast::decl_var &decl) {
 	}
 
 	auto type = decl_get_type(state, decl);
-	
-	const auto [res, symbol_introduced] =
-		state.symbol_table.try_emplace(key, &decl, nullptr, type);
+
+	const auto [res, symbol_introduced] = state.symbol_table.try_emplace(key, &decl, nullptr, type);
 	auto &sym = res->second;
 
 	if (type->is_valid() && sym.value == nullptr) {
-		llvm::IRBuilder<> TmpB(&state.init_function->getEntryBlock(), state.init_function->getEntryBlock().begin());
+		llvm::IRBuilder<> TmpB(&state.init_function->getEntryBlock(),
+		                       state.init_function->getEntryBlock().begin());
 		state.TheModule->getOrInsertGlobal(key.c_str(), type->get_llvm_type(state));
 		llvm::GlobalVariable *gVar = state.TheModule->getNamedGlobal(key.c_str());
 		gVar->setDSOLocal(true);
-		//gVar->setAlignment(llvm::MaybeAlign(4));
+		// gVar->setAlignment(llvm::MaybeAlign(4));
 		gVar->setInitializer(type->get_default_llvm_value(state));
-		//gVar->setLinkage(llvm::GlobalValue::InternalLinkage);
-		sym.value = gVar;//TmpB.CreateAlloca(type->get_llvm_type(state), 0, key.c_str());
+		// gVar->setLinkage(llvm::GlobalValue::InternalLinkage);
+		sym.value = gVar; // TmpB.CreateAlloca(type->get_llvm_type(state), 0, key.c_str());
 	}
 
-	if (n == 0) return 1;
-	if (*sym.type != *type) return 1;
+	if (n == 0)
+		return 1;
+	if (*sym.type != *type)
+		return 1;
 	return 0;
 }
 
@@ -432,6 +462,5 @@ void codegen(codegen::state &state, ast::decl_var &decl) {
 void codegen(codegen::state &state, ast::decl_const &decl) {
 	state.report_message(report_type::error, "decl_const: Not implemented", decl);
 }
-
 
 } // namespace catalyst::compiler::codegen

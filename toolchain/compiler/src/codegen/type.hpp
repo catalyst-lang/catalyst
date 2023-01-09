@@ -79,6 +79,13 @@ struct type_undefined : type {
 	llvm::Value *get_sizeof(codegen::state &) override;
 };
 
+struct type_void : type {
+	type_void() : type("void") {}
+	llvm::Type *get_llvm_type(codegen::state &state) override;
+	bool is_valid() override { return true; }
+	llvm::Value *get_sizeof(codegen::state &) override;
+};
+
 struct type_primitive : type {
 	type_primitive(std::string fqn, int specialization_score, bool is_signed = true)
 		: type(fqn, specialization_score), is_signed(is_signed) {}

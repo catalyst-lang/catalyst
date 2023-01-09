@@ -1,20 +1,7 @@
-struct bla { 
-            var i = 4
-            var j = 9.8
-            var k = 9i32
+        fn v() {
         }
 
         fn main() {
-            var a: bla;
-            a.i = 10
-            a.j = 44.44
-            a.k = 9i32
-
-            var b = a
-
-            a.i = 1
-            a.j = 3.4
-            a.k = 13
-
-            return b.i + b.k
+            v()
+            return 123i64;
         }

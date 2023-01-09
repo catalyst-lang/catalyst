@@ -260,12 +260,20 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr,
 		llvm::CallInst *callinstr = nullptr;
 		if (llvm::isa<llvm::Function>(sym->value)) {
 			// This is a straight function value
-			callinstr = state.Builder.CreateCall(CalleeF, ArgsV, "calltmp");
+			if (typeid(*type->return_type) == typeid(type_void)) {
+				callinstr = state.Builder.CreateCall(CalleeF, ArgsV);
+			} else {
+				callinstr = state.Builder.CreateCall(CalleeF, ArgsV, "calltmp");
+			}
 		} else if (llvm::isa<llvm::AllocaInst>(sym->value)) {
 			// This is a function pointer
 			llvm::Value *ptr = state.Builder.CreateLoad(sym->value->getType(), sym->value);
 			llvm::FunctionType *fty = (llvm::FunctionType *)sym->type->get_llvm_type(state);
-			callinstr = state.Builder.CreateCall(fty, ptr, ArgsV, "ptrcalltmp");
+			if (typeid(*type->return_type) == typeid(type_void)) {
+				callinstr = state.Builder.CreateCall(fty, ptr, ArgsV);
+			} else {
+				callinstr = state.Builder.CreateCall(fty, ptr, ArgsV, "ptrcalltmp");
+			}
 		} else {
 			state.report_message(report_type::error, "unsupported base type for function call",
 			                     expr);

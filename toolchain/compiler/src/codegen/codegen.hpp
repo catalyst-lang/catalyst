@@ -47,6 +47,10 @@ struct state {
 	llvm::Function *current_function = nullptr;
 	llvm::AllocaInst *current_return = nullptr;
 	llvm::BasicBlock *current_return_block = nullptr;
+	bool current_function_has_return = false;
+
+	int num_errors = 0;
+	int num_warnings = 0;
 
 	llvm::Function *init_function = nullptr;
 
@@ -60,10 +64,11 @@ struct state {
 
 	state();
 
-	static void report_message(report_type type, const std::string &message);
+	static void report_message_static(report_type type, const std::string &message);
+	void report_message(report_type type, const std::string &message);
 	void report_message(report_type type, const std::string &message,
 	                    const parser::ast_node &positional,
-	                    const std::string &pos_comment = "here") const;
+	                    const std::string &pos_comment = "here");
 
 	scope &current_scope() { return scopes.current_scope(); }
 

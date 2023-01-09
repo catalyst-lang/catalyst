@@ -36,24 +36,37 @@ void codegen(codegen::state &state, ast::statement_expr &stmt) { codegen(state, 
 
 void codegen(codegen::state &state, ast::statement_return &stmt) {
 	auto expecting_type = ((type_function*)state.current_function_symbol->type.get())->return_type;
-	auto expr = codegen(state, stmt.expr, expecting_type);
-	auto expr_type = expr_resulting_type(state, stmt.expr, expecting_type);
+	
+	if (typeid(*expecting_type) == typeid(type_void)) {
+		if (stmt.expr.has_value()) {	
+			state.report_message(report_type::error, "‘return’ with a value, in function returning void", stmt);
+			return;
+		}
+		state.Builder.CreateBr(state.current_return_block);
+	} else {
+		if (!stmt.expr.has_value()) {
+			state.report_message(report_type::error, "Expecting return value", stmt);
+			return;
+		}
+		auto expr = codegen(state, stmt.expr.value(), expecting_type);
+		auto expr_type = expr_resulting_type(state, stmt.expr.value(), expecting_type);
 
-	if (*expr_type != *((type_function *)state.current_function_symbol->type.get())->return_type) {
-		state.report_message(report_type::error, "Conflicting return type", stmt);
-		std::string message = "Got ";
-		message += expr_type->get_fqn();
-		message += ", but expected type ";
-		message +=
-			((type_function *)state.current_function_symbol->type.get())->return_type->get_fqn();
-		state.report_message(report_type::info, message);
-		state.report_message(report_type::info, "For function starting here",
-		                     *state.current_function_symbol->ast_node);
-		// TODO: warn (instead of error) about return type mismatch
+		if (*expr_type != *((type_function *)state.current_function_symbol->type.get())->return_type) {
+			state.report_message(report_type::error, "Conflicting return type", stmt);
+			std::string message = "Got ";
+			message += expr_type->get_fqn();
+			message += ", but expected type ";
+			message +=
+				((type_function *)state.current_function_symbol->type.get())->return_type->get_fqn();
+			state.report_message(report_type::info, message);
+			state.report_message(report_type::info, "For function starting here",
+								*state.current_function_symbol->ast_node);
+			// TODO: warn (instead of error) about return type mismatch
+		}
+
+		state.Builder.CreateStore(expr, state.current_return);
+		state.Builder.CreateBr(state.current_return_block);
 	}
-
-	state.Builder.CreateStore(expr, state.current_return);
-	state.Builder.CreateBr(state.current_return_block);
 }
 
 void codegen(codegen::state &state, std::vector<ast::statement_ptr> const &statements) {

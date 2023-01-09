@@ -40,9 +40,9 @@ struct statement_expr : statement {
 };
 
 struct statement_return : statement {
-	statement_return(const parser::char_type *begin, const parser::char_type *end, expr_ptr expr)
+	statement_return(const parser::char_type *begin, const parser::char_type *end, std::optional<expr_ptr> expr)
 		: statement(begin, end), expr(expr) {}
-	expr_ptr expr;
+	std::optional<expr_ptr> expr;
 };
 
 struct statement_block : statement {

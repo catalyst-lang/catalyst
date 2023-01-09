@@ -8,13 +8,21 @@
 
 namespace catalyst::compiler::codegen {
 
+void state::report_message_static(report_type type, const std::string &message) {
+	parser::report_message(type, message);
+}
+
 void state::report_message(report_type type, const std::string &message) {
+	if (type == report_type::error) num_errors++;
+	if (type == report_type::warning) num_warnings++;
 	parser::report_message(type, message);
 }
 
 void state::report_message(report_type type, const std::string &message,
                            const parser::ast_node &positional,
-                           const std::string &pos_comment) const {
+                           const std::string &pos_comment) {
+	if (type == report_type::error) num_errors++;
+	if (type == report_type::warning) num_warnings++;
 	parser::report_message(type, this->translation_unit->parser_state, message, positional,
 	                       pos_comment);
 }
@@ -32,11 +40,17 @@ void codegen(codegen::state &state, ast::translation_unit &tu) {
 		for (const auto &decl : tu.declarations) {
 			pass_changes += proto_pass(state, pass_n, decl);
 		}
+
+		if (state.num_errors > 0) {
+			state.report_message(report_type::info, "Compilation stopped due to errors");
+			return;
+		}
+
 		pass_n++;
 	}
 
 	for (const auto &[k, v] : state.symbol_table) {
-		//std::cout << k << ": " << v.type->get_fqn() << std::endl;
+		std::cout << k << ": " << v.type->get_fqn() << std::endl;
 		if (v.type == nullptr || !v.type->is_valid()) {
 			state.report_message(report_type::error,
 			                     "No type has been defined and can't be inferred", *v.ast_node);
