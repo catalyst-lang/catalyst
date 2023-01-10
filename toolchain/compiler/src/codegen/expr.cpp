@@ -135,6 +135,9 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr,
 	} else if (llvm::isa<llvm::GlobalVariable>(symbol->value)) {
 		auto *a = (llvm::GlobalVariable *)symbol->value;
 		return state.Builder.CreateLoad(a->getValueType(), a, expr.ident.name.c_str());
+	} else if (llvm::isa<llvm::Argument>(symbol->value)) {
+		auto *a = (llvm::Argument *)symbol->value;
+		return a;
 	} else {
 		auto *a = (llvm::AllocaInst *)symbol->value;
 		if (llvm::isa<llvm::StructType>(a->getAllocatedType())) {
@@ -218,6 +221,13 @@ llvm::Value *codegen(codegen::state &state, ast::expr_binary_logical &expr,
 	return nullptr;
 }
 
+llvm::Value *structure_to_pointer(codegen::state &state, llvm::Value *struct_val) {
+	llvm::IRBuilder<> TmpB(&state.current_function->getEntryBlock(), state.current_function->getEntryBlock().begin());
+	auto ptr = TmpB.CreateAlloca(struct_val->getType(), nullptr, "struct_ptr");
+	state.Builder.CreateStore(struct_val, ptr);
+	return ptr;
+}
+
 llvm::Value *codegen(codegen::state &state, ast::expr_call &expr,
                      std::shared_ptr<type> expecting_type) {
 	if (typeid(*expr.lhs) == typeid(ast::expr_ident)) {
@@ -250,6 +260,11 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr,
 			if (!arg_type->equals(type->parameters[i])) {
 				// TODO: warn if casting happens
 				arg = arg_type->cast_llvm_value(state, arg, type->parameters[i].get());
+			}
+
+			if (llvm::isa<llvm::StructType>(arg->getType())) {
+				// we want a structure pointer instead
+				arg = structure_to_pointer(state, arg);
 			}
 
 			ArgsV.push_back(arg);
@@ -320,6 +335,11 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 
 	int index = lhs_struct->index_of(ident->name);
 
+	if (llvm::isa<llvm::StructType>(lhs_value->getType())) {
+		// we expect a pointer, but we got a structure value
+		lhs_value = structure_to_pointer(state, lhs_value);
+	}
+
 	auto ptr = state.Builder.CreateStructGEP(lhs_struct->get_llvm_type(state), lhs_value, index);
 
 	auto rhs_type = lhs_struct->members[index].type;
@@ -355,8 +375,14 @@ void codegen_assignment(codegen::state &state, llvm::Value *dest_ptr,
 		auto to = (type_object *)rhs_type.get();
 		if (typeid(*to->object_type) == typeid(type_struct)) {	
 			auto size = to->object_type->get_sizeof(state);
-			state.Builder.CreateMemCpy(dest_ptr, llvm::MaybeAlign(0), rhs_value, 
-				llvm::MaybeAlign(0), size);
+			if (llvm::isa<llvm::PointerType>(rhs_value->getType())) {
+				state.Builder.CreateMemCpy(dest_ptr, llvm::MaybeAlign(0), rhs_value, 
+					llvm::MaybeAlign(0), size);
+			} else if (llvm::isa<llvm::StructType>(rhs_value->getType())) {
+				state.Builder.CreateStore(rhs_value, dest_ptr);
+			} else {
+				state.report_message(report_type::error, "Unexpected storage class", *rhs);
+			}
 			return;
 		}
 	}

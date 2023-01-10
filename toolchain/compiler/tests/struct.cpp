@@ -87,6 +87,220 @@ TEST_CASE("copy on pass") {
     CHECK(ret == 19);
 }
 
+TEST_CASE("copy on return") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        struct bla { 
+            var i = 4
+            var j = 9.8
+            var k = 9i32
+        }
+
+        fn test() -> bla {
+            var a: bla
+            a.i = 1
+            a.j = 3.4
+            a.k = 13
+            return a
+        }
+
+        fn main() {
+            var a = test()
+            return a.i + a.k
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run(result);
+    CHECK(ret == 14);
+}
+
+TEST_CASE("copy on return and pass as parameter 1") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        struct bla { 
+            var i = 4
+            var j = 9.8
+            var k = 9i32
+        }
+
+        fn test() -> bla {
+            var a: bla
+            a.i = 1
+            a.j = 3.4
+            a.k = 13
+            return a
+        }
+
+        fn piz(b: bla) {
+            return b.k
+        }
+
+        fn main() {
+            var a = piz(test())
+            return a
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run(result);
+    CHECK(ret == 13);
+}
+
+TEST_CASE("copy on return and pass as parameter 2") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        struct bla { 
+            var i = 4
+            var j = 9.8
+            var k = 9i32
+        }
+
+        fn test() -> bla {
+            var a: bla
+            a.i = 1
+            a.j = 3.4
+            a.k = 13
+            return a
+        }
+
+        fn piz(b: bla) {
+            return b.k
+        }
+
+        fn main() {
+            var a: bla
+            a.i = 44
+            a.k = 33
+            var b: bla
+            b.k = 222
+            b.i = piz(test())
+            b.k = piz(a)
+            return b.k
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run(result);
+    CHECK(ret == 33);
+}
+
+TEST_CASE("copy on return and pass as parameter 3") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        struct bla { 
+            var i = 4
+            var j = 9.8
+            var k = 9i32
+        }
+
+        fn test(b: bla) {
+            b.i = 13
+        }
+
+        fn main() {
+            var a: bla
+            a.i = 44
+            a.k = 33
+            test(a)
+            return a.i
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run(result);
+    CHECK(ret == 44);
+}
+
+TEST_CASE("copy on return and pass as parameter 4") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        struct bla { 
+            var i = 4
+            var j = 9.8
+            var k = 9i32
+        }
+
+        fn test() -> bla {
+            var a: bla
+            a.i = 1
+            a.j = 3.4
+            a.k = 13
+            return a
+        }
+
+        fn test2(b: bla) -> bla {
+            b.i = 83
+            return b
+        }
+
+        fn piz(b: bla) {
+            return b.i
+        }
+
+        fn main() {
+            var r = test2(test())
+            return piz(r) + r.k
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run(result);
+    CHECK(ret == 96);
+}
+
+TEST_CASE("copy on return and pass as parameter 5") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        struct bla { 
+            var i = 4
+            var j = 9.8
+            var k = 9i32
+        }
+
+        fn test() -> bla {
+            var a: bla
+            a.i = 1
+            a.j = 3.4
+            a.k = 13
+            return a
+        }
+
+        fn test2(b: bla) -> bla {
+            b.i = 83
+            return b
+        }
+
+        fn piz(b: bla) {
+            return b.i
+        }
+
+        fn main() {
+            var a = test()
+            var b = piz(test2(a))
+            return a.i
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run(result);
+    CHECK(ret == 1);
+}
+
+TEST_CASE("copy on return and pass as parameter 6") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        struct bla { 
+            var i = 4
+            var j = 9.8
+            var k = 9i32
+        }
+
+        fn test() -> bla {
+            var a: bla
+            a.i = 188
+            a.j = 3.4
+            a.k = 13
+            return a
+        }
+
+        fn main() {
+            var a = test().i
+            return a
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run(result);
+    CHECK(ret == 188);
+}
+
 TEST_CASE("advanced 1") {
     compiler::options opts;
     auto result = compiler::compile_string(R"catalyst_source(

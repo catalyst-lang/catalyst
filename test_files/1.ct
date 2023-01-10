@@ -1,10 +1,18 @@
-        fn v() {
+        struct bla { 
+            var i = 4
+            var j = 9.8
+            var k = 9i32
+        }
+
+        fn test() -> bla {
+            var a: bla
+            a.i = 1
+            a.j = 3.4
+            a.k = 13
+            return a
         }
 
         fn main() {
-            v()
-
-                var vo: void
-
-            return 123i64;
+            var a = test().i
+            return a
         }

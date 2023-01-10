@@ -23,6 +23,10 @@ void state::report_message(report_type type, const std::string &message,
                            const std::string &pos_comment) {
 	if (type == report_type::error) num_errors++;
 	if (type == report_type::warning) num_warnings++;
+	if (&positional == nullptr) {
+		parser::report_message(type, message);
+		return;
+	}
 	parser::report_message(type, this->translation_unit->parser_state, message, positional,
 	                       pos_comment);
 }

@@ -48,23 +48,25 @@ void codegen(codegen::state &state, ast::statement_return &stmt) {
 			state.report_message(report_type::error, "Expecting return value", stmt);
 			return;
 		}
-		auto expr = codegen(state, stmt.expr.value(), expecting_type);
 		auto expr_type = expr_resulting_type(state, stmt.expr.value(), expecting_type);
+		auto return_type = ((type_function *)state.current_function_symbol->type.get())->return_type;
 
-		if (*expr_type != *((type_function *)state.current_function_symbol->type.get())->return_type) {
+		if (*expr_type != *return_type) {
 			state.report_message(report_type::error, "Conflicting return type", stmt);
 			std::string message = "Got ";
 			message += expr_type->get_fqn();
 			message += ", but expected type ";
-			message +=
-				((type_function *)state.current_function_symbol->type.get())->return_type->get_fqn();
+			message += return_type->get_fqn();
 			state.report_message(report_type::info, message);
 			state.report_message(report_type::info, "For function starting here",
 								*state.current_function_symbol->ast_node);
 			// TODO: warn (instead of error) about return type mismatch
 		}
 
-		state.Builder.CreateStore(expr, state.current_return);
+		codegen_assignment(state, state.current_return, return_type, stmt.expr.value());
+
+		//auto expr = codegen(state, stmt.expr.value(), expecting_type);
+		//state.Builder.CreateStore(expr, state.current_return, return_type);
 		state.Builder.CreateBr(state.current_return_block);
 	}
 }

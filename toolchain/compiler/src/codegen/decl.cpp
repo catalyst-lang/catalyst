@@ -247,8 +247,17 @@ void codegen(codegen::state &state, ast::decl_fn &decl) {
 		auto &arg_local =
 			state.symbol_table[state.scopes.get_fully_qualified_scope_name(Arg.getName().str())];
 
-		// Store the initial value into the alloca.
-		state.Builder.CreateStore(&Arg, arg_local.value);
+		if (typeid(*arg_local.type) == typeid(type_object)) {
+			auto to = (type_object *)arg_local.type.get();
+			if (typeid(*to->object_type) == typeid(type_struct)) {
+				arg_local.value = &Arg;
+			} else {
+				state.Builder.CreateStore(&Arg, arg_local.value);
+			}
+		} else {
+			// Store the initial value into the alloca.
+			state.Builder.CreateStore(&Arg, arg_local.value);
+		}
 
 		// Add arguments to variable symbol table.
 		// state.scopes.back().named_values[std::string(Arg.getName())] = arg_local.value;

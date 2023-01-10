@@ -36,7 +36,12 @@ int64_t run_jit(codegen::state &state) {
 	}*/
 
 	auto ExprSymbol = TheJIT->lookup("main");
-	assert(ExprSymbol && "Entry function not found");
+	if (!ExprSymbol) {
+		auto message = llvm::toString(ExprSymbol.takeError());
+		state.report_message(codegen::report_type::error, "Entry function not found");
+		state.report_message(codegen::report_type::info, message);
+		return -1;
+	}
 
 	// Get the symbol's address and cast it to the right type (takes no
 	// arguments, returns a double) so we can call it as a native function.
