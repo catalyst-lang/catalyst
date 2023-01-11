@@ -1,6 +1,7 @@
 #include "llvm/Support/TargetSelect.h"
 
 #include "runtime.hpp"
+#include <iostream>
 
 using namespace catalyst;
 using type = compiler::codegen::type;
@@ -18,12 +19,12 @@ int32_t bar() {
 }
 
 int32_t baz(int64_t p) {
-	printf("baz! %ld\n", p);
+	std::cout << "baz!" << p << std::endl;
 	return 9;
 }
 
 int32_t nacho(double p) {
-	printf("nacho! %f\n", p);
+	std::cout << "nacho!" << p << std::endl;
 	return 9;
 }
 
