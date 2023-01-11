@@ -19,15 +19,15 @@ void state::report_message(report_type type, const std::string &message) {
 }
 
 void state::report_message(report_type type, const std::string &message,
-                           const parser::ast_node &positional,
+                           const parser::ast_node *positional,
                            const std::string &pos_comment) {
 	if (type == report_type::error) num_errors++;
 	if (type == report_type::warning) num_warnings++;
-	if (&positional == nullptr) {
+	if (positional == nullptr) {
 		parser::report_message(type, message);
 		return;
 	}
-	parser::report_message(type, this->translation_unit->parser_state, message, positional,
+	parser::report_message(type, this->translation_unit->parser_state, message, *positional,
 	                       pos_comment);
 }
 
@@ -57,7 +57,7 @@ void codegen(codegen::state &state, ast::translation_unit &tu) {
 		//std::cout << k << ": " << v.type->get_fqn() << std::endl;
 		if (v.type == nullptr || !v.type->is_valid()) {
 			state.report_message(report_type::error,
-			                     "No type has been defined and can't be inferred", *v.ast_node);
+			                     "No type has been defined and can't be inferred", v.ast_node);
 		}
 	}
 

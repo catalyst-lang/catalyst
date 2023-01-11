@@ -12,7 +12,7 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_fn
 	std::vector<std::shared_ptr<type>> params;
 	for (const auto &param : decl.parameter_list) {
 		if (!param.type.has_value()) {
-			state.report_message(report_type::error, "Parameter has no type", param);
+			state.report_message(report_type::error, "Parameter has no type", &param);
 			return nullptr;
 		}
 		params.push_back(type::create(state, param.type.value()));
@@ -30,7 +30,7 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_va
 		state.report_message(report_type::error,
 		                     "Global variable must have explicit type set or the type must be "
 		                     "inferrable from a direct assignment",
-		                     decl);
+		                     &decl);
 		return nullptr;
 	}
 }
@@ -53,7 +53,7 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_pt
 	} else if (isa<ast::decl_struct>(decl)) {
 		return decl_get_type(state, *(ast::decl_struct *)decl.get());
 	} else {
-		state.report_message(report_type::error, "Decl type not implemented", *decl.get());
+		state.report_message(report_type::error, "Decl type not implemented", decl.get());
         return nullptr;
 	}
 }

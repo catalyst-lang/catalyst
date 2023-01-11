@@ -36,7 +36,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_ptr e
 		return expr_resulting_type(state, *(ast::expr_cast *)expr.get());
 	}
 
-	state.report_message(report_type::error, "Expression type unsupported", *expr);
+	state.report_message(report_type::error, "Expression type unsupported", expr.get());
 
 	return type::create_builtin();
 }
@@ -177,7 +177,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_membe
 	auto lhs_struct = lhs_object->object_type;
 
 	if (!isa<ast::expr_ident>(expr.rhs)) {
-		state.report_message(report_type::error, "Identifier expected", *expr.rhs);
+		state.report_message(report_type::error, "Identifier expected", expr.rhs.get());
 		return type::create_builtin();
 	}
 

@@ -67,7 +67,7 @@ struct state {
 	static void report_message_static(report_type type, const std::string &message);
 	void report_message(report_type type, const std::string &message);
 	void report_message(report_type type, const std::string &message,
-	                    const parser::ast_node &positional,
+	                    const parser::ast_node *positional,
 	                    const std::string &pos_comment = "here");
 
 	scope &current_scope() { return scopes.current_scope(); }

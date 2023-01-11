@@ -32,7 +32,7 @@ void codegen(codegen::state &state, ast::decl_ptr decl) {
 	} else if (isa<ast::decl_struct>(decl)) {
 		codegen(state, *(ast::decl_struct *)decl.get());
 	} else {
-		state.report_message(report_type::error, "Decl type not implemented", *decl.get());
+		state.report_message(report_type::error, "Decl type not implemented", decl.get());
 	}
 }
 
@@ -65,7 +65,7 @@ int locals_pass(codegen::state &state, int n, ast::decl_var &stmt) {
 
 	// if first pass and symbol is NOT introduced, this is a redefinition error
 	if (n == 0 && !symbol_introduced) {
-		state.report_message(report_type::error, "Symbol redefined", stmt.ident);
+		state.report_message(report_type::error, "Symbol redefined", &stmt.ident);
 		return 0;
 		// todo: show where first definition is
 		// state.report_message("First definition here", sym.ast_node);
@@ -146,7 +146,7 @@ int locals_pass(codegen::state &state, int n, ast::statement_ptr &stmt) {
 		// TODO
 		return 0;
 	}
-	state.report_message(report_type::error, "Choices exhausted", *stmt);
+	state.report_message(report_type::error, "Choices exhausted", stmt.get());
 	return 0;
 }
 
@@ -158,7 +158,7 @@ int locals_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 	if (n == 0) {
 		for (auto &param : decl.parameter_list) {
 			if (!param.type.has_value()) {
-				state.report_message(report_type::error, "Parameter has no type", param);
+				state.report_message(report_type::error, "Parameter has no type", &param);
 				return 0;
 			}
 			auto key = state.scopes.get_fully_qualified_scope_name(param.ident.name);
@@ -183,11 +183,11 @@ int locals_pass(codegen::state &state, int n, ast::decl_ptr &decl) {
 	} else if (isa<ast::decl_fn>(decl)) {
 		return locals_pass(state, n, *(ast::decl_fn *)decl.get());
 	} else if (isa<ast::decl_struct>(decl)) {
-		state.report_message(report_type::error, "Local structs not supported (yet)", *decl);
+		state.report_message(report_type::error, "Local structs not supported (yet)", decl.get());
 		return 0;
 		// return locals_pass(state, n, *(ast::decl_struct *)decl.get());
 	}
-	state.report_message(report_type::error, "Choices exhausted", *decl);
+	state.report_message(report_type::error, "Choices exhausted", decl.get());
 	return 0;
 }
 
@@ -294,7 +294,7 @@ void codegen(codegen::state &state, ast::decl_fn &decl) {
 		state.scopes.pop_back();
 	} else {
 		// Error reading body, remove function.
-		state.report_message(report_type::error, err, decl);
+		state.report_message(report_type::error, err, &decl);
 		the_function->print(llvm::errs());
 		state.scopes.pop_back();
 		the_function->eraseFromParent();
@@ -342,8 +342,8 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 
 	if (n == 0 && state.symbol_table.contains(key)) {
 		auto other = state.symbol_table[key];
-		state.report_message(report_type::error, "Function name already exists", decl.ident);
-		state.report_message(report_type::info, "Previous declaration here", *other.ast_node);
+		state.report_message(report_type::error, "Function name already exists", &decl.ident);
+		state.report_message(report_type::info, "Previous declaration here", other.ast_node);
 		return 0;
 	}
 
@@ -382,7 +382,7 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 				changed_num++;
 			}
 		} else {
-			state.report_message(report_type::error, "control reaches end of non-void function", decl);
+			state.report_message(report_type::error, "control reaches end of non-void function", &decl);
 		}
 	}
 
@@ -422,8 +422,8 @@ int proto_pass(codegen::state &state, int n, ast::decl_var &decl) {
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 	if (n == 0 && state.symbol_table.contains(key)) {
 		auto other = state.symbol_table[key];
-		state.report_message(report_type::error, "Global variable name already exists", decl.ident);
-		state.report_message(report_type::info, "Previous declaration here", *other.ast_node);
+		state.report_message(report_type::error, "Global variable name already exists", &decl.ident);
+		state.report_message(report_type::info, "Previous declaration here", other.ast_node);
 		return 0;
 	}
 
@@ -435,8 +435,8 @@ int proto_pass(codegen::state &state, int n, ast::decl_var &decl) {
 	if (type->is_valid() && sym.value == nullptr) {
 		llvm::IRBuilder<> TmpB(&state.init_function->getEntryBlock(),
 		                       state.init_function->getEntryBlock().begin());
-		state.TheModule->getOrInsertGlobal(key.c_str(), type->get_llvm_type(state));
-		llvm::GlobalVariable *gVar = state.TheModule->getNamedGlobal(key.c_str());
+		state.TheModule->getOrInsertGlobal(key, type->get_llvm_type(state));
+		llvm::GlobalVariable *gVar = state.TheModule->getNamedGlobal(key);
 		gVar->setDSOLocal(true);
 		// gVar->setAlignment(llvm::MaybeAlign(4));
 		gVar->setInitializer(type->get_default_llvm_value(state));
@@ -466,7 +466,7 @@ void codegen(codegen::state &state, ast::decl_var &decl) {
 }
 
 void codegen(codegen::state &state, ast::decl_const &decl) {
-	state.report_message(report_type::error, "decl_const: Not implemented", decl);
+	state.report_message(report_type::error, "decl_const: Not implemented", &decl);
 }
 
 } // namespace catalyst::compiler::codegen

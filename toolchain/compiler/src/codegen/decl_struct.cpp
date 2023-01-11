@@ -21,8 +21,8 @@ int proto_pass(codegen::state &state, int n, ast::decl_struct &decl) {
 	if (n == 0 &&
 	    state.symbol_table.contains(key)) {
 		auto other = state.symbol_table[key];
-		state.report_message(report_type::error, "Struct name already exists", decl.ident);
-		state.report_message(report_type::info, "Previous declaration here", *other.ast_node);
+		state.report_message(report_type::error, "Struct name already exists", &decl.ident);
+		state.report_message(report_type::info, "Previous declaration here", other.ast_node);
 		return 0;
 	}
 

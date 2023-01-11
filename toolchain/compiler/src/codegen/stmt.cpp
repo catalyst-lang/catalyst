@@ -29,7 +29,7 @@ void codegen(codegen::state &state, ast::statement_ptr stmt) {
 	} else if (isa<ast::statement_block>(stmt)) {
 		codegen(state, *(ast::statement_block *)stmt.get());
 	} else {
-		state.report_message(report_type::error, "unsupported statement type", *stmt);
+		state.report_message(report_type::error, "unsupported statement type", stmt.get());
 	}
 }
 
@@ -40,27 +40,27 @@ void codegen(codegen::state &state, ast::statement_return &stmt) {
 	
 	if (isa<type_void>(expecting_type)) {
 		if (stmt.expr.has_value()) {	
-			state.report_message(report_type::error, "‘return’ with a value, in function returning void", stmt);
+			state.report_message(report_type::error, "‘return’ with a value, in function returning void", &stmt);
 			return;
 		}
 		state.Builder.CreateBr(state.current_return_block);
 	} else {
 		if (!stmt.expr.has_value()) {
-			state.report_message(report_type::error, "Expecting return value", stmt);
+			state.report_message(report_type::error, "Expecting return value", &stmt);
 			return;
 		}
 		auto expr_type = expr_resulting_type(state, stmt.expr.value(), expecting_type);
 		auto return_type = ((type_function *)state.current_function_symbol->type.get())->return_type;
 
 		if (*expr_type != *return_type) {
-			state.report_message(report_type::error, "Conflicting return type", stmt);
+			state.report_message(report_type::error, "Conflicting return type", &stmt);
 			std::string message = "Got ";
 			message += expr_type->get_fqn();
 			message += ", but expected type ";
 			message += return_type->get_fqn();
 			state.report_message(report_type::info, message);
 			state.report_message(report_type::info, "For function starting here",
-								*state.current_function_symbol->ast_node);
+								state.current_function_symbol->ast_node);
 			// TODO: warn (instead of error) about return type mismatch
 		}
 
@@ -75,7 +75,7 @@ void codegen(codegen::state &state, ast::statement_return &stmt) {
 void codegen(codegen::state &state, std::vector<ast::statement_ptr> const &statements) {
 	for (auto &stmt : statements) {
 		if (state.Builder.GetInsertBlock()->getTerminator()) {
-			state.report_message(report_type::warning, "Statements after return", *stmt);
+			state.report_message(report_type::warning, "Statements after return", stmt.get());
 		} else {
 			codegen(state, stmt);
 		}
@@ -111,7 +111,7 @@ void codegen(codegen::state &state, ast::statement_if &stmt) {
 	auto p_cond_type = dynamic_cast<type_primitive *>(cond_type.get());
 	if (p_cond_type == nullptr) {
 		state.report_message(report_type::error,
-		                     "condition does not result in comparable primitive type", *stmt.cond);
+		                     "condition does not result in comparable primitive type", stmt.cond.get());
 		return;
 	}
 
