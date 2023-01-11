@@ -94,7 +94,17 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_liter
 	return type::create_builtin("bool");
 }
 
+std::shared_ptr<type> expr_resulting_type_this(codegen::state &state, ast::expr_ident &expr, std::shared_ptr<type> expecting_type) {
+	auto fn_type = (type_function*)state.current_function_symbol->type.get();
+	if (!fn_type || !fn_type->is_method()) {
+		return nullptr;
+	}
+	return std::make_shared<type_object>(fn_type->method_of);
+}
+
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_ident &expr, std::shared_ptr<type> expecting_type) {
+	if (expr.ident.name == "this") return expr_resulting_type_this(state, expr, expecting_type);
+
 	// Look this variable up in the function.
 	auto *symbol = state.scopes.find_named_symbol(expr.ident.name);
 	if (!symbol)
@@ -177,7 +187,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_membe
 	auto lhs_struct = lhs_object->object_type;
 
 	if (!isa<ast::expr_ident>(expr.rhs)) {
-		state.report_message(report_type::error, "Identifier expected", expr.rhs.get());
+		//state.report_message(report_type::error, "Identifier expected", expr.rhs.get());
 		return type::create_builtin();
 	}
 

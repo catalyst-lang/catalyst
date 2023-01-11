@@ -17,9 +17,10 @@ struct type;
 namespace catalyst::compiler::codegen {
 
 struct member {
-	member(const std::string &name, std::shared_ptr<type> type) : name(name), type(type) {}
+	member(const std::string &name, std::shared_ptr<type> type, ast::decl_ptr decl) : name(name), type(type), decl(decl) {}
 	std::string name;
 	std::shared_ptr<type> type;
+	ast::decl_ptr decl;
 };
 
 struct type {
@@ -269,6 +270,8 @@ struct type_f80 : type_primitive {
 	llvm::Constant *get_llvm_constant_zero(codegen::state &state) const override;
 };
 
+struct type_custom;
+
 struct type_function : type {
 	explicit type_function(std::shared_ptr<type> return_type)
 		: type("function"), return_type(std::move(return_type)) {}
@@ -284,6 +287,9 @@ struct type_function : type {
 	virtual llvm::Value* get_sizeof(catalyst::compiler::codegen::state &state) override;
 	
 	bool is_valid() override;
+
+	std::shared_ptr<type_custom> method_of = nullptr;
+	inline bool is_method() const { return method_of != nullptr; }
 };
 
 struct type_custom : type {

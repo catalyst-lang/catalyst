@@ -328,6 +328,11 @@ bool type_primitive::is_assignable_from(const std::shared_ptr<type> &type) const
 
 llvm::Type *type_function::get_llvm_type(state &state) {
 	std::vector<llvm::Type *> params;
+
+	if (this->is_method()) {
+		params.push_back(llvm::PointerType::get(*state.TheContext, 0));
+	}
+
 	for (const auto &param : parameters) {
 		auto type = param->get_llvm_type(state);
 
@@ -351,7 +356,7 @@ llvm::Value* type_function::get_sizeof(catalyst::compiler::codegen::state &state
 }
 
 std::string type_function::get_fqn() const {
-	std::string fqn = "fn(";
+	std::string fqn = is_method() ? "@fn(" : "fn(";
 	bool first = true;
 	for (auto param : parameters) {
 		if (!first) {
@@ -394,7 +399,9 @@ llvm::Type *type_struct::get_llvm_type(state &state) {
 	if (structType == nullptr) {
 		std::vector<llvm::Type *> fields;
 		for (const auto &member : members) {
-			fields.push_back(member.type->get_llvm_type(state));
+			if (!isa<ast::decl_fn>(member.decl)) {
+				fields.push_back(member.type->get_llvm_type(state));
+			}
 		}
 
 		structType = llvm::StructType::create(*state.TheContext, fields, name, true);
@@ -405,23 +412,23 @@ llvm::Type *type_struct::get_llvm_type(state &state) {
 std::string type_struct::get_fqn() const {
 	std::string fqn = "struct(" + name + "){";
 	bool first = true;
-	for (const auto &[name, type] : members) {
+	for (const auto &mmbr : members) {
 		if (!first) {
 			fqn += ",";
 		} else {
 			first = false;
 		}
-		fqn += name;
+		fqn += mmbr.name;
 		fqn += ":";
-		fqn += type->get_fqn();
+		fqn += mmbr.type->get_fqn();
 	}
 	fqn += "}";
 	return fqn;
 }
 
 bool type_struct::is_valid() {
-	for (const auto &[name, type] : members) {
-		if (!type->is_valid()) return false;
+	for (const auto &mmbr : members) {
+		if (!mmbr.type->is_valid()) return false;
 	}
 	return true;
 }

@@ -117,8 +117,25 @@ llvm::Value *codegen(codegen::state &state, ast::expr_literal_bool &expr,
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(1, expr.value));
 }
 
+llvm::Value *codegen_this(codegen::state &state, ast::expr_ident &expr,
+                     std::shared_ptr<type> expecting_type) {
+	auto fn_type = (type_function*)state.current_function_symbol->type.get();
+	if (!fn_type) {
+		state.report_message(report_type::error, "`this` referenced outside of function.", &expr);
+		return nullptr;
+	}
+	if (!fn_type->is_method()) {
+		state.report_message(report_type::error, "`this` referenced in non-member function.", &expr);
+		state.report_message(report_type::info, "In function:", state.current_function_symbol->ast_node);
+		return nullptr;
+	}
+	return state.current_function->getArg(0);
+}
+
 llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr,
                      std::shared_ptr<type> expecting_type) {
+	if (expr.ident.name == "this") return codegen_this(state, expr, expecting_type);
+
 	// Look this variable up in the function.
 	auto *symbol = state.scopes.find_named_symbol(expr.ident.name);
 	if (!symbol) {
@@ -333,6 +350,12 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 	}
 
 	auto ident = &((ast::expr_ident *)expr.rhs.get())->ident;
+
+	if (ident->name == "this") {
+		state.report_message(report_type::error, "`this` is a reserved identifier", expr.rhs.get());
+		state.report_message(report_type::help, "`this` can't be used to the right side of `.`. It can only be the left-most in a chain of member accesses.");
+		return nullptr;
+	}
 
 	int index = lhs_struct->index_of(ident->name);
 

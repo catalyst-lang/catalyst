@@ -39,7 +39,6 @@ void codegen(codegen::state &state, ast::decl_ptr decl) {
 /// Recursively go over all nested local variables in an AST node and add them to the symbol_table
 /// @return number of locals added or changed in this pass
 int locals_pass(codegen::state &state, int n, ast::statement_ptr &stmt);
-int locals_pass(codegen::state &state, int n, ast::decl_ptr &decl);
 
 int locals_pass(codegen::state &state, int n,
                 std::vector<catalyst::ast::statement_ptr> &statements) {
@@ -241,6 +240,8 @@ void codegen(codegen::state &state, ast::decl_fn &decl) {
 	// Record the function arguments in the NamedValues map.
 	for (auto &Arg : the_function->args()) {
 		// Create an alloca for this variable.
+		if (type->is_method() && Arg.getArgNo() == 0) continue;
+
 		auto &arg_local =
 			state.symbol_table[state.scopes.get_fully_qualified_scope_name(Arg.getName().str())];
 
@@ -338,6 +339,12 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 	// First, check for an existing function from a previous 'extern' declaration.
 	// llvm::Function *the_function = state.TheModule->getFunction(decl.ident.name);
 
+	symbol* method_of = nullptr;
+	if (state.symbol_table.contains(state.scopes.get_fully_qualified_scope_name())) {
+		auto parent = state.symbol_table[state.scopes.get_fully_qualified_scope_name()];
+		if (isa<type_struct>(parent.type)) method_of = &parent;
+	}
+
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 
 	if (n == 0 && state.symbol_table.contains(key)) {
@@ -350,6 +357,9 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 	int changed_num = n == 0 ? 1 : 0;
 
 	auto fn_type = decl_get_type(state, decl);
+	if (method_of) {
+		((type_function *)fn_type.get())->method_of = std::dynamic_pointer_cast<type_custom>(method_of->type);
+	}
 
 	const auto [res, symbol_introduced] =
 		state.symbol_table.try_emplace(key, &decl, nullptr, fn_type);
@@ -396,8 +406,14 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 			llvm::Function::ExternalLinkage, decl.ident.name, state.TheModule.get());
 
 		// Set names for all arguments.
-		unsigned i = 0;
+		unsigned i = method_of != nullptr ? -1 : 0;
 		for (auto &Arg : the_function->args()) {
+			if (i == -1) {
+				// method; this param
+				Arg.setName("this");
+				i++;
+				continue;
+			}
 			Arg.setName(decl.parameter_list[i].ident.name);
 			if (isa<type_object>(current_fn_type->parameters[i])) {
 				auto to = (type_object *)current_fn_type->parameters[i].get();

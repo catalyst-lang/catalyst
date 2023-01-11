@@ -2,6 +2,10 @@
             var i = 4
             var j = 9.8
             var k = 9i32
+
+            fn set_k(k: i64) {
+                this.k = k
+            }
         }
 
         fn test() -> bla {
@@ -12,7 +16,13 @@
             return a
         }
 
+        fn slkdfj(i: i32) {
+            return 4
+        }
+
         fn main() {
-            var a = test().i
-            return a
+            var a = test()
+            //return slkdfj(a.i)
+            a.set_k(99)
+            //return a
         }
