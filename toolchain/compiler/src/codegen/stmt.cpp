@@ -5,6 +5,7 @@
 #include <sstream>
 #include <typeinfo>
 
+#include "catalyst/rtti.hpp"
 #include "decl.hpp"
 #include "expr.hpp"
 #include "expr_type.hpp"
@@ -17,15 +18,15 @@ namespace catalyst::compiler::codegen {
 // and bloat to the codebase than just this one ugly dispatch function.
 // Feel free to refactor the AST and introduce an _elegant_ visitation pattern.
 void codegen(codegen::state &state, ast::statement_ptr stmt) {
-	if (typeid(*stmt) == typeid(ast::statement_expr)) {
+	if (isa<ast::statement_expr>(stmt)) {
 		codegen(state, *(ast::statement_expr *)stmt.get());
-	} else if (typeid(*stmt) == typeid(ast::statement_decl)) {
+	} else if (isa<ast::statement_decl>(stmt)) {
 		codegen(state, *(ast::statement_decl *)stmt.get());
-	} else if (typeid(*stmt) == typeid(ast::statement_return)) {
+	} else if (isa<ast::statement_return>(stmt)) {
 		codegen(state, *(ast::statement_return *)stmt.get());
-	} else if (typeid(*stmt) == typeid(ast::statement_if)) {
+	} else if (isa<ast::statement_if>(stmt)) {
 		codegen(state, *(ast::statement_if *)stmt.get());
-	} else if (typeid(*stmt) == typeid(ast::statement_block)) {
+	} else if (isa<ast::statement_block>(stmt)) {
 		codegen(state, *(ast::statement_block *)stmt.get());
 	} else {
 		state.report_message(report_type::error, "unsupported statement type", *stmt);
@@ -37,7 +38,7 @@ void codegen(codegen::state &state, ast::statement_expr &stmt) { codegen(state, 
 void codegen(codegen::state &state, ast::statement_return &stmt) {
 	auto expecting_type = ((type_function*)state.current_function_symbol->type.get())->return_type;
 	
-	if (typeid(*expecting_type) == typeid(type_void)) {
+	if (isa<type_void>(expecting_type)) {
 		if (stmt.expr.has_value()) {	
 			state.report_message(report_type::error, "‘return’ with a value, in function returning void", stmt);
 			return;

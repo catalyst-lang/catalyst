@@ -8,6 +8,7 @@
 #include <string>
 #include <typeinfo>
 
+#include "catalyst/rtti.hpp"
 #include "decl.hpp"
 #include "decl_type.hpp"
 #include "expr.hpp"
@@ -24,13 +25,11 @@ void codegen(codegen::state &state, ast::decl_ptr decl) {
 	//	if (std::dynamic_pointer_cast<ast::decl_fn>(decl)) {
 	//		return codegen(state, *(ast::decl_fn *)decl.get());
 	//	}
-	if (typeid(*decl) == typeid(ast::decl_fn)) {
+	if (isa<ast::decl_fn>(decl)) {
 		codegen(state, *(ast::decl_fn *)decl.get());
-	} else if (typeid(*decl) == typeid(ast::decl_var)) {
+	} else if (isa<ast::decl_var>(decl)) {
 		codegen(state, *(ast::decl_var *)decl.get());
-	} else if (typeid(*decl) == typeid(ast::decl_const)) {
-		codegen(state, *(ast::decl_var *)decl.get());
-	} else if (typeid(*decl) == typeid(ast::decl_struct)) {
+	} else if (isa<ast::decl_struct>(decl)) {
 		codegen(state, *(ast::decl_struct *)decl.get());
 	} else {
 		state.report_message(report_type::error, "Decl type not implemented", *decl.get());
@@ -135,15 +134,15 @@ int locals_pass(codegen::state &state, int n, ast::statement_return &stmt) {
 }
 
 int locals_pass(codegen::state &state, int n, ast::statement_ptr &stmt) {
-	if (typeid(*stmt) == typeid(ast::statement_decl)) {
+	if (isa<ast::statement_decl>(stmt)) {
 		return locals_pass(state, n, *(ast::statement_decl *)stmt.get());
-	} else if (typeid(*stmt) == typeid(ast::statement_if)) {
+	} else if (isa<ast::statement_if>(stmt)) {
 		return locals_pass(state, n, *(ast::statement_if *)stmt.get());
-	} else if (typeid(*stmt) == typeid(ast::statement_block)) {
+	} else if (isa<ast::statement_block>(stmt)) {
 		return locals_pass(state, n, *(ast::statement_block *)stmt.get());
-	} else if (typeid(*stmt) == typeid(ast::statement_return)) {
+	} else if (isa<ast::statement_return>(stmt)) {
 		return locals_pass(state, n, *(ast::statement_return *)stmt.get());
-	} else if (typeid(*stmt) == typeid(ast::statement_expr)) {
+	} else if (isa<ast::statement_expr>(stmt)) {
 		// TODO
 		return 0;
 	}
@@ -179,13 +178,11 @@ int locals_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 }
 
 int locals_pass(codegen::state &state, int n, ast::decl_ptr &decl) {
-	if (typeid(*decl) == typeid(ast::decl_var)) {
+	if (isa<ast::decl_var>(decl)) {
 		return locals_pass(state, n, *(ast::decl_var *)decl.get());
-	} else if (typeid(*decl) == typeid(ast::decl_const)) {
-		return locals_pass(state, n, *(ast::decl_var *)decl.get());
-	} else if (typeid(*decl) == typeid(ast::decl_fn)) {
+	} else if (isa<ast::decl_fn>(decl)) {
 		return locals_pass(state, n, *(ast::decl_fn *)decl.get());
-	} else if (typeid(*decl) == typeid(ast::decl_struct)) {
+	} else if (isa<ast::decl_struct>(decl)) {
 		state.report_message(report_type::error, "Local structs not supported (yet)", *decl);
 		return 0;
 		// return locals_pass(state, n, *(ast::decl_struct *)decl.get());
@@ -199,12 +196,12 @@ int locals_pass(codegen::state &state, int n, ast::decl_ptr &decl) {
 static llvm::AllocaInst *CreateEntryBlockAlloca(codegen::state &state, llvm::Function *the_function,
                                                 const std::string &var_name, type &type) {
 	llvm::IRBuilder<> TmpB(&the_function->getEntryBlock(), the_function->getEntryBlock().begin());
-	if (typeid(type) == typeid(type_function)) {
+	if (isa<type_function>(type)) {
 		return TmpB.CreateAlloca(TmpB.getPtrTy(), nullptr, var_name);
-	} else if (typeid(type) == typeid(type_object)) {
+	} else if (isa<type_object>(type)) {
 		auto *to = (type_object *)&type;
 		return TmpB.CreateAlloca(to->object_type->get_llvm_type(state), nullptr, var_name);
-	} else if (typeid(type) == typeid(type_void)) {
+	} else if (isa<type_void>(type)) {
 		return nullptr;
 	} else {
 		return TmpB.CreateAlloca(type.get_llvm_type(state), nullptr, var_name);
@@ -229,7 +226,7 @@ void codegen(codegen::state &state, ast::decl_fn &decl) {
 
 	auto previous_return = state.current_return;
 	auto previous_return_block = state.current_return_block;
-	if (typeid(*type->return_type) == typeid(type_void)) {
+	if (isa<type_void>(type->return_type)) {
 		state.current_return = nullptr;
 	} else {
 		state.current_return =
@@ -247,9 +244,9 @@ void codegen(codegen::state &state, ast::decl_fn &decl) {
 		auto &arg_local =
 			state.symbol_table[state.scopes.get_fully_qualified_scope_name(Arg.getName().str())];
 
-		if (typeid(*arg_local.type) == typeid(type_object)) {
+		if (isa<type_object>(arg_local.type)) {
 			auto to = (type_object *)arg_local.type.get();
-			if (typeid(*to->object_type) == typeid(type_struct)) {
+			if (isa<type_struct>(to->object_type)) {
 				arg_local.value = &Arg;
 			} else {
 				state.Builder.CreateStore(&Arg, arg_local.value);
@@ -276,7 +273,7 @@ void codegen(codegen::state &state, ast::decl_fn &decl) {
 	state.current_return_block->insertInto(the_function);
 	state.Builder.SetInsertPoint(state.current_return_block);
 
-	if (typeid(*type->return_type) == typeid(type_void)) {
+	if (isa<type_void>(type->return_type)) {
 		state.Builder.CreateRetVoid();
 	} else {
 		state.Builder.CreateRet(state.Builder.CreateLoad(state.current_return->getAllocatedType(),
@@ -327,13 +324,11 @@ void codegen(codegen::state &state, ast::fn_body_expr &body) {
 void codegen(codegen::state &state, ast::fn_body_block &body) { codegen(state, body.statements); }
 
 int proto_pass(codegen::state &state, int n, ast::decl_ptr decl) {
-	if (typeid(*decl) == typeid(ast::decl_fn)) {
+	if (isa<ast::decl_fn>(decl)) {
 		return proto_pass(state, n, *(ast::decl_fn *)decl.get());
-	} else if (typeid(*decl) == typeid(ast::decl_var)) {
+	} else if (isa<ast::decl_var>(decl)) {
 		return proto_pass(state, n, *(ast::decl_var *)decl.get());
-	} else if (typeid(*decl) == typeid(ast::decl_const)) {
-		return proto_pass(state, n, *(ast::decl_var *)decl.get());
-	} else if (typeid(*decl) == typeid(ast::decl_struct)) {
+	} else if (isa<ast::decl_struct>(decl)) {
 		return proto_pass(state, n, *(ast::decl_struct *)decl.get());
 	}
 	return 0;
@@ -382,7 +377,7 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 
 	if (!state.current_function_has_return) {
 		if (!decl.type.has_value() || (decl.type.has_value() && decl.type.value().ident.name == "void")) {
-			if (typeid(*current_fn_type->return_type) != typeid(type_void)) {
+			if (!isa<type_void>(current_fn_type->return_type)) {
 				current_fn_type->return_type = type::create(state, "void");
 				changed_num++;
 			}
@@ -404,9 +399,9 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 		unsigned i = 0;
 		for (auto &Arg : the_function->args()) {
 			Arg.setName(decl.parameter_list[i].ident.name);
-			if (typeid(*current_fn_type->parameters[i]) == typeid(type_object)) {
+			if (isa<type_object>(current_fn_type->parameters[i])) {
 				auto to = (type_object *)current_fn_type->parameters[i].get();
-				if (typeid(*to->object_type) == typeid(type_struct)) {
+				if (isa<type_struct>(to->object_type)) {
 					Arg.addAttr(llvm::Attribute::NoUndef);
 					Arg.addAttr(llvm::Attribute::getWithByValType(
 						*state.TheContext, current_fn_type->parameters[i]->get_llvm_type(state)));

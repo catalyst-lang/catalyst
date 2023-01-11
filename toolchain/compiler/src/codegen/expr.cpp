@@ -7,6 +7,7 @@
 #include <sstream>
 #include <typeinfo>
 
+#include "catalyst/rtti.hpp"
 #include "expr.hpp"
 #include "expr_type.hpp"
 #include "value.hpp"
@@ -20,25 +21,25 @@ namespace catalyst::compiler::codegen {
 // Feel free to refactor the AST and introduce an _elegant_ visitation pattern.
 llvm::Value *codegen(codegen::state &state, ast::expr_ptr expr,
                      std::shared_ptr<type> expecting_type) {
-	if (typeid(*expr) == typeid(ast::expr_ident)) {
+	if (isa<ast::expr_ident>(expr)) {
 		return codegen(state, *(ast::expr_ident *)expr.get(), expecting_type);
-	} else if (typeid(*expr) == typeid(ast::expr_literal_numeric)) {
+	} else if (isa<ast::expr_literal_numeric>(expr)) {
 		return codegen(state, *(ast::expr_literal_numeric *)expr.get(), expecting_type);
-	} else if (typeid(*expr) == typeid(ast::expr_literal_bool)) {
+	} else if (isa<ast::expr_literal_bool>(expr)) {
 		return codegen(state, *(ast::expr_literal_bool *)expr.get(), expecting_type);
-	} else if (typeid(*expr) == typeid(ast::expr_binary_arithmetic)) {
+	} else if (isa<ast::expr_binary_arithmetic>(expr)) {
 		return codegen(state, *(ast::expr_binary_arithmetic *)expr.get(), expecting_type);
-	} else if (typeid(*expr) == typeid(ast::expr_unary_arithmetic)) {
+	} else if (isa<ast::expr_unary_arithmetic>(expr)) {
 		return codegen(state, *(ast::expr_unary_arithmetic *)expr.get(), expecting_type);
-	} else if (typeid(*expr) == typeid(ast::expr_binary_logical)) {
+	} else if (isa<ast::expr_binary_logical>(expr)) {
 		return codegen(state, *(ast::expr_binary_logical *)expr.get(), expecting_type);
-	} else if (typeid(*expr) == typeid(ast::expr_assignment)) {
+	} else if (isa<ast::expr_assignment>(expr)) {
 		return codegen(state, *(ast::expr_assignment *)expr.get(), expecting_type);
-	} else if (typeid(*expr) == typeid(ast::expr_call)) {
+	} else if (isa<ast::expr_call>(expr)) {
 		return codegen(state, *(ast::expr_call *)expr.get(), expecting_type);
-	} else if (typeid(*expr) == typeid(ast::expr_member_access)) {
+	} else if (isa<ast::expr_member_access>(expr)) {
 		return codegen(state, *(ast::expr_member_access *)expr.get(), expecting_type);
-	} else if (typeid(*expr) == typeid(ast::expr_cast)) {
+	} else if (isa<ast::expr_cast>(expr)) {
 		return codegen(state, *(ast::expr_cast *)expr.get(), expecting_type);
 	}
 
@@ -144,7 +145,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr,
 			// if (expecting_type == nullptr) {
 			//  return the pointer
 			return a;
-			//} else if (typeid(*expecting_type) == typeid(type_object)) {
+			//} else if (type id(*expecting_type) == type id(type_object)) {
 			//	auto *a_struct = (type_struct*)symbol->type.get();
 			//	return state.Builder.CreateLoad(a_struct->get_llvm_type(state), a);
 			//} else {
@@ -230,7 +231,7 @@ llvm::Value *structure_to_pointer(codegen::state &state, llvm::Value *struct_val
 
 llvm::Value *codegen(codegen::state &state, ast::expr_call &expr,
                      std::shared_ptr<type> expecting_type) {
-	if (typeid(*expr.lhs) == typeid(ast::expr_ident)) {
+	if (isa<ast::expr_ident>(expr.lhs)) {
 		auto &callee = *(ast::expr_ident *)expr.lhs.get();
 		// Look up the name in the global module table.
 		// llvm::Function *CalleeF = state.TheModule->getFunction(callee.name);
@@ -275,7 +276,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr,
 		llvm::CallInst *callinstr = nullptr;
 		if (llvm::isa<llvm::Function>(sym->value)) {
 			// This is a straight function value
-			if (typeid(*type->return_type) == typeid(type_void)) {
+			if (isa<type_void>(type->return_type)) {
 				callinstr = state.Builder.CreateCall(CalleeF, ArgsV);
 			} else {
 				callinstr = state.Builder.CreateCall(CalleeF, ArgsV, "calltmp");
@@ -284,7 +285,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr,
 			// This is a function pointer
 			llvm::Value *ptr = state.Builder.CreateLoad(sym->value->getType(), sym->value);
 			llvm::FunctionType *fty = (llvm::FunctionType *)sym->type->get_llvm_type(state);
-			if (typeid(*type->return_type) == typeid(type_void)) {
+			if (isa<type_void>(type->return_type)) {
 				callinstr = state.Builder.CreateCall(fty, ptr, ArgsV);
 			} else {
 				callinstr = state.Builder.CreateCall(fty, ptr, ArgsV, "ptrcalltmp");
@@ -297,9 +298,9 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr,
 
 		for (unsigned i = 0, e = expr.parameters.size(); i != e; ++i) {
 			auto arg_type = expr_resulting_type(state, expr.parameters[i], type->parameters[i]);
-			if (typeid(*arg_type) == typeid(type_object)) {
+			if (isa<type_object>(arg_type)) {
 				auto to = (type_object *)arg_type.get();
-				if (typeid(*to->object_type) == typeid(type_struct)) {
+				if (isa<type_struct>(to->object_type)) {
 					callinstr->addParamAttr(i, llvm::Attribute::NoUndef);
 					callinstr->addParamAttr(i, llvm::Attribute::getWithByValType(*state.TheContext, to->object_type->get_llvm_type(state)));
 				}
@@ -317,7 +318,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 	auto lhs_value = codegen(state, expr.lhs);
 	auto lhs_type = expr_resulting_type(state, expr.lhs);
 
-	if (typeid(*lhs_type) != typeid(type_object)) {
+	if (!isa<type_object>(lhs_type)) {
 		state.report_message(report_type::error, "Member access can only be performed on an object",
 		                     *expr.lhs);
 		return nullptr;
@@ -326,7 +327,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 	auto lhs_object = (type_object *)lhs_type.get();
 	auto lhs_struct = lhs_object->object_type;
 
-	if (typeid(*expr.rhs) != typeid(ast::expr_ident)) {
+	if (!isa<ast::expr_ident>(expr.rhs)) {
 		state.report_message(report_type::error, "Identifier expected", *expr.rhs);
 		return nullptr;
 	}
@@ -343,8 +344,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 	auto ptr = state.Builder.CreateStructGEP(lhs_struct->get_llvm_type(state), lhs_value, index);
 
 	auto rhs_type = lhs_struct->members[index].type;
-	if (typeid(*rhs_type) == typeid(type_object) &&
-	    (!expecting_type || typeid(*expecting_type) != typeid(type_object))) {
+	if (isa<type_object>(rhs_type) && (!expecting_type || !isa<type_object>(expecting_type))) {
 		// member is a struct or class, return the pointer if we don't request the
 		// object value itself
 		return ptr;
@@ -371,9 +371,9 @@ void codegen_assignment(codegen::state &state, llvm::Value *dest_ptr,
 		}
 	}
 
-	if (typeid(*rhs_type) == typeid(type_object)) {
+	if (isa<type_object>(rhs_type)) {
 		auto to = (type_object *)rhs_type.get();
-		if (typeid(*to->object_type) == typeid(type_struct)) {	
+		if (isa<type_struct>(to->object_type)) {	
 			auto size = to->object_type->get_sizeof(state);
 			if (llvm::isa<llvm::PointerType>(rhs_value->getType())) {
 				state.Builder.CreateMemCpy(dest_ptr, llvm::MaybeAlign(0), rhs_value, 

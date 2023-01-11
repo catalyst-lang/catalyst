@@ -1,6 +1,8 @@
 // Copyright (c) 2021-2022 Bas du Pré and Catalyst contributors
 // SPDX-License-Identifier: MIT
 
+#include "catalyst/rtti.hpp"
+
 #include "type.hpp"
 
 namespace catalyst::compiler::codegen {
@@ -59,7 +61,7 @@ std::shared_ptr<type> type::create_builtin(const ast::type &ast_type) {
 std::shared_ptr<type> type::create(codegen::state &state, const std::string &name) {
 	auto sym = state.scopes.find_named_symbol(name);
 	if (sym != nullptr) {
-		if (typeid(*sym->type) == typeid(type_struct)) {
+		if (isa<type_struct>(sym->type)) {
 			return std::make_shared<type_object>(std::dynamic_pointer_cast<type_struct>(sym->type));
 		}
 	}
@@ -329,7 +331,7 @@ llvm::Type *type_function::get_llvm_type(state &state) {
 	for (const auto &param : parameters) {
 		auto type = param->get_llvm_type(state);
 
-		if (typeid(*param) == typeid(type_object)) {
+		if (isa<type_object>(param)) {
 			auto to = (type_object*)param.get();
 			// always pointers (even with structs, as they are augmented with byval)
 			type = llvm::PointerType::get(*state.TheContext, 0);

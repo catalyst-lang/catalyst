@@ -1,5 +1,6 @@
 #include <vector>
 
+#include "catalyst/rtti.hpp"
 #include "decl_type.hpp"
 #include "expr_type.hpp"
 
@@ -43,13 +44,13 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_st
 }
 
 std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_ptr decl) {
-	if (typeid(*decl) == typeid(ast::decl_fn)) {
+	if (isa<ast::decl_fn>(decl)) {
 		return decl_get_type(state, *(ast::decl_fn *)decl.get());
-	} else if (typeid(*decl) == typeid(ast::decl_var)) {
+	} else if (isa<ast::decl_var>(decl)) {
 		return decl_get_type(state, *(ast::decl_var *)decl.get());
-	} else if (typeid(*decl) == typeid(ast::decl_const)) {
+	} else if (isa<ast::decl_const>(decl)) {
 		return decl_get_type(state, *(ast::decl_var *)decl.get());
-	} else if (typeid(*decl) == typeid(ast::decl_struct)) {
+	} else if (isa<ast::decl_struct>(decl)) {
 		return decl_get_type(state, *(ast::decl_struct *)decl.get());
 	} else {
 		state.report_message(report_type::error, "Decl type not implemented", *decl.get());

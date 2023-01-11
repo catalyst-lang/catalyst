@@ -18,6 +18,14 @@
 #include "llvm/Transforms/Utils.h"
 #include "llvm/Transforms/IPO/AlwaysInliner.h"
 #include "llvm/Transforms/IPO/Inliner.h"
+#include "llvm/Transforms/IPO/ArgumentPromotion.h"
+#include "llvm/Transforms/Vectorize.h"
+#include "llvm/Transforms/IPO.h"
+#include "llvm/Transforms/IPO/Attributor.h"
+#include "llvm/Transforms/IPO/ForceFunctionAttrs.h"
+#include "llvm/Transforms/IPO/FunctionAttrs.h"
+#include "llvm/Transforms/IPO/InferFunctionAttrs.h"
+#include "llvm/Analysis/Passes.h"
 #include "jit.hpp"
 #pragma warning( pop )
 
@@ -34,7 +42,7 @@ compile_result compile(catalyst::ast::translation_unit &tu, options options) {
 
 	state->runtime->register_symbols();
 
-	//options.optimizer_level = 2;
+	options.optimizer_level = 2;
 
 	if (options.optimizer_level >= 1) {
 		// Standard mem2reg pass to construct SSA form from alloca's and stores.
@@ -50,11 +58,22 @@ compile_result compile(catalyst::ast::translation_unit &tu, options options) {
 		// Simplify the control flow graph (deleting unreachable blocks, etc).
 		state->FPM->add(llvm::createCFGSimplificationPass());
 
+		state->FPM->add(llvm::createMemCpyOptPass());
 		state->FPM->add(llvm::createConstantHoistingPass());
 		state->FPM->add(llvm::createDeadCodeEliminationPass());
+		//state->FPM->add(llvm::createDeadArgEliminationPass());
+		state->FPM->add(llvm::createDeadStoreEliminationPass());
+		//state->FPM->add(llvm::createInferFunctionAttrsLegacyPass());
+		state->FPM->add(llvm::createIndVarSimplifyPass());
 
 		state->FPM->add(llvm::createPartiallyInlineLibCallsPass());
+		//state->FPM->add(llvm::createAlwaysInlinerLegacyPass());
+		//state->FPM->add(llvm::createVectorCombinePass());
+		//state->FPM->add(llvm::createLoadStoreVectorizerPass());
+		//state->FPM->add(llvm::createSLPVectorizerPass());
+		//state->FPM->add(llvm::createLoopVectorizePass());
 	}
+
 
 	state->FPM->doInitialization();
 
