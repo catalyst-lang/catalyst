@@ -18,7 +18,7 @@ int32_t bar() {
 }
 
 int32_t baz(int64_t p) {
-	printf("baz! %lld\n", p);
+	printf("baz! %ld\n", p);
 	return 9;
 }
 
