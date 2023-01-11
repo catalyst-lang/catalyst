@@ -43,12 +43,10 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_st
     return type::create_struct(decl.ident.name, members);
 }
 
-std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_ptr decl) {
+std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, const ast::decl_ptr &decl) {
 	if (isa<ast::decl_fn>(decl)) {
 		return decl_get_type(state, *(ast::decl_fn *)decl.get());
 	} else if (isa<ast::decl_var>(decl)) {
-		return decl_get_type(state, *(ast::decl_var *)decl.get());
-	} else if (isa<ast::decl_const>(decl)) {
 		return decl_get_type(state, *(ast::decl_var *)decl.get());
 	} else if (isa<ast::decl_struct>(decl)) {
 		return decl_get_type(state, *(ast::decl_struct *)decl.get());
