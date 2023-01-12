@@ -3,8 +3,8 @@
             var j = 9.8
             var k = 9i32
 
-            fn set_k(k: i64) {
-                this.k = k
+            fn set_k(val: i64) {
+                this.k = val
             }
         }
 
@@ -16,13 +16,10 @@
             return a
         }
 
-        fn slkdfj(i: i32) {
-            return 4
-        }
-
         fn main() {
             var a = test()
-            //return slkdfj(a.i)
             a.set_k(99)
-            //return a
+            var b: bla
+            b.set_k(32)
+            return a.k + b.k
         }

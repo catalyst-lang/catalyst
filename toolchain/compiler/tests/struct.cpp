@@ -339,4 +339,60 @@ TEST_CASE("advanced 1") {
     CHECK(ret == 7779);
 }
 
+TEST_CASE("method 1") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        struct bla { 
+            var i = 4
+            var j = 9.8
+            var k = 9i32
+
+            fn set_k(k: i64) {
+                this.k = k
+            }
+        }
+
+        fn main() {
+            var b: bla
+            b.set_k(32)
+            return b.k
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run(result);
+    CHECK(ret == 32);
+}
+
+TEST_CASE("method 2") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        struct bla { 
+            var i = 4
+            var j = 9.8
+            var k = 9i32
+
+            fn set_k(k: i64) {
+                this.k = k
+            }
+        }
+
+        fn test() -> bla {
+            var a: bla
+            a.i = 1
+            a.j = 3.4
+            a.k = 13
+            return a
+        }
+
+        fn main() {
+            var a = test()
+            a.set_k(99)
+            var b: bla
+            b.set_k(32)
+            return a.k + b.k
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run(result);
+    CHECK(ret == 131);
+}
+
 }

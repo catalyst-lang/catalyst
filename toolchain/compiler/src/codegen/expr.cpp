@@ -246,84 +246,95 @@ llvm::Value *structure_to_pointer(codegen::state &state, llvm::Value *struct_val
 	return ptr;
 }
 
-llvm::Value *codegen(codegen::state &state, ast::expr_call &expr,
-                     std::shared_ptr<type> expecting_type) {
+llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &expr, llvm::Value *this_) {
+	auto CalleeF = (llvm::Function *)sym->value;
+
+	if (!CalleeF) {
+		state.report_message(report_type::error, "Unknown function referenced", &expr);
+		return nullptr;
+	}
+
+	auto type = (type_function*)sym->type.get();
+
+	// If argument mismatch error.
+	if (type->parameters.size() != expr.parameters.size()) {
+		// TODO, make ast_node from parameters for reporting errors
+		std::stringstream str;
+		str << "expected " << type->parameters.size() << ", but got " << expr.parameters.size();
+
+		state.report_message(report_type::error, "Incorrect number of arguments passed", &expr,
+								str.str());
+		return nullptr;
+	}
+
+	// Generate arguments
+	std::vector<llvm::Value *> ArgsV;
+	if (this_) {
+		// method call, prepend the this pointer
+		ArgsV.push_back(this_);
+	}
+	for (unsigned i = 0, e = expr.parameters.size(); i != e; ++i) {
+		auto arg_type = expr_resulting_type(state, expr.parameters[i], type->parameters[i]);
+		auto arg = codegen(state, expr.parameters[i]);
+		if (!arg_type->equals(type->parameters[i])) {
+			// TODO: warn if casting happens
+			arg = arg_type->cast_llvm_value(state, arg, type->parameters[i].get());
+		}
+
+		if (llvm::isa<llvm::StructType>(arg->getType())) {
+			// we want a structure pointer instead
+			arg = structure_to_pointer(state, arg);
+		}
+
+		ArgsV.push_back(arg);
+		if (!ArgsV.back())
+			return nullptr;
+	}
+
+	llvm::CallInst *callinstr = nullptr;
+	if (llvm::isa<llvm::Function>(sym->value)) {
+		// This is a straight function value
+		if (isa<type_void>(type->return_type)) {
+			callinstr = state.Builder.CreateCall(CalleeF, ArgsV);
+		} else {
+			callinstr = state.Builder.CreateCall(CalleeF, ArgsV, "calltmp");
+		}
+	} else if (llvm::isa<llvm::AllocaInst>(sym->value)) {
+		// This is a function pointer
+		llvm::Value *ptr = state.Builder.CreateLoad(sym->value->getType(), sym->value);
+		llvm::FunctionType *fty = (llvm::FunctionType *)sym->type->get_llvm_type(state);
+		if (isa<type_void>(type->return_type)) {
+			callinstr = state.Builder.CreateCall(fty, ptr, ArgsV);
+		} else {
+			callinstr = state.Builder.CreateCall(fty, ptr, ArgsV, "ptrcalltmp");
+		}
+	} else {
+		state.report_message(report_type::error, "unsupported base type for function call",	&expr);
+		return nullptr;
+	}
+
+	// Revisit the arguments to add attributes. This can only be done after the llvm::CallInst is
+	// generated.
+	int method_offset = this_ ? 1 : 0;
+	for (unsigned i = 0, e = expr.parameters.size(); i != e; ++i) {
+		auto arg_type = expr_resulting_type(state, expr.parameters[i], type->parameters[i]);
+		if (isa<type_object>(arg_type)) {
+			auto to = (type_object *)arg_type.get();
+			if (isa<type_struct>(to->object_type)) {
+				callinstr->addParamAttr(i + method_offset, llvm::Attribute::NoUndef);
+				callinstr->addParamAttr(i + method_offset, llvm::Attribute::getWithByValType(*state.TheContext, to->object_type->get_llvm_type(state)));
+			}
+		}
+	}
+	return callinstr;
+}
+
+llvm::Value *codegen(codegen::state &state, ast::expr_call &expr, std::shared_ptr<type> expecting_type) {
 	if (isa<ast::expr_ident>(expr.lhs)) {
 		auto &callee = *(ast::expr_ident *)expr.lhs.get();
 		// Look up the name in the global module table.
-		// llvm::Function *CalleeF = state.TheModule->getFunction(callee.name);
 		auto sym = state.scopes.find_named_symbol(callee.ident.name);
-		auto type = (type_function *)sym->type.get();
-		auto CalleeF = (llvm::Function *)sym->value;
-		if (!CalleeF) {
-			state.report_message(report_type::error, "Unknown function referenced", &callee);
-			return nullptr;
-		}
-
-		// If argument mismatch error.
-		if (type->parameters.size() != expr.parameters.size()) {
-			// TODO, make ast_node from parameters for reporting errors
-			std::stringstream str;
-			str << "expected " << type->parameters.size() << ", but got " << expr.parameters.size();
-
-			state.report_message(report_type::error, "Incorrect number of arguments passed", &callee,
-			                     str.str());
-			return nullptr;
-		}
-
-		std::vector<llvm::Value *> ArgsV;
-		for (unsigned i = 0, e = expr.parameters.size(); i != e; ++i) {
-			auto arg_type = expr_resulting_type(state, expr.parameters[i], type->parameters[i]);
-			auto arg = codegen(state, expr.parameters[i]);
-			if (!arg_type->equals(type->parameters[i])) {
-				// TODO: warn if casting happens
-				arg = arg_type->cast_llvm_value(state, arg, type->parameters[i].get());
-			}
-
-			if (llvm::isa<llvm::StructType>(arg->getType())) {
-				// we want a structure pointer instead
-				arg = structure_to_pointer(state, arg);
-			}
-
-			ArgsV.push_back(arg);
-			if (!ArgsV.back())
-				return nullptr;
-		}
-
-		llvm::CallInst *callinstr = nullptr;
-		if (llvm::isa<llvm::Function>(sym->value)) {
-			// This is a straight function value
-			if (isa<type_void>(type->return_type)) {
-				callinstr = state.Builder.CreateCall(CalleeF, ArgsV);
-			} else {
-				callinstr = state.Builder.CreateCall(CalleeF, ArgsV, "calltmp");
-			}
-		} else if (llvm::isa<llvm::AllocaInst>(sym->value)) {
-			// This is a function pointer
-			llvm::Value *ptr = state.Builder.CreateLoad(sym->value->getType(), sym->value);
-			llvm::FunctionType *fty = (llvm::FunctionType *)sym->type->get_llvm_type(state);
-			if (isa<type_void>(type->return_type)) {
-				callinstr = state.Builder.CreateCall(fty, ptr, ArgsV);
-			} else {
-				callinstr = state.Builder.CreateCall(fty, ptr, ArgsV, "ptrcalltmp");
-			}
-		} else {
-			state.report_message(report_type::error, "unsupported base type for function call",
-			                     &expr);
-			return nullptr;
-		}
-
-		for (unsigned i = 0, e = expr.parameters.size(); i != e; ++i) {
-			auto arg_type = expr_resulting_type(state, expr.parameters[i], type->parameters[i]);
-			if (isa<type_object>(arg_type)) {
-				auto to = (type_object *)arg_type.get();
-				if (isa<type_struct>(to->object_type)) {
-					callinstr->addParamAttr(i, llvm::Attribute::NoUndef);
-					callinstr->addParamAttr(i, llvm::Attribute::getWithByValType(*state.TheContext, to->object_type->get_llvm_type(state)));
-				}
-			}
-		}
-		return callinstr;
+		return codegen_call(state, sym, expr, nullptr);
 	} else {
 		state.report_message(report_type::error, "Virtual functions not implemented", &expr);
 		return nullptr;
@@ -344,36 +355,49 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 	auto lhs_object = (type_object *)lhs_type.get();
 	auto lhs_struct = lhs_object->object_type;
 
-	if (!isa<ast::expr_ident>(expr.rhs)) {
-		state.report_message(report_type::error, "Identifier expected", expr.rhs.get());
+	if (isa<ast::expr_ident>(expr.rhs)) {
+		auto ident = &((ast::expr_ident *)expr.rhs.get())->ident;
+
+		if (ident->name == "this") {
+			state.report_message(report_type::error, "`this` is a reserved identifier", expr.rhs.get());
+			state.report_message(report_type::help, "`this` can't be used to the right side of `.`. It can only be the left-most in a chain of member accesses.");
+			return nullptr;
+		}
+
+		int index = lhs_struct->index_of(ident->name);
+
+		if (llvm::isa<llvm::StructType>(lhs_value->getType())) {
+			// we expect a pointer, but we got a structure value
+			lhs_value = structure_to_pointer(state, lhs_value);
+		}
+
+		auto ptr = state.Builder.CreateStructGEP(lhs_struct->get_llvm_type(state), lhs_value, index);
+
+		auto rhs_type = lhs_struct->members[index].type;
+		if (isa<type_object>(rhs_type) && (!expecting_type || !isa<type_object>(expecting_type))) {
+			// member is a struct or class, return the pointer if we don't request the
+			// object value itself
+			return ptr;
+		}
+
+		return state.Builder.CreateLoad(rhs_type->get_llvm_type(state), ptr);
+	} else if (isa<ast::expr_call>(expr.rhs)) {
+		auto call = (ast::expr_call *)expr.rhs.get();
+
+		if (!isa<ast::expr_ident>(call->lhs)) {
+			state.report_message(report_type::error, "Expected identifier", expr.lhs.get());
+			return nullptr;
+		}
+
+		auto &ident = ((ast::expr_ident *)call->lhs.get())->ident;
+		auto sym = state.scopes.find_named_symbol(lhs_struct->name + "." + ident.name);
+		auto this_ = lhs_value;
+
+		return codegen_call(state, sym, *call, this_);
+	} else {
+		state.report_message(report_type::error, "Identifier or name expected", expr.rhs.get());
 		return nullptr;
 	}
-
-	auto ident = &((ast::expr_ident *)expr.rhs.get())->ident;
-
-	if (ident->name == "this") {
-		state.report_message(report_type::error, "`this` is a reserved identifier", expr.rhs.get());
-		state.report_message(report_type::help, "`this` can't be used to the right side of `.`. It can only be the left-most in a chain of member accesses.");
-		return nullptr;
-	}
-
-	int index = lhs_struct->index_of(ident->name);
-
-	if (llvm::isa<llvm::StructType>(lhs_value->getType())) {
-		// we expect a pointer, but we got a structure value
-		lhs_value = structure_to_pointer(state, lhs_value);
-	}
-
-	auto ptr = state.Builder.CreateStructGEP(lhs_struct->get_llvm_type(state), lhs_value, index);
-
-	auto rhs_type = lhs_struct->members[index].type;
-	if (isa<type_object>(rhs_type) && (!expecting_type || !isa<type_object>(expecting_type))) {
-		// member is a struct or class, return the pointer if we don't request the
-		// object value itself
-		return ptr;
-	}
-
-	return state.Builder.CreateLoad(rhs_type->get_llvm_type(state), ptr);
 }
 
 void codegen_assignment(codegen::state &state, llvm::Value *dest_ptr,

@@ -70,6 +70,9 @@ struct scope_stack : public std::deque<scope> {
 				return &(*symbol_table)[potential_local_name];
 			}
 		}
+		if (symbol_table->count(name) > 0) {
+			return &(*symbol_table)[name];
+		}
 		return nullptr;
 	}
 
