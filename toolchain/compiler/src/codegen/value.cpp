@@ -36,9 +36,10 @@ llvm::Value *get_lvalue(codegen::state &state, ast::expr_ptr expr) {
 			state.Builder.CreateStructGEP(lhs_struct->get_llvm_type(state), lhs_value, index);
 
 		return ptr;
+	} else {
+		state.report_message(report_type::error, "Not a valid lvalue", expr.get());
+		return nullptr;
 	}
-
-	return nullptr;
 }
 
 } // namespace catalyst::compiler::codegen
