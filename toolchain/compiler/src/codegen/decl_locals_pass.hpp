@@ -8,9 +8,9 @@ namespace catalyst::compiler::codegen {
 
 struct locals_pass : pass {
     explicit locals_pass(codegen::state &state, int n = 0) : pass(state) { this->n = n; }
-    virtual int process(ast::decl_var &stmt) override;
-    virtual int process(ast::statement_return &stmt) override;
-    virtual int process(ast::decl_fn &decl) override;
+    int process(ast::decl_var &stmt) override;
+    int process(ast::statement_return &stmt) override;
+    int process(ast::decl_fn &decl) override;
 };
 
 }
