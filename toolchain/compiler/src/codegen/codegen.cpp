@@ -76,7 +76,6 @@ void codegen(codegen::state &state) {
 	assert(state.init_function == nullptr);
 	
 	// create init function
-	std::vector<llvm::Type *> args(0);
 	auto *FT = llvm::FunctionType::get(llvm::Type::getVoidTy(*state.TheContext), false);
 	state.init_function = 
 		llvm::Function::Create(FT, llvm::Function::ExternalLinkage, ".__CATA_INIT", state.TheModule.get());

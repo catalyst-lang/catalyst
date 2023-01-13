@@ -69,13 +69,41 @@ void codegen(codegen::state &state, ast::decl_struct &decl) {
 
     // auto structAlloca = state.Builder.CreateAlloca(llvm_type);
 
+	// create struct init function
+	auto *FT = llvm::FunctionType::get(llvm::Type::getVoidTy(*state.TheContext), { state.Builder.getPtrTy() }, false);
+	auto init_function = 
+		llvm::Function::Create(FT, llvm::Function::ExternalLinkage, key + "..__CATA_INIT", state.TheModule.get());
+	init_function->addFnAttr(llvm::Attribute::AlwaysInline);
+	init_function->setDSOLocal(true);
+	auto this_ = init_function->getArg(0);
+	auto *BB = llvm::BasicBlock::Create(*state.TheContext, "init", init_function);
+	
 	state.scopes.enter(decl.ident.name);
 
 	for (auto &member : type->members) {
 		if (isa<type_function>(member.type)) {
 			codegen(state, member.decl);
+		} else if (isa<ast::decl_var>(member.decl)) {
+			state.Builder.SetInsertPoint(BB);
+			auto decl = (ast::decl_var*)member.decl.get();
+
+			int index = type->index_of(member.name);
+			auto ptr = state.Builder.CreateStructGEP(type->get_llvm_type(state), this_, index);
+
+			if (decl->expr.has_value() && decl->expr.value() != nullptr) {
+				codegen_assignment(state, ptr, member.type, decl->expr.value());
+			} else {
+				// set default value
+				auto default_val = member.type->get_default_llvm_value(state);
+				if (default_val) {
+					state.Builder.CreateStore(default_val, ptr);
+				}
+			}
 		}
 	}
+
+	state.Builder.SetInsertPoint(BB);
+	state.Builder.CreateRetVoid();
 
 	state.scopes.leave();
 

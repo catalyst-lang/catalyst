@@ -403,7 +403,7 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 		}
 		auto the_function = llvm::Function::Create(
 			(llvm::FunctionType *)current_fn_type->get_llvm_type(state),
-			llvm::Function::ExternalLinkage, decl.ident.name, state.TheModule.get());
+			llvm::Function::ExternalLinkage, key, state.TheModule.get());
 
 		// Set names for all arguments.
 		unsigned i = method_of != nullptr ? -1 : 0;
@@ -479,10 +479,6 @@ void codegen(codegen::state &state, ast::decl_var &decl) {
 			state.Builder.CreateStore(default_val, var->value);
 		}
 	}
-}
-
-void codegen(codegen::state &state, ast::decl_const &decl) {
-	state.report_message(report_type::error, "decl_const: Not implemented", &decl);
 }
 
 } // namespace catalyst::compiler::codegen

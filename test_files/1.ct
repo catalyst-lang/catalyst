@@ -12,7 +12,7 @@
             }
 
             fn set_k(val: i64) {
-                k = val
+                this.k = val
             }
         }
 
