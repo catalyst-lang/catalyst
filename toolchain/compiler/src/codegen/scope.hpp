@@ -60,7 +60,7 @@ struct scope_stack : public std::deque<scope> {
 
   public:
 	scope_stack(symbol_map *symbol_table) : symbol_table(symbol_table) {
-		root_scope = &emplace_back(nullptr, "root");
+		root_scope = &emplace_back(nullptr, "");
 	}
 
 	symbol *find_named_symbol(const std::string &name) {

@@ -261,7 +261,7 @@ void codegen(codegen::state &state, ast::decl_fn &decl) {
 		// state.scopes.back().named_values[std::string(Arg.getName())] = arg_local.value;
 	}
 
-	if (key == "root.main") {
+	if (key == "main") {
 		state.Builder.CreateCall(state.init_function);
 	}
 

@@ -1,25 +1,24 @@
-        struct bla { 
+        struct Bla { 
             var i = 4
             var j = 9.8
             var k = 9i32
 
+            fn new() {
+                
+            }
+
+            fn discard() {
+                
+            }
+
             fn set_k(val: i64) {
-                this.k = val
+                k = val
             }
         }
 
-        fn test() -> bla {
-            var a: bla
-            a.i = 1
-            a.j = 3.4
-            a.k = 13
-            return a
-        }
-
         fn main() {
-            var a = test()
-            a.set_k(99)
-            var b: bla
+            var b: Bla //= Bla()
+
             b.set_k(32)
-            return a.k + b.k
+            return b.k
         }

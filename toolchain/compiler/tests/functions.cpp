@@ -7,7 +7,7 @@ using namespace catalyst;
 
 TEST_SUITE("functions") {
 
-TEST_CASE("concept") {
+TEST_CASE("function concept") {
     compiler::options opts;
     auto result = compiler::compile_string(R"catalyst_source(
         fn main() {
@@ -16,6 +16,31 @@ TEST_CASE("concept") {
     )catalyst_source", opts);
 	auto ret = compiler::run(result);
     CHECK(ret == 123);
+}
+
+TEST_CASE("initialize globals") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        var hi = 4
+        fn main() {
+            return hi;
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run(result);
+    CHECK(ret == 4);
+}
+
+TEST_CASE("changing globals") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        var hi = 4
+        fn main() {
+            hi = 56
+            return hi;
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run(result);
+    CHECK(ret == 56);
 }
 
 TEST_CASE("return void (explicit)") {

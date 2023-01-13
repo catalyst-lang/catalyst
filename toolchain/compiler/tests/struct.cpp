@@ -7,7 +7,7 @@ using namespace catalyst;
 
 TEST_SUITE("structs") {
 
-TEST_CASE("concept") {
+TEST_CASE("struct concept") {
     compiler::options opts;
     auto result = compiler::compile_string(R"catalyst_source(
         struct bla { 
