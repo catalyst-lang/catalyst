@@ -358,7 +358,8 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 
 	auto fn_type = decl_get_type(state, decl);
 	if (method_of) {
-		((type_function *)fn_type.get())->method_of = std::dynamic_pointer_cast<type_custom>(method_of->type);
+		auto fn = (type_function *)fn_type.get();
+		fn->method_of = std::dynamic_pointer_cast<type_custom>(method_of->type);
 	}
 
 	const auto [res, symbol_introduced] =
@@ -393,6 +394,20 @@ int proto_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 			}
 		} else {
 			state.report_message(report_type::error, "control reaches end of non-void function", &decl);
+		}
+	}
+
+	if (decl.ident.name == "new") {
+		if (!isa<type_void>(current_fn_type->return_type)) {
+			state.report_message(report_type::error, "`new` function must return void", &decl);
+			return 0;
+		}
+	}
+
+	if (decl.ident.name == "discard") {
+		if (!isa<type_void>(current_fn_type->return_type)) {
+			state.report_message(report_type::error, "`discard` function must return void", &decl);
+			return 0;
 		}
 	}
 

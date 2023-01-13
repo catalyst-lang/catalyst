@@ -1,24 +1,15 @@
-        struct Bla { 
+struct Bla { 
             var i = 4
             var j = 9.8
             var k = 9i32
 
-            fn new() {
-                
-            }
-
-            fn discard() {
-                
-            }
-
-            fn set_k(val: i64) {
-                this.k = val
+            fn new(variable: i64) {
+                this.k = variable
+                return
             }
         }
 
         fn main() {
-            var b: Bla //= Bla()
-
-            b.set_k(32)
+            var b = Bla(66)
             return b.k
         }

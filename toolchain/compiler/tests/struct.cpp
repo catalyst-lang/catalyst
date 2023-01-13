@@ -395,4 +395,88 @@ TEST_CASE("method 2") {
     CHECK(ret == 131);
 }
 
+TEST_CASE("struct initializers") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        struct Bla { 
+            var i = 4
+            var j = 9.8
+            var k = 9i32
+        }
+
+        fn main() {
+            var b = Bla()
+            return b.i
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run(result);
+    CHECK(ret == 4);
+}
+
+TEST_CASE("struct new()") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        struct Bla { 
+            var i = 4
+            var j = 9.8
+            var k = 9i32
+
+            fn new() {
+                this.k = 321
+            }
+        }
+
+        fn main() {
+            var b = Bla()
+            return b.k
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run(result);
+    CHECK(ret == 321);
+}
+
+TEST_CASE("struct initializers + new()") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        struct Bla { 
+            var i = 4
+            var j = 9.8
+            var k = 9i32
+
+            fn new() {
+                this.k = 321
+            }
+        }
+
+        fn main() {
+            var b = Bla()
+            return b.k + b.i
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run(result);
+    CHECK(ret == 325);
+}
+
+TEST_CASE("struct new(i64)") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        struct Bla { 
+            var i = 4
+            var j = 9.8
+            var k = 9i32
+
+            fn new(variable: i64) {
+                this.k = variable
+            }
+        }
+
+        fn main() {
+            var b = Bla(43)
+            return b.k
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run(result);
+    CHECK(ret == 43);
+}
+
 }

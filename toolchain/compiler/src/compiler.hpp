@@ -13,7 +13,7 @@ namespace catalyst::compiler {
 constexpr struct {
 	int major = 0, minor = 0, patch = 1;
 
-	std::string string() const {
+	[[nodiscard]] std::string string() const {
 		std::stringstream ss;
 		ss << major << '.' << minor << '.' << patch;
 		return ss.str();
@@ -25,7 +25,7 @@ struct options {
 };
 
 struct compile_result {
-	bool is_successful;
+	bool is_successful = false;
 	std::shared_ptr<void> state;
 
 	static compile_result create_failed() {

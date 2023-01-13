@@ -298,6 +298,8 @@ struct type_custom : type {
 	std::string name;
 	std::vector<member> members;
 
+	llvm::Function *init_function = nullptr;
+
 	int index_of(const std::string &name);
 };
 

@@ -71,11 +71,11 @@ void codegen(codegen::state &state, ast::decl_struct &decl) {
 
 	// create struct init function
 	auto *FT = llvm::FunctionType::get(llvm::Type::getVoidTy(*state.TheContext), { state.Builder.getPtrTy() }, false);
-	auto init_function = 
+	type->init_function = 
 		llvm::Function::Create(FT, llvm::Function::ExternalLinkage, key + "..__CATA_INIT", state.TheModule.get());
-	init_function->setDSOLocal(true);
-	auto this_ = init_function->getArg(0);
-	auto *BB = llvm::BasicBlock::Create(*state.TheContext, "init", init_function);
+	type->init_function->setDSOLocal(true);
+	auto this_ = type->init_function->getArg(0);
+	auto *BB = llvm::BasicBlock::Create(*state.TheContext, "init", type->init_function);
 	
 	state.scopes.enter(decl.ident.name);
 

@@ -13,6 +13,7 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/InstCombine/InstCombine.h"
+#include "llvm/Transforms/AggressiveInstCombine/AggressiveInstCombine.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Utils.h"
@@ -42,7 +43,7 @@ compile_result compile(catalyst::ast::translation_unit &tu, options options) {
 
 	state->runtime->register_symbols();
 
-	//options.optimizer_level = 2;
+	options.optimizer_level = 2;
 
 	if (options.optimizer_level >= 1) {
 		// Standard mem2reg pass to construct SSA form from alloca's and stores.
@@ -55,18 +56,25 @@ compile_result compile(catalyst::ast::translation_unit &tu, options options) {
 	if (options.optimizer_level >= 2) {
 		// Eliminate Common SubExpressions.
 		state->FPM->add(llvm::createGVNPass());
+		state->FPM->add(llvm::createSinkingPass());
+		state->FPM->add(llvm::createGVNHoistPass());
+		state->FPM->add(llvm::createGVNSinkPass());
 		// Simplify the control flow graph (deleting unreachable blocks, etc).
 		state->FPM->add(llvm::createCFGSimplificationPass());
+		state->FPM->add(llvm::createSROAPass());
 
+		state->FPM->add(llvm::createIndVarSimplifyPass());
+		state->FPM->add(llvm::createAggressiveInstCombinerPass());
+		state->FPM->add(llvm::createPartiallyInlineLibCallsPass());
+		//state->FPM->add(llvm::createAggressiveDCEPass());
 		state->FPM->add(llvm::createMemCpyOptPass());
 		state->FPM->add(llvm::createConstantHoistingPass());
+		
 		state->FPM->add(llvm::createDeadCodeEliminationPass());
 		//state->FPM->add(llvm::createDeadArgEliminationPass());
 		state->FPM->add(llvm::createDeadStoreEliminationPass());
 		//state->FPM->add(llvm::createInferFunctionAttrsLegacyPass());
-		state->FPM->add(llvm::createIndVarSimplifyPass());
 
-		state->FPM->add(llvm::createPartiallyInlineLibCallsPass());
 		//state->FPM->add(llvm::createAlwaysInlinerLegacyPass());
 		//state->FPM->add(llvm::createVectorCombinePass());
 		//state->FPM->add(llvm::createLoadStoreVectorizerPass());

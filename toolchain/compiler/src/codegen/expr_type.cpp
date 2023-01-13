@@ -169,11 +169,15 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_call 
 			return type::create_builtin();
 		}
 		if (!sym->type->is_valid()) return type::create_builtin();
-		auto type = (type_function*)sym->type.get();
-		return type->return_type;
-	} else {
-		return type::create_builtin();
+		if (isa<type_function>(sym->type)) {
+			auto type = (type_function*)sym->type.get();
+			return type->return_type;
+		} else if (isa<type_custom>(sym->type)) {
+			// constructor
+			return std::make_shared<type_object>(std::dynamic_pointer_cast<type_custom>(sym->type));
+		}
 	}
+	return type::create_builtin();
 }
 
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_member_access &expr, std::shared_ptr<type> expecting_type) {

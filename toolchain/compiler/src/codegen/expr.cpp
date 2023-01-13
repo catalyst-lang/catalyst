@@ -246,10 +246,50 @@ llvm::Value *structure_to_pointer(codegen::state &state, llvm::Value *struct_val
 	return ptr;
 }
 
-llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &expr, llvm::Value *this_) {
-	auto CalleeF = (llvm::Function *)sym->value;
+llvm::Value *codegen_call_new(codegen::state &state, symbol *sym, ast::expr_call &expr, llvm::Value *this_) {
+	if (!isa<type_custom>(sym->type)) {
+		// should never happen, but just to be sure we report an error if somebody calls this function in the
+		// future with a non type_custom type.
+		state.report_message(report_type::error, "Constructor call performed on non-constructor function", &expr);
+		return nullptr;
+	}
+	auto sym_c = (type_custom*)sym->type.get();
 
-	if (!CalleeF) {
+	llvm::Value *new_object = nullptr;
+
+	if (isa<type_struct>(sym->type)) {
+		new_object = state.Builder.CreateAlloca(sym_c->get_llvm_type(state), nullptr, "new");
+	} else {
+		state.report_message(report_type::error, "TODO " CATALYST_AT, &expr);
+		return nullptr;
+	}
+
+	state.Builder.CreateCall(sym_c->init_function, { new_object });
+
+	auto key = sym_c->name + "." + "new";
+	if (state.symbol_table.contains(key)) {
+		auto sym_new = &state.symbol_table[key];
+		auto new_call = codegen_call(state, sym_new, expr, new_object);
+	} else if (!expr.parameters.empty()) {
+		state.report_message(report_type::error, std::string("No constructor has been defined on type `") + sym_c->name + "`", &expr);
+		return nullptr;
+	}
+
+	return new_object;
+}
+
+llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &expr, llvm::Value *this_) {
+	llvm::Function *CalleeF;
+	if (isa<type_function>(sym->type)) {
+		CalleeF = (llvm::Function *)sym->value;
+		if (!CalleeF) {
+			state.report_message(report_type::error, "Unknown function referenced (symbol undefined)", &expr);
+			return nullptr;
+		}
+	} else if (isa<type_custom>(sym->type)) {
+		// constructor
+		return codegen_call_new(state, sym, expr, this_);
+	} else {
 		state.report_message(report_type::error, "Unknown function referenced", &expr);
 		return nullptr;
 	}
@@ -302,7 +342,7 @@ llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &ex
 	} else if (llvm::isa<llvm::AllocaInst>(sym->value)) {
 		// This is a function pointer
 		llvm::Value *ptr = state.Builder.CreateLoad(sym->value->getType(), sym->value);
-		llvm::FunctionType *fty = (llvm::FunctionType *)sym->type->get_llvm_type(state);
+		auto *fty = (llvm::FunctionType *)sym->type->get_llvm_type(state);
 		if (isa<type_void>(type->return_type)) {
 			callinstr = state.Builder.CreateCall(fty, ptr, ArgsV);
 		} else {
