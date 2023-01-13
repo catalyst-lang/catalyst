@@ -125,6 +125,8 @@ int proto_pass::process(ast::decl_fn &decl) {
 }
 
 int proto_pass::process(ast::decl_var &decl) {
+	if (!state.is_root_scope()) return 0;
+
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 	if (n == 0 && state.symbol_table.contains(key)) {
 		auto other = state.symbol_table[key];
