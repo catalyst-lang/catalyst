@@ -4,6 +4,7 @@
 #include "codegen.hpp"
 #include "../../../parser/src/parser.hpp"
 #include "decl.hpp"
+#include "decl_proto_pass.hpp"
 #include <iostream>
 
 namespace catalyst::compiler::codegen {
@@ -36,21 +37,20 @@ state::state()
 		  scopes(&symbol_table), runtime(new compiler::runtime(*this)) {}
 
 void codegen(codegen::state &state, ast::translation_unit &tu) {
+	for (const auto &decl : tu.declarations) {
+		//overloading_functions_pass(state, decl)
+	}
+
 	// fill prototypes
-	int pass_n = 0;
+	proto_pass proto_pass(state);
 	int pass_changes = 1;
 	while (pass_changes > 0) {
 		pass_changes = 0;
-		for (const auto &decl : tu.declarations) {
-			pass_changes += proto_pass(state, pass_n, decl);
-		}
-
+		pass_changes += proto_pass(tu);
 		if (state.num_errors > 0) {
 			state.report_message(report_type::info, "Compilation stopped due to errors");
 			return;
 		}
-
-		pass_n++;
 	}
 
 	#ifndef NDEBUG

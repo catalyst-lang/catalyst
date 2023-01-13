@@ -11,13 +11,14 @@
 #include "catalyst/rtti.hpp"
 
 #include "decl.hpp"
+#include "decl_proto_pass.hpp"
 #include "decl_type.hpp"
 #include "expr.hpp"
 #include "expr_type.hpp"
 
 namespace catalyst::compiler::codegen {
 
-int proto_pass(codegen::state &state, int n, ast::decl_struct &decl) {
+int proto_pass::process(ast::decl_struct &decl) {
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 
 	if (n == 0 &&
@@ -35,14 +36,22 @@ int proto_pass(codegen::state &state, int n, ast::decl_struct &decl) {
 	struct_type->name = key;
 
 	const auto [res, symbol_introduced] = state.symbol_table.try_emplace(key, &decl, nullptr, struct_type_sptr);
-	auto &sym = res->second;
+
+	return changed_num;
+}
+
+int proto_pass::process_after(ast::decl_struct &decl) {
+	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
+	auto &sym = state.symbol_table[key];
     auto s = (type_struct*)sym.type.get();
+
+	auto struct_type_sptr = decl_get_type(state, decl);
+    auto struct_type = (type_struct*)struct_type_sptr.get();
 
 	state.scopes.enter(decl.ident.name);
 
 	for (auto &member : struct_type->members) {
 		if (isa<type_function>(member.type)) {
-			changed_num += proto_pass(state, n, member.decl);
 			member.type = state.symbol_table[state.scopes.get_fully_qualified_scope_name(member.name)].type;
 		}
 	}
@@ -54,10 +63,10 @@ int proto_pass(codegen::state &state, int n, ast::decl_struct &decl) {
 		// structure pointed to by sym.type at this point.
 		// We only want one instance of type_struct to ever exist per definition.
 		s->copy_from(*struct_type);
-		changed_num = 1;
+		return 1;
 	}
-
-	return changed_num;
+	
+	return 0;
 }
 
 void codegen(codegen::state &state, ast::decl_struct &decl) {

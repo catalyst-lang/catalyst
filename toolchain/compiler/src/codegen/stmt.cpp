@@ -82,14 +82,18 @@ void codegen(codegen::state &state, std::vector<ast::statement_ptr> const &state
 	}
 } 
 
+std::string scope_name(const ast::statement_block &stmt) {
+	std::stringstream sstream;
+	sstream << std::hex << (size_t)(&stmt);
+	return sstream.str();
+}
+
 void codegen(codegen::state &state, ast::statement_block &stmt) {
 	// llvm::BasicBlock *BB = llvm::BasicBlock::Create(*state.TheContext, "stmt_block",
 	//                                                 state.current_scope().current_function);
 	// state.Builder.SetInsertPoint(BB);
 
-	std::stringstream sstream;
-	sstream << std::hex << (size_t)(&stmt);
-	state.scopes.enter(sstream.str());
+	state.scopes.enter(scope_name(stmt));
 	codegen(state, stmt.statements);
 	state.scopes.leave();
 }

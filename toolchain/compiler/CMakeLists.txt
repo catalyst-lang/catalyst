@@ -25,6 +25,14 @@ add_library(libcompiler
     src/codegen/type.cpp 
     src/codegen/expr_type.cpp 
     src/codegen/expr_type.hpp 
+    src/codegen/decl_overloading_pass.cpp
+    src/codegen/decl_overloading_pass.hpp
+    src/codegen/decl_proto_pass.cpp
+    src/codegen/decl_proto_pass.hpp
+    src/codegen/decl_locals_pass.cpp
+    src/codegen/decl_locals_pass.hpp
+    src/codegen/pass.hpp
+    src/codegen/pass.cpp
     src/runtime.cpp 
     src/runtime.hpp
 )
