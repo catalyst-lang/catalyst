@@ -73,7 +73,6 @@ void codegen(codegen::state &state, ast::decl_struct &decl) {
 	auto *FT = llvm::FunctionType::get(llvm::Type::getVoidTy(*state.TheContext), { state.Builder.getPtrTy() }, false);
 	auto init_function = 
 		llvm::Function::Create(FT, llvm::Function::ExternalLinkage, key + "..__CATA_INIT", state.TheModule.get());
-	init_function->addFnAttr(llvm::Attribute::AlwaysInline);
 	init_function->setDSOLocal(true);
 	auto this_ = init_function->getArg(0);
 	auto *BB = llvm::BasicBlock::Create(*state.TheContext, "init", init_function);
