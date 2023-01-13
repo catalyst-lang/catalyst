@@ -5,6 +5,12 @@
 
 namespace catalyst::compiler::codegen {
 
+int pass::operator()(ast::decl *decl) {
+	int res = walk(decl);
+	n++;
+	return res;
+}
+
 int pass::operator()(ast::decl_ptr &decl) {
 	int res = walk(decl);
 	n++;
@@ -27,14 +33,18 @@ int pass::walk(ast::translation_unit &tu) {
 }
 
 int pass::walk(ast::decl_ptr &decl) {
+	return walk(decl.get());
+}
+
+int pass::walk(ast::decl *decl) {
 	if (isa<ast::decl_var>(decl)) {
-		return walk(*(ast::decl_var *)decl.get());
+		return walk(*(ast::decl_var *)decl);
 	} else if (isa<ast::decl_fn>(decl)) {
-		return walk(*(ast::decl_fn *)decl.get());
+		return walk(*(ast::decl_fn *)decl);
 	} else if (isa<ast::decl_struct>(decl)) {
-		return walk(*(ast::decl_struct *)decl.get());
+		return walk(*(ast::decl_struct *)decl);
 	}
-	state.report_message(report_type::error, "Choices exhausted", decl.get());
+	state.report_message(report_type::error, "Choices exhausted", decl);
 	return 0;
 }
 

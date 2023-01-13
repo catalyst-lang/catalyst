@@ -113,7 +113,12 @@
         "queue": "cpp",
         "shared_mutex": "cpp",
         "*.inc": "cpp",
-        "*.def": "cpp"
+        "*.def": "cpp",
+        "*.rh": "cpp",
+        "cassert": "cpp",
+        "cerrno": "cpp",
+        "cfloat": "cpp",
+        "climits": "cpp"
     },
     "files.insertFinalNewline": true,
 

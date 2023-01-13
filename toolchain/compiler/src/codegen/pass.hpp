@@ -11,6 +11,7 @@ namespace catalyst::compiler::codegen {
 struct pass {
     explicit pass(codegen::state &state) : state(state) {}
 
+    int operator()(ast::decl *decl);
     int operator()(ast::decl_ptr &decl);
     int operator()(ast::translation_unit &tu);
 
@@ -42,6 +43,7 @@ struct pass {
 
     private:
     int walk(ast::translation_unit &tu);
+    int walk(ast::decl *decl);
     int walk(ast::decl_ptr &decl);
     int walk(ast::decl_fn &decl);
     int walk(ast::decl_var &decl);

@@ -8,22 +8,8 @@ namespace catalyst::compiler::codegen {
 
 /// Recursively go over all nested local variables in an AST node and add them to the symbol_table
 /// @return number of locals added or changed in this pass
-int c;
 
-int locals_pass(codegen::state &state, int n,
-                std::vector<catalyst::ast::statement_ptr> &statements) {
-	int locals_changed = 0;
-	for (auto &stmt : statements) {
-		locals_changed += locals_pass(state, n, stmt);
-	}
-	return locals_changed;
-}
-
-int locals_pass(codegen::state &state, int n, ast::statement_decl &stmt) {
-	return locals_pass(state, n, stmt.decl);
-}
-
-int locals_pass(codegen::state &state, int n, ast::decl_var &stmt) {
+int locals_pass::process(ast::decl_var &stmt) {
 	auto key = state.scopes.get_fully_qualified_scope_name(stmt.ident.name);
 	int locals_changed = 0;
 
@@ -61,23 +47,7 @@ int locals_pass(codegen::state &state, int n, ast::decl_var &stmt) {
 	return locals_changed;
 }
 
-int locals_pass(codegen::state &state, int n, ast::statement_if &stmt) {
-	int locals_changed = locals_pass(state, n, stmt.then);
-	if (stmt.else_.has_value())
-		locals_changed += locals_pass(state, n, stmt.else_.value());
-	return locals_changed;
-}
-
-int locals_pass(codegen::state &state, int n, ast::statement_block &stmt) {
-	std::stringstream sstream;
-	sstream << std::hex << (size_t)(&stmt);
-	state.scopes.enter(sstream.str());
-	int locals_changed = locals_pass(state, n, stmt.statements);
-	state.scopes.leave();
-	return locals_changed;
-}
-
-int locals_pass(codegen::state &state, int n, ast::statement_return &stmt) {
+int locals_pass::process(ast::statement_return &stmt) {
 	state.current_function_has_return = true;
 
 	std::shared_ptr<type> expr_type;
@@ -97,25 +67,8 @@ int locals_pass(codegen::state &state, int n, ast::statement_return &stmt) {
     return 0;
 }
 
-int locals_pass(codegen::state &state, int n, ast::statement_ptr &stmt) {
-	if (isa<ast::statement_decl>(stmt)) {
-		return locals_pass(state, n, *(ast::statement_decl *)stmt.get());
-	} else if (isa<ast::statement_if>(stmt)) {
-		return locals_pass(state, n, *(ast::statement_if *)stmt.get());
-	} else if (isa<ast::statement_block>(stmt)) {
-		return locals_pass(state, n, *(ast::statement_block *)stmt.get());
-	} else if (isa<ast::statement_return>(stmt)) {
-		return locals_pass(state, n, *(ast::statement_return *)stmt.get());
-	} else if (isa<ast::statement_expr>(stmt)) {
-		// TODO
-		return 0;
-	}
-	state.report_message(report_type::error, "Choices exhausted", stmt.get());
-	return 0;
-}
-
 /// Perform a locals pass for a function declaration
-int locals_pass(codegen::state &state, int n, ast::decl_fn &decl) {
+int locals_pass::process(ast::decl_fn &decl) {
 	state.scopes.enter(decl.ident.name);
 
 	int pass_changes = 0;
@@ -132,27 +85,8 @@ int locals_pass(codegen::state &state, int n, ast::decl_fn &decl) {
 		}
 	}
 
-	if (std::holds_alternative<ast::fn_body_block>(decl.body)) {
-		auto &block = std::get<ast::fn_body_block>(decl.body);
-		pass_changes = locals_pass(state, n, block.statements);
-	}
-
 	state.scopes.leave();
 	return pass_changes;
-}
-
-int locals_pass(codegen::state &state, int n, ast::decl_ptr &decl) {
-	if (isa<ast::decl_var>(decl)) {
-		return locals_pass(state, n, *(ast::decl_var *)decl.get());
-	} else if (isa<ast::decl_fn>(decl)) {
-		return locals_pass(state, n, *(ast::decl_fn *)decl.get());
-	} else if (isa<ast::decl_struct>(decl)) {
-		state.report_message(report_type::error, "Local structs not supported (yet)", decl.get());
-		return 0;
-		// return locals_pass(state, n, *(ast::decl_struct *)decl.get());
-	}
-	state.report_message(report_type::error, "Choices exhausted", decl.get());
-	return 0;
 }
 
 }

@@ -55,9 +55,9 @@ int proto_pass::process(ast::decl_fn &decl) {
 	}
 
 	int locals_updated = 1;
-	int pass_n = n;
+	locals_pass lp(state, n);
 	while (locals_updated > 0) {
-		locals_updated = locals_pass(state, pass_n++, decl);
+		locals_updated = lp(&decl);
 		changed_num += locals_updated;
 	}
 
