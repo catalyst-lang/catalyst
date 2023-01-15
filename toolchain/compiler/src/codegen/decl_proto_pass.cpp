@@ -22,6 +22,8 @@ int proto_pass::process(ast::decl_fn &decl) {
 
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 
+	// TODO: fix this. Is broken after function overloading was added. No error is reported if function
+	// with same name and type is added.
 	if (n == 0 && state.symbol_table.contains(key)) {
 		auto other = state.symbol_table[key];
 		state.report_message(report_type::error, "Function name already exists", &decl.ident);

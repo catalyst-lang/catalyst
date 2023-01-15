@@ -22,9 +22,6 @@ namespace catalyst::compiler::codegen {
 // and bloat to the codebase than just this one ugly dispatch function.
 // Feel free to refactor the AST and introduce an _elegant_ visitation pattern.
 void codegen(codegen::state &state, ast::decl_ptr decl) {
-	//	if (std::dynamic_pointer_cast<ast::decl_fn>(decl)) {
-	//		return codegen(state, *(ast::decl_fn *)decl.get());
-	//	}
 	if (isa<ast::decl_fn>(decl)) {
 		codegen(state, *(ast::decl_fn *)decl.get());
 	} else if (isa<ast::decl_var>(decl)) {

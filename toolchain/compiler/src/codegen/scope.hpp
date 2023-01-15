@@ -63,8 +63,11 @@ struct scope_stack : public std::deque<scope> {
 		root_scope = &emplace_back(nullptr, "");
 	}
 
-	symbol *find_named_symbol(const std::string &name) {
-		for (auto it = rbegin(); it != rend(); ++it) {
+	// TODO: find_named_symbol and find_overloaded_symbol only find up the scope tree or full names,
+	// but do not find "d.e" if the scope tree is 'a.b.c.d.f'.
+
+	symbol *find_named_symbol(const std::string &name, bool exact_match = false) {
+		if (!exact_match) for (auto it = rbegin(); it != rend(); ++it) {
 			auto potential_local_name = (*it).get_fully_qualified_scope_name(name);
 			if (symbol_table->count(potential_local_name) > 0) {
 				return &(*symbol_table)[potential_local_name];
@@ -75,6 +78,30 @@ struct scope_stack : public std::deque<scope> {
 		}
 		return nullptr;
 	}
+
+	std::set<symbol *> find_overloaded_symbol(const std::string &name, bool exact_match = false) {
+		std::set<symbol *> results;
+
+		if (!exact_match) for (auto it = rbegin(); it != rend(); ++it) {
+			int i = 1;
+			auto potential_local_name = (*it).get_fully_qualified_scope_name(name);
+			auto key = potential_local_name; 
+			while (symbol_table->count(key) > 0) {
+				results.insert(&(*symbol_table)[key]);
+				key = potential_local_name + "`" + std::to_string(i++);
+			}
+		}
+		if (symbol_table->count(name) > 0) {
+			int i = 1;
+			auto key = name; 
+			while (symbol_table->count(key) > 0) {
+				results.insert(&(*symbol_table)[key]);
+				key = name + "`" + std::to_string(i++);
+			}
+		}
+
+		return results;
+	} 
 
 	inline void enter(const std::string &name) { emplace_back(&back(), name); }
 	inline void leave() { pop_back(); }

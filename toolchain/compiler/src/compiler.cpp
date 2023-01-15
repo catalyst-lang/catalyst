@@ -88,8 +88,8 @@ compile_result compile(catalyst::ast::translation_unit &tu, options options) {
 	codegen::codegen(*state);
 
 	compile_result result;
+	result.is_successful = state->num_errors == 0;
 	result.state = std::move(state);
-	result.is_successful = true;
 	return result;
 }
 

@@ -1,13 +1,17 @@
-        struct bla { 
-            var i = 4
-            var j = 9.8
-            var k = 9i32
+        
+        fn testk() {
+            return 4
+        }
+
+        fn test() {
+            return 5
+        }
+
+        fn test() {
+            return 9.5
         }
 
         fn main() {
-            var a: bla;
-            a.i = 10
-            a.j = 44.44
-            a.k = 9i32
-            return a.i + a.k
+            var a: i32 = test()
+            return a;
         }

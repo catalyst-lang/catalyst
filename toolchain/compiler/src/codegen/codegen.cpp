@@ -5,6 +5,7 @@
 #include "../../../parser/src/parser.hpp"
 #include "decl.hpp"
 #include "decl_proto_pass.hpp"
+#include "decl_overloading_pass.hpp"
 #include <iostream>
 
 namespace catalyst::compiler::codegen {
@@ -37,9 +38,8 @@ state::state()
 		  scopes(&symbol_table), runtime(new compiler::runtime(*this)) {}
 
 void codegen(codegen::state &state, ast::translation_unit &tu) {
-	for (const auto &decl : tu.declarations) {
-		//overloading_functions_pass(state, decl)
-	}
+	overloading_pass op(state);
+	op(tu);
 
 	// fill prototypes
 	proto_pass proto_pass(state);

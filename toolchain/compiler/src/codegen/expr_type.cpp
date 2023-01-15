@@ -6,6 +6,7 @@
 
 #include "catalyst/rtti.hpp"
 #include "expr_type.hpp"
+#include "function_overloading.hpp"
 
 namespace catalyst::compiler::codegen {
 
@@ -15,25 +16,25 @@ namespace catalyst::compiler::codegen {
 // Feel free to refactor the AST and introduce an _elegant_ visitation pattern.
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_ptr expr, std::shared_ptr<type> expecting_type) {
 	if (isa<ast::expr_ident>(expr)) {
-		return expr_resulting_type(state, *(ast::expr_ident *)expr.get());
+		return expr_resulting_type(state, *(ast::expr_ident *)expr.get(), expecting_type);
 	} else if (isa<ast::expr_literal_numeric>(expr)) {
-		return expr_resulting_type(state, *(ast::expr_literal_numeric *)expr.get());
+		return expr_resulting_type(state, *(ast::expr_literal_numeric *)expr.get(), expecting_type);
 	} else if (isa<ast::expr_literal_bool>(expr)) {
-		return expr_resulting_type(state, *(ast::expr_literal_bool *)expr.get());
+		return expr_resulting_type(state, *(ast::expr_literal_bool *)expr.get(), expecting_type);
 	} else if (isa<ast::expr_binary_arithmetic>(expr)) {
-		return expr_resulting_type(state, *(ast::expr_binary_arithmetic *)expr.get());
+		return expr_resulting_type(state, *(ast::expr_binary_arithmetic *)expr.get(), expecting_type);
 	} else if (isa<ast::expr_unary_arithmetic>(expr)) {
-		return expr_resulting_type(state, *(ast::expr_unary_arithmetic *)expr.get());
+		return expr_resulting_type(state, *(ast::expr_unary_arithmetic *)expr.get(), expecting_type);
 	} else if (isa<ast::expr_binary_logical>(expr)) {
-		return expr_resulting_type(state, *(ast::expr_binary_logical *)expr.get());
+		return expr_resulting_type(state, *(ast::expr_binary_logical *)expr.get(), expecting_type);
 	} else if (isa<ast::expr_assignment>(expr)) {
-		return expr_resulting_type(state, *(ast::expr_assignment *)expr.get());
+		return expr_resulting_type(state, *(ast::expr_assignment *)expr.get(), expecting_type);
 	} else if (isa<ast::expr_call>(expr)) {
-		return expr_resulting_type(state, *(ast::expr_call *)expr.get());
+		return expr_resulting_type(state, *(ast::expr_call *)expr.get(), expecting_type);
 	} else if (isa<ast::expr_member_access>(expr)) {
-		return expr_resulting_type(state, *(ast::expr_member_access *)expr.get());
+		return expr_resulting_type(state, *(ast::expr_member_access *)expr.get(), expecting_type);
 	} else if (isa<ast::expr_cast>(expr)) {
-		return expr_resulting_type(state, *(ast::expr_cast *)expr.get());
+		return expr_resulting_type(state, *(ast::expr_cast *)expr.get(), expecting_type);
 	}
 
 	state.report_message(report_type::error, "Expression type unsupported", expr.get());
@@ -164,7 +165,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_binar
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_call &expr, std::shared_ptr<type> expecting_type) {
 	if (isa<ast::expr_ident>(expr.lhs)) {
 		auto &callee = *(ast::expr_ident *)expr.lhs.get();
-		auto sym = state.scopes.find_named_symbol(callee.ident.name);
+		auto sym = find_function_overload(state, callee.ident.name, expr, expecting_type);
 		if (sym == nullptr) {
 			return type::create_builtin();
 		}
@@ -190,15 +191,32 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_membe
 	auto lhs_object = (type_object*)lhs_type.get();
 	auto lhs_struct = lhs_object->object_type;
 
-	if (!isa<ast::expr_ident>(expr.rhs)) {
-		//state.report_message(report_type::error, "Identifier expected", expr.rhs.get());
+	if (isa<ast::expr_ident>(expr.rhs)) {
+		auto ident = &((ast::expr_ident*)expr.rhs.get())->ident;
+		int index = lhs_struct->index_of(ident->name);
+
+		return lhs_struct->members[index].type;
+	} else if (isa<ast::expr_call>(expr.rhs)) {
+		auto call = (ast::expr_call *)expr.rhs.get();
+
+		if (!isa<ast::expr_ident>(call->lhs)) {
+			return type::create_builtin();
+		}
+
+		auto &ident = ((ast::expr_ident *)call->lhs.get())->ident;
+		auto sym = find_function_overload(state, lhs_struct->name + "." + ident.name, *call, expecting_type);
+		if (sym == nullptr) return type::create_builtin();
+		if (!sym->type->is_valid()) return type::create_builtin();
+		if (isa<type_function>(sym->type)) {
+			auto type = (type_function*)sym->type.get();
+			return type->return_type;
+		} else if (isa<type_custom>(sym->type)) {
+			// constructor
+			return std::make_shared<type_object>(std::dynamic_pointer_cast<type_custom>(sym->type));
+		}
+	} else {
 		return type::create_builtin();
 	}
-
-	auto ident = &((ast::expr_ident*)expr.rhs.get())->ident;
-	int index = lhs_struct->index_of(ident->name);
-
-	return lhs_struct->members[index].type;
 }
 
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_assignment &expr, std::shared_ptr<type> expecting_type) {

@@ -31,6 +31,8 @@ add_library(libcompiler
     src/codegen/decl_proto_pass.hpp
     src/codegen/decl_locals_pass.cpp
     src/codegen/decl_locals_pass.hpp
+    src/codegen/function_overloading.cpp
+    src/codegen/function_overloading.hpp
     src/codegen/pass.hpp
     src/codegen/pass.cpp
     src/runtime.cpp 

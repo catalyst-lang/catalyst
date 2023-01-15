@@ -4,14 +4,19 @@
 #pragma once
 
 #include <memory>
+#include <string>
+#include <unordered_set>
 #include "../common/catalyst/ast/ast.hpp"
 #include "codegen.hpp"
+#include "pass.hpp"
 
 namespace catalyst::compiler::codegen {
 
-int overloading_functions_pass(codegen::state &state, int n, ast::decl_ptr decl);
-int overloading_functions_pass(codegen::state &state, int n, ast::decl_fn &decl);
-int overloading_functions_pass(codegen::state &state, int n, ast::decl_var &decl);
-int overloading_functions_pass(codegen::state &state, int n, ast::decl_struct &decl);
+struct overloading_pass : pass {
+    explicit overloading_pass(codegen::state &state) : pass(state) {}
+    int process(ast::decl_fn &decl) override;
 
+    private:
+    std::unordered_set<std::string> names;
+};
 } // namespace catalyst::compiler::codegen

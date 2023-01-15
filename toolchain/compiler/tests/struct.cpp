@@ -479,4 +479,56 @@ TEST_CASE("struct new(i64)") {
     CHECK(ret == 43);
 }
 
+TEST_CASE("struct new overloading 1") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        struct Bla { 
+            var i = 4
+            var j = 9.8
+            var k = 9i32
+
+            fn new(variable: i64) {
+                this.k = variable
+            }
+
+            fn new() {
+                this.k = 123
+            }
+        }
+
+        fn main() {
+            var b = Bla(44)
+            return b.k
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run(result);
+    CHECK(ret == 44);
+}
+
+TEST_CASE("struct new overloading 2") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        struct Bla { 
+            var i = 4
+            var j = 9.8
+            var k = 9i32
+
+            fn new(variable: i64) {
+                this.k = variable
+            }
+
+            fn new() {
+                this.k = 123
+            }
+        }
+
+        fn main() {
+            var b = Bla()
+            return b.k
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run(result);
+    CHECK(ret == 123);
+}
+
 }

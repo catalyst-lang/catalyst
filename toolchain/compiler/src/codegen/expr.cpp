@@ -12,6 +12,7 @@
 #include "expr_type.hpp"
 #include "value.hpp"
 #include "llvm/IR/Value.h"
+#include "function_overloading.hpp"
 
 namespace catalyst::compiler::codegen {
 
@@ -267,9 +268,9 @@ llvm::Value *codegen_call_new(codegen::state &state, symbol *sym, ast::expr_call
 	state.Builder.CreateCall(sym_c->init_function, { new_object });
 
 	auto key = sym_c->name + "." + "new";
-	if (state.symbol_table.contains(key)) {
-		auto sym_new = &state.symbol_table[key];
-		auto new_call = codegen_call(state, sym_new, expr, new_object);
+	auto sym_new = find_function_overload(state, key, expr, type::create_builtin("void"));
+	if (sym) {
+		auto new_call = codegen_call(state, sym_new, expr, new_object, type::create_builtin("void"));
 	} else if (!expr.parameters.empty()) {
 		state.report_message(report_type::error, std::string("No constructor has been defined on type `") + sym_c->name + "`", &expr);
 		return nullptr;
@@ -278,7 +279,8 @@ llvm::Value *codegen_call_new(codegen::state &state, symbol *sym, ast::expr_call
 	return new_object;
 }
 
-llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &expr, llvm::Value *this_) {
+llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &expr, llvm::Value *this_, std::shared_ptr<type> expecting_type) {
+	if (!sym) return nullptr;
 	llvm::Function *CalleeF;
 	if (isa<type_function>(sym->type)) {
 		CalleeF = (llvm::Function *)sym->value;
@@ -315,7 +317,8 @@ llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &ex
 	}
 	for (unsigned i = 0, e = expr.parameters.size(); i != e; ++i) {
 		auto arg_type = expr_resulting_type(state, expr.parameters[i], type->parameters[i]);
-		auto arg = codegen(state, expr.parameters[i]);
+		auto arg = codegen(state, expr.parameters[i], type->parameters[i]);
+		if (!arg) return nullptr;
 		if (!arg_type->equals(type->parameters[i])) {
 			// TODO: warn if casting happens
 			arg = arg_type->cast_llvm_value(state, arg, type->parameters[i].get());
@@ -373,8 +376,8 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr, std::shared_pt
 	if (isa<ast::expr_ident>(expr.lhs)) {
 		auto &callee = *(ast::expr_ident *)expr.lhs.get();
 		// Look up the name in the global module table.
-		auto sym = state.scopes.find_named_symbol(callee.ident.name);
-		return codegen_call(state, sym, expr, nullptr);
+		auto sym = find_function_overload(state, callee.ident.name, expr, expecting_type);
+		return codegen_call(state, sym, expr, nullptr, expecting_type);
 	} else {
 		state.report_message(report_type::error, "Virtual functions not implemented", &expr);
 		return nullptr;
@@ -430,10 +433,10 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 		}
 
 		auto &ident = ((ast::expr_ident *)call->lhs.get())->ident;
-		auto sym = state.scopes.find_named_symbol(lhs_struct->name + "." + ident.name);
+		auto sym = find_function_overload(state, lhs_struct->name + "." + ident.name, *call, expecting_type);
 		auto this_ = lhs_value;
 
-		return codegen_call(state, sym, *call, this_);
+		return codegen_call(state, sym, *call, this_, expecting_type);
 	} else {
 		state.report_message(report_type::error, "Identifier or name expected", expr.rhs.get());
 		return nullptr;
