@@ -1,4 +1,5 @@
 #include <doctest.h>
+#include <iostream>
 
 #include "../src/compiler.hpp"
 #include "catalyst/ast/ast.hpp"
@@ -146,6 +147,7 @@ TEST_CASE("function overloading (exact parameter match)") {
 
 TEST_CASE("function overloading (ambiguous parameter)") {
     compiler::options opts;
+    std::cout.setstate(std::ios_base::failbit);
     auto result = compiler::compile_string(R"catalyst_source(
         fn test() {
             return 4
@@ -163,6 +165,7 @@ TEST_CASE("function overloading (ambiguous parameter)") {
             test(1i64)
         }
     )catalyst_source", opts);
+    std::cout.clear();
     CHECK_FALSE(result.is_successful); // Should fail as ambiguous call
 }
 
