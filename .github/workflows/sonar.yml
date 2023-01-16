@@ -47,9 +47,9 @@ jobs:
 
       - name: Run tests
         run: |
-          ./build/toolchain/parser/test-parser -s -d --reporters=junit --out=parser.junit.xml
+          ./build/toolchain/parser/test-parser
           mv default.profraw parser.profraw
-          ./build/toolchain/compiler/test-compiler -s -d --reporters=junit --out=compiler.junit.xml
+          ./build/toolchain/compiler/test-compiler
           mv default.profraw compiler.profraw
       - name: Merge counters from different runs and convert the result into an llvm-cov-compatible form
         run: |
@@ -65,5 +65,4 @@ jobs:
         run: |
           sonar-scanner \
             --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}" \
-            --define sonar.cfamily.llvm-cov.reportPath=coverage.txt \
-            --define sonar.junit.reportPaths="*.junit.xml"
+            --define sonar.cfamily.llvm-cov.reportPath=coverage.txt
