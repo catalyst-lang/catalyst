@@ -34,10 +34,6 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh ${LLVM_VER%%.*}
           echo "LLVM_DIR=/usr/lib/llvm-${LLVM_VER%%.*}" >> $GITHUB_ENV
-          sudo apt-get install apt-file
-          sudo apt-file update
-          apt-file find llvm-profdata
-          llvm-profdata-15
 
       - name: Install sonar-scanner and build-wrapper
         uses: SonarSource/sonarcloud-github-c-cpp@v1
