@@ -47,9 +47,9 @@ jobs:
 
       - name: Run tests
         run: |
-          ./build/toolchain/parser/test-parser -s -d --reporters=junit --out parser.junit.xml
+          ./build/toolchain/parser/test-parser -s -d --reporters=junit --out=parser.junit.xml
           mv default.profraw parser.profraw
-          ./build/toolchain/compiler/test-compiler -s -d --reporters=junit --out compiler.junit.xml
+          ./build/toolchain/compiler/test-compiler -s -d --reporters=junit --out=compiler.junit.xml
           mv default.profraw compiler.profraw
       - name: Merge counters from different runs and convert the result into an llvm-cov-compatible form
         run: |
