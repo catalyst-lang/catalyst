@@ -55,7 +55,7 @@ jobs:
           llvm-profdata-15 merge -o merged.profdata *.profraw
       - name: Collect the coverage
         run: |
-          llvm-cov show --instr-profile merged.profdata build/toolchain/parser/test-parser -object build/toolchain/compiler/test-compiler > coverage.txt
+          llvm-cov-15 show --instr-profile merged.profdata build/toolchain/parser/test-parser -object build/toolchain/compiler/test-compiler > coverage.txt
 
       - name: Run sonar-scanner
         env:
