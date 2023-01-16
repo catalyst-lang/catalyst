@@ -19,6 +19,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
       - name: Setup Ninja
         uses: ashutoshvarma/setup-ninja@master
         with:
@@ -36,10 +39,17 @@ jobs:
         uses: SonarSource/sonarcloud-github-c-cpp@v1
 
       - name: Configure
-        run: cmake -GNinja -B build -DCMAKE_CXX_COMPILER=clang++-14 -DCMAKE_BUILD_TYPE=Release
+        run: cmake -GNinja -B build -DCMAKE_CXX_COMPILER=clang++-14 -DCMAKE_BUILD_TYPE=Release -DCOVERAGE=true
 
       - name: Build
         run: build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build build
+
+      - name: Run tests
+        run: |
+          ./build/toolchain/parser/test-parser
+          ./build/toolchain/compiler/test-compiler
+          sudo apt-get install gcovr
+          gcovr -r ${{github.workspace}} ${{github.workspace}}/build --sonarqube coverage.xml
 
       - name: Run sonar-scanner
         env:
@@ -47,8 +57,3 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           sonar-scanner --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}"
-
-      #- name: Test parser
-      #  run: ./build/toolchain/parser/test-parser --force-colors=true
-      #- name: Test compiler
-      #  run: ./build/toolchain/compiler/test-compiler --force-colors=true
