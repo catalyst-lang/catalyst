@@ -1,0 +1,54 @@
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - poc
+
+name: SonarCloud
+
+env:
+  LLVM_VER: 15.0.6
+
+jobs:
+  build:
+    name: Build and analyze
+    runs-on: ubuntu-22.04
+    env:
+      BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory # Directory where build-wrapper output will be placed
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Ninja
+        uses: ashutoshvarma/setup-ninja@master
+        with:
+          # ninja version to download. Default: 1.10.0
+          version: 1.10.0
+
+      - name: Install dependencies
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh ${LLVM_VER%%.*}
+          echo "LLVM_DIR=/usr/lib/llvm-${LLVM_VER%%.*}" >> $GITHUB_ENV
+
+      - name: Install sonar-scanner and build-wrapper
+        uses: SonarSource/sonarcloud-github-c-cpp@v1
+
+      - name: Configure
+        run: cmake -GNinja -B build -DCMAKE_CXX_COMPILER=clang++-14 -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build build
+
+      - name: Run sonar-scanner
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          sonar-scanner --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}"
+
+      #- name: Test parser
+      #  run: ./build/toolchain/parser/test-parser --force-colors=true
+      #- name: Test compiler
+      #  run: ./build/toolchain/compiler/test-compiler --force-colors=true
