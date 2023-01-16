@@ -213,6 +213,8 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_membe
 		} else if (isa<type_custom>(sym->type)) {
 			// constructor
 			return std::make_shared<type_object>(std::dynamic_pointer_cast<type_custom>(sym->type));
+		} else {
+			return type::create_builtin();
 		}
 	} else {
 		return type::create_builtin();

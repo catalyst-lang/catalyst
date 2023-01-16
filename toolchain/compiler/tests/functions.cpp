@@ -163,7 +163,7 @@ TEST_CASE("function overloading (ambiguous parameter)") {
             test(1i64)
         }
     )catalyst_source", opts);
-    CHECK(result.is_successful == false); // Should fail as ambiguous call
+    CHECK_FALSE(result.is_successful); // Should fail as ambiguous call
 }
 
 TEST_CASE("function overloading (no parameter case)") {
@@ -182,10 +182,11 @@ TEST_CASE("function overloading (no parameter case)") {
         }
 
         fn main() {
-            test()
+            return test()
         }
     )catalyst_source", opts);
 	auto ret = compiler::run(result);
+    REQUIRE(result.is_successful);
     CHECK(ret == 4);
 }
 
