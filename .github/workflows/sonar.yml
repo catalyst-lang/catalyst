@@ -51,6 +51,7 @@ jobs:
           sudo apt-get install gcovr tree
           gcovr -r ${{github.workspace}} ${{github.workspace}}/build --sonarqube coverage.xml
           cat coverage.xml
+          tree
       - name: Run sonar-scanner
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
