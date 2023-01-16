@@ -141,6 +141,12 @@
     },
     "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [
         "modernize-use-trailing-return-type"
-    ]
+    ],
+    "sonarlint.connectedMode.project": {
+        "connectionId": "catalyst-lang",
+        "projectKey": "catalyst-lang_catalyst"
+    },
+    "cmake.generator": "Ninja",
+    "sonarlint.pathToCompileCommands": "${workspaceFolder}\\build\\compile_commands.json"
       
 }
