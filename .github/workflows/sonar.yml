@@ -37,6 +37,7 @@ jobs:
           sudo apt-get install apt-file
           sudo apt-file update
           apt-file find llvm-profdata
+          llvm-profdata-15
 
       - name: Install sonar-scanner and build-wrapper
         uses: SonarSource/sonarcloud-github-c-cpp@v1
@@ -55,7 +56,7 @@ jobs:
           mv default.profraw compiler.profraw
       - name: Merge counters from different runs and convert the result into an llvm-cov-compatible form
         run: |
-          llvm-profdata merge -o merged.profdata *.profraw
+          llvm-profdata-15 merge -o merged.profdata *.profraw
       - name: Collect the coverage
         run: |
           llvm-cov show --instr-profile merged.profdata build/toolchain/parser/test-parser -object build/toolchain/compiler/test-compiler > coverage.txt
