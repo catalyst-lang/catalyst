@@ -193,4 +193,29 @@ TEST_CASE("function overloading (no parameter case)") {
     CHECK(ret == 4);
 }
 
+TEST_CASE("function overloading (return value)") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        fn test() -> i32 {
+            return 4
+        }
+
+        fn test() -> i64 {
+            return 5
+        }
+
+        fn test() -> f64 {
+            return 6.0
+        }
+
+        fn main() {
+            var a: i64 = test()
+            return a
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run(result);
+    REQUIRE(result.is_successful);
+    CHECK(ret == 5);
+}
+
 }

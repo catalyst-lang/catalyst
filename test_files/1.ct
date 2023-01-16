@@ -1,17 +1,17 @@
-        
-        fn testk() {
+        fn test() -> i32 {
             return 4
         }
 
-        fn test() {
+        fn test() -> i64 {
             return 5
         }
 
-        fn test() {
-            return 9.5
+        fn test() -> f64 {
+            return 6.0
         }
 
         fn main() {
-            var a: i32 = test()
-            return a;
+            var a: f64 = test()
+            return a
         }
+

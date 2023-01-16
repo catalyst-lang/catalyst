@@ -11,31 +11,47 @@ symbol* find_function_overload(codegen::state &state, const std::string &name, a
 	if (symbols.empty()) return nullptr;
 	if (symbols.size() == 1) return *symbols.begin();
 
+	auto check_parameter_types = [&](symbol* symbol) { 
+		auto type = (type_function*)symbol->type.get();
+		if (type->parameters.size() != expr.parameters.size()) return true;
+		for (int i = 0; i < type->parameters.size(); i++) {
+			auto expr_type = expr_resulting_type(state, expr.parameters[i], type->parameters[i]);
+			if (!type->parameters[i]->is_assignable_from(expr_type)) return true;
+		}
+		return false;
+	};
+
+	auto check_exact_parameter_types = [&](symbol* symbol) { 
+		auto type = (type_function*)symbol->type.get();
+		for (int i = 0; i < type->parameters.size(); i++) {
+			auto expr_type = expr_resulting_type(state, expr.parameters[i], type->parameters[i]);
+			if (*type->parameters[i] != *expr_type) return true;
+		}
+		return false;
+	};
+
+	auto check_return_type = [&](symbol* symbol) { 
+		auto type = (type_function*)symbol->type.get();
+		if (!expecting_type->is_assignable_from(type->return_type)) return true;
+		return false;
+	};
+
+	auto check_exact_return_type = [&](symbol* symbol) { 
+		auto type = (type_function*)symbol->type.get();
+		if (*expecting_type != *type->return_type) return true;
+		return false;
+	};
+
 	// eliminate the symbols that don't match parameter types and return type
 	
 	// remove all calls that have a different number of parameters than the call or have incompatible
 	// types.
-	std::erase_if(symbols, [&](symbol* symbol) { 
-			auto type = (type_function*)symbol->type.get();
-			if (type->parameters.size() != expr.parameters.size()) return true;
-			for (int i = 0; i < type->parameters.size(); i++) {
-				auto expr_type = expr_resulting_type(state, expr.parameters[i], type->parameters[i]);
-				if (!type->parameters[i]->is_assignable_from(expr_type)) return true;
-			}
-			return false;
-		});
+	std::erase_if(symbols, check_parameter_types);
 
 	if (symbols.size() > 1) {
 		// we have more than 1 candidate, let's see if there is one with exact type matches
 		auto exact_symbols = std::set<symbol *>(symbols);
-		std::erase_if(exact_symbols, [&](symbol* symbol) { 
-				auto type = (type_function*)symbol->type.get();
-				for (int i = 0; i < type->parameters.size(); i++) {
-					auto expr_type = expr_resulting_type(state, expr.parameters[i], type->parameters[i]);
-					if (*type->parameters[i] != *expr_type) return true;
-				}
-				return false;
-			});
+		std::erase_if(exact_symbols, check_exact_parameter_types);
 		if (exact_symbols.size() == 1) {
 			// we've found exactly 1 exact match. Winner!
 			return *exact_symbols.begin();
@@ -47,16 +63,28 @@ symbol* find_function_overload(codegen::state &state, const std::string &name, a
 			state.report_message(report_type::info, "Expected type is not deductable from context.");
             state.report_message(report_type::help, "Consider making types explicit.");
 		} else {
-			std::erase_if(symbols, [&](symbol* symbol) { 
-					auto type = (type_function*)symbol->type.get();
-					if (!expecting_type->is_assignable_from(type->return_type)) return true;
-					return false;
-				});
+			std::erase_if(symbols, check_return_type);
+			if (exact_symbols.size() == 1) {
+				// we've found exactly 1 exact match. Winner!
+				return *exact_symbols.begin();
+			}
 		}
 
-		// TODO: maybe again check for exact types in parameters here
+		//  check again for exact types in parameters here
+		exact_symbols = std::set<symbol *>(symbols);
+		std::erase_if(exact_symbols, check_exact_parameter_types);
+		if (exact_symbols.size() == 1) {
+			return *exact_symbols.begin();
+		}
 
-        // TODO: again check for for exact return type here
+        // check again for for exact return type here
+		if (expecting_type && expecting_type->is_valid()) {
+			exact_symbols = std::set<symbol *>(symbols);
+			std::erase_if(exact_symbols, check_exact_return_type);
+			if (exact_symbols.size() == 1) {
+				return *exact_symbols.begin();
+			}
+		}
 	}
 
 	if (symbols.empty()) {
