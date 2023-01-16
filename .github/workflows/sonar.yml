@@ -39,7 +39,7 @@ jobs:
         uses: SonarSource/sonarcloud-github-c-cpp@v1
 
       - name: Configure
-        run: cmake -GNinja -B build -DCMAKE_CXX_COMPILER=clang++-14 -DCMAKE_BUILD_TYPE=Release -DCOVERAGE=true
+        run: cmake -GNinja -B build -DCMAKE_CXX_COMPILER=clang++-14 -DCMAKE_BUILD_TYPE=Release -DCOVERAGE=true -DLLVM_ENABLE_TERMINFO=OFF
 
       - name: Build
         run: build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build build
