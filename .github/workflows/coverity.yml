@@ -33,9 +33,13 @@ jobs:
     - name: Configure
       run: cmake -GNinja -B build -DCMAKE_CXX_COMPILER=clang++-15 -DCMAKE_C_COMPILER=clang-15 -DCMAKE_BUILD_TYPE=Release #-DCOVERAGE=true
 
-    - uses: vapier/coverity-scan-action@v1
+    - uses: basdp/coverity-scan-action@v1
       with:
         email: ${{ secrets.COVERITY_EMAIL }}
         project: catalyst-lang/catalyst
         token: ${{ secrets.COVERITY_SCAN_TOKEN }}
+        configure: cov-configure --template --compiler clang++-15 --comptype clangcc
         command: cmake --build build
+    - name: bla
+      run: cov-configure --help
+      
