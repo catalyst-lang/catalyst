@@ -1,8 +1,13 @@
 # The Catalyst Programming Language
 
-**Catalyst** is an easy to use, feature-complete and c++-compatible programming language.
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=catalyst-lang_catalyst&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=catalyst-lang_catalyst)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=catalyst-lang_catalyst&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=catalyst-lang_catalyst)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=catalyst-lang_catalyst&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=catalyst-lang_catalyst)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=catalyst-lang_catalyst&metric=coverage)](https://sonarcloud.io/summary/new_code?id=catalyst-lang_catalyst)
 
-Catalyst transpiles to idiomatic, readable (but slightly opinionated) C++ code.
+**Catalyst** is an easy to use, feature-complete general-purpose programming language.
+
+Catalyst compiles to highly optimized machine-code, resulting in very high-performing code.
 
 > **Warning**
 > The language is under heavy development.
