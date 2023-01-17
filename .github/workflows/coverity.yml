@@ -8,10 +8,13 @@ on:
 
 name: Coverity Scan
 
+env:
+  LLVM_VER: 15.0.6
+
 jobs:
   # NB: "coverity" here can be anything you want.
   coverity:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
     - name: Setup Ninja
