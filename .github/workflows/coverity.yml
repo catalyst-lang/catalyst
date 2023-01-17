@@ -40,4 +40,6 @@ jobs:
         token: ${{ secrets.COVERITY_SCAN_TOKEN }}
         configure: --template --compiler clang++-15 --comptype clangcxx && cmake -GNinja -B build -DCMAKE_CXX_COMPILER=clang++-15 -DCMAKE_C_COMPILER=clang-15 -DCMAKE_BUILD_TYPE=Release
         command: cmake --build build
+    
+    - run: cat cov-int/build-log.txt
       
