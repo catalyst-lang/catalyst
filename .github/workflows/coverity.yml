@@ -1,0 +1,38 @@
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
+      - poc
+
+name: Coverity Scan
+
+jobs:
+  # NB: "coverity" here can be anything you want.
+  coverity:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup Ninja
+      uses: ashutoshvarma/setup-ninja@master
+      with:
+        # ninja version to download. Default: 1.10.0
+        version: 1.10.0
+
+    - name: Install dependencies
+      run: |
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x llvm.sh
+        sudo ./llvm.sh ${LLVM_VER%%.*}
+        echo "LLVM_DIR=/usr/lib/llvm-${LLVM_VER%%.*}" >> $GITHUB_ENV
+          
+    - name: Configure
+      run: cmake -GNinja -B build -DCMAKE_CXX_COMPILER=clang++-15 -DCMAKE_C_COMPILER=clang-15 -DCMAKE_BUILD_TYPE=Release #-DCOVERAGE=true
+
+    - uses: vapier/coverity-scan-action@v1
+      with:
+        email: ${{ secrets.COVERITY_EMAIL }}
+        project: catalyst-lang/catalyst
+        token: ${{ secrets.COVERITY_SCAN_TOKEN }}
+        command: cmake --build build
