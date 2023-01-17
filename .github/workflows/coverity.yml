@@ -38,8 +38,11 @@ jobs:
         email: ${{ secrets.COVERITY_EMAIL }}
         project: catalyst-lang/catalyst
         token: ${{ secrets.COVERITY_SCAN_TOKEN }}
-        configure: --template --compiler clang++-15 --comptype clangcc
+        configure: --template --compiler clang++-15 --comptype clangc++
         command: cmake --build build
     - name: bla
-      run: cov-configure --help
+      run: |
+        export PATH="${PWD}/cov-analysis/bin:${PATH}"
+        cov-configure --help
+        cov-configure --list-compiler-types
       
