@@ -1,5 +1,6 @@
 # The Catalyst Programming Language
 
+[![continuous-integration](https://github.com/catalyst-lang/catalyst/actions/workflows/ci.yml/badge.svg)](https://github.com/catalyst-lang/catalyst/actions/workflows/ci.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=catalyst-lang_catalyst&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=catalyst-lang_catalyst)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=catalyst-lang_catalyst&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=catalyst-lang_catalyst)
 [![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=catalyst-lang_catalyst&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=catalyst-lang_catalyst)
@@ -12,10 +13,11 @@ Catalyst compiles to highly optimized machine-code, resulting in very high-perfo
 > **Warning**
 > The language is under heavy development.
 
-Catalyst's main draw is to provide a modern, current programming language that is compatible with the C++ ecosystem (mainly the vast amount of libraries available). C++ is a very powerful language, but has become very bloated and convoluted because of the decades of legacy it needs to drag along. Catalyst moderna language with much the same goals as C++, while also providing a modern day development experience in both syntax as well as idioms.
+Catalyst's main draw is to provide a modern, current programming language that allows you to write efficient code using high-level concepts and modern, easy to use idioms.  
+
+Catalyst is designed to be a replacement for the usecases where C++ is typically used. C++ is a very powerful language, but has become very bloated and convoluted because of the decades of legacy it needs to drag along. Catalyst is a modern language with much the same goals, while also providing a modern-day development experience in both syntax as well as idioms.
 
 ## Usage
-The transpilation to C++ requires `clang`. Make sure you have that installed.
 ```
 catalyst file.ct
 ./build/file

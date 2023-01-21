@@ -5,7 +5,7 @@ on:
       - main
       - poc
 
-name: continuous-integration
+name: Continuous Integration
 
 env:
   LLVM_VER: 15.0.6
