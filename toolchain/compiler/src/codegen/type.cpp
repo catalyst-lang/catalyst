@@ -88,11 +88,26 @@ bool type::operator!=(const type &other) const { return (this->get_fqn() != othe
 
 std::string type::get_fqn() const { return fqn; }
 
-llvm::Value *type::cast_llvm_value(state &state, llvm::Value *value, type *to) { return nullptr; }
+llvm::Value *type::cast_llvm_value(state &state, llvm::Value *value, const type &to) const { return nullptr; }
 
 bool type::is_assignable_from(const std::shared_ptr<type> &type) const { return false; }
-llvm::Value *type::create_add(state &state, llvm::Value *lhs, std::shared_ptr<type> rhs_type,
-                              llvm::Value *rhs) {
+llvm::Value *type::create_add(codegen::state &state, const type &result_type, llvm::Value *value,
+	                        const type &rhs_type, llvm::Value *rhs) {
+	return nullptr;
+}
+
+llvm::Value *type::create_sub(codegen::state &state, const type &result_type, llvm::Value *value,
+	                        const type &rhs_type, llvm::Value *rhs) {
+	return nullptr;
+}
+
+llvm::Value *type::create_div(codegen::state &state, const type &result_type, llvm::Value *value,
+	                        const type &rhs_type, llvm::Value *rhs) {
+	return nullptr;
+}
+
+llvm::Value *type::create_mul(codegen::state &state, const type &result_type, llvm::Value *value,
+	                        const type &rhs_type, llvm::Value *rhs) {
 	return nullptr;
 }
 
@@ -100,7 +115,7 @@ llvm::Value* type_primitive::get_sizeof(catalyst::compiler::codegen::state &stat
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(32, get_llvm_type(state)->getPrimitiveSizeInBits() / 8));
 }
 
-llvm::Type *type_undefined::get_llvm_type(state &state) {
+llvm::Type *type_undefined::get_llvm_type(state &state) const {
 	return llvm::Type::getVoidTy(*state.TheContext);
 }
 
@@ -108,7 +123,7 @@ llvm::Value *type_undefined::get_sizeof(codegen::state &state) {
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(32, 0));
 }
 
-llvm::Type *type_void::get_llvm_type(state &state) {
+llvm::Type *type_void::get_llvm_type(state &state) const {
 	return llvm::Type::getVoidTy(*state.TheContext);
 }
 
@@ -116,7 +131,7 @@ llvm::Value *type_void::get_sizeof(codegen::state &state) {
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(32, 0));
 }
 
-llvm::Type *type_bool::get_llvm_type(state &state) {
+llvm::Type *type_bool::get_llvm_type(state &state) const {
 	return llvm::Type::getInt1Ty(*state.TheContext);
 }
 
@@ -124,7 +139,7 @@ llvm::Constant *type_bool::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(1, 0));
 }
 
-llvm::Type *type_i8::get_llvm_type(state &state) {
+llvm::Type *type_i8::get_llvm_type(state &state) const {
 	return llvm::Type::getInt8Ty(*state.TheContext);
 }
 
@@ -132,7 +147,7 @@ llvm::Constant *type_i8::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(8, 0));
 }
 
-llvm::Type *type_i16::get_llvm_type(state &state) {
+llvm::Type *type_i16::get_llvm_type(state &state) const {
 	return llvm::Type::getInt16Ty(*state.TheContext);
 }
 
@@ -140,7 +155,7 @@ llvm::Constant *type_i16::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(16, 0));
 }
 
-llvm::Type *type_i32::get_llvm_type(state &state) {
+llvm::Type *type_i32::get_llvm_type(state &state) const {
 	return llvm::Type::getInt32Ty(*state.TheContext);
 }
 
@@ -148,7 +163,7 @@ llvm::Constant *type_i32::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(32, 0));
 }
 
-llvm::Type *type_i64::get_llvm_type(state &state) {
+llvm::Type *type_i64::get_llvm_type(state &state) const {
 	return llvm::Type::getInt64Ty(*state.TheContext);
 }
 
@@ -156,7 +171,7 @@ llvm::Constant *type_i64::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(64, 0));
 }
 
-llvm::Type *type_i128::get_llvm_type(state &state) {
+llvm::Type *type_i128::get_llvm_type(state &state) const {
 	return llvm::Type::getInt128Ty(*state.TheContext);
 }
 
@@ -164,7 +179,7 @@ llvm::Constant *type_i128::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(128, 0));
 }
 
-llvm::Type *type_isize::get_llvm_type(state &state) {
+llvm::Type *type_isize::get_llvm_type(state &state) const {
 	return llvm::Type::getInt64Ty(*state.TheContext);
 }
 
@@ -172,7 +187,7 @@ llvm::Constant *type_isize::get_llvm_constant_zero(codegen::state &state) const 
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(64, 0));
 }
 
-llvm::Type *type_u8::get_llvm_type(state &state) {
+llvm::Type *type_u8::get_llvm_type(state &state) const {
 	return llvm::Type::getInt8Ty(*state.TheContext);
 }
 
@@ -180,7 +195,7 @@ llvm::Constant *type_u8::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(8, 0));
 }
 
-llvm::Type *type_u16::get_llvm_type(state &state) {
+llvm::Type *type_u16::get_llvm_type(state &state) const {
 	return llvm::Type::getInt16Ty(*state.TheContext);
 }
 
@@ -188,7 +203,7 @@ llvm::Constant *type_u16::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(16, 0));
 }
 
-llvm::Type *type_u32::get_llvm_type(state &state) {
+llvm::Type *type_u32::get_llvm_type(state &state) const {
 	return llvm::Type::getInt32Ty(*state.TheContext);
 }
 
@@ -196,7 +211,7 @@ llvm::Constant *type_u32::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(32, 0));
 }
 
-llvm::Type *type_u64::get_llvm_type(state &state) {
+llvm::Type *type_u64::get_llvm_type(state &state) const {
 	return llvm::Type::getInt64Ty(*state.TheContext);
 }
 
@@ -204,7 +219,7 @@ llvm::Constant *type_u64::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(64, 0));
 }
 
-llvm::Type *type_u128::get_llvm_type(state &state) {
+llvm::Type *type_u128::get_llvm_type(state &state) const {
 	return llvm::Type::getInt128Ty(*state.TheContext);
 }
 
@@ -212,7 +227,7 @@ llvm::Constant *type_u128::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(128, 0));
 }
 
-llvm::Type *type_usize::get_llvm_type(state &state) {
+llvm::Type *type_usize::get_llvm_type(state &state) const {
 	return llvm::Type::getInt64Ty(*state.TheContext);
 }
 
@@ -220,7 +235,7 @@ llvm::Constant *type_usize::get_llvm_constant_zero(codegen::state &state) const 
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(64, 0));
 }
 
-llvm::Type *type_f16::get_llvm_type(state &state) {
+llvm::Type *type_f16::get_llvm_type(state &state) const {
 	return llvm::Type::getHalfTy(*state.TheContext);
 }
 
@@ -228,7 +243,7 @@ llvm::Constant *type_f16::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantFP::get(llvm::Type::getHalfTy(*state.TheContext), 0.0);
 }
 
-llvm::Type *type_f32::get_llvm_type(state &state) {
+llvm::Type *type_f32::get_llvm_type(state &state) const {
 	return llvm::Type::getFloatTy(*state.TheContext);
 }
 
@@ -236,7 +251,7 @@ llvm::Constant *type_f32::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantFP::get(llvm::Type::getFloatTy(*state.TheContext), 0.0);
 }
 
-llvm::Type *type_f64::get_llvm_type(state &state) {
+llvm::Type *type_f64::get_llvm_type(state &state) const {
 	return llvm::Type::getDoubleTy(*state.TheContext);
 }
 
@@ -244,7 +259,7 @@ llvm::Constant *type_f64::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantFP::get(llvm::Type::getDoubleTy(*state.TheContext), 0.0);
 }
 
-llvm::Type *type_f128::get_llvm_type(state &state) {
+llvm::Type *type_f128::get_llvm_type(state &state) const {
 	return llvm::Type::getFP128Ty(*state.TheContext);
 }
 
@@ -252,7 +267,7 @@ llvm::Constant *type_f128::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantFP::get(llvm::Type::getFP128Ty(*state.TheContext), 0.0);
 }
 
-llvm::Type *type_f80::get_llvm_type(state &state) {
+llvm::Type *type_f80::get_llvm_type(state &state) const {
 	return llvm::Type::getX86_FP80Ty(*state.TheContext);
 }
 
@@ -260,8 +275,8 @@ llvm::Constant *type_f80::get_llvm_constant_zero(codegen::state &state) const {
 	return llvm::ConstantFP::get(llvm::Type::getX86_FP80Ty(*state.TheContext), 0.0);
 }
 
-llvm::Value *type_primitive::cast_llvm_value(state &state, llvm::Value *value, type *to) {
-	auto p_to = dynamic_cast<type_primitive *>(to);
+llvm::Value *type_primitive::cast_llvm_value(state &state, llvm::Value *value, const type &to) const {
+	auto p_to = dynamic_cast<const type_primitive *>(&to);
 	if (p_to == nullptr) {
 		// state.report_message("Converting between types that aren't both primitives");
 		// assert(false);
@@ -298,22 +313,76 @@ llvm::Value *type_primitive::cast_llvm_value(state &state, llvm::Value *value, t
 	return nullptr;
 }
 
-llvm::Value *type_primitive::create_add(codegen::state &state, llvm::Value *value,
-                                        std::shared_ptr<type> rhs_type, llvm::Value *rhs) {
-	auto p_rhs = dynamic_cast<type_primitive *>(rhs_type.get());
-	if (p_rhs == nullptr) {
-		return nullptr;
-	}
+llvm::Value *type_primitive::create_add(codegen::state &state, const type &result_type, llvm::Value *value,
+	                        const type &rhs_type, llvm::Value *rhs) {
+	if (*this != result_type) value = cast_llvm_value(state, value, result_type);
+	if (rhs_type != result_type) rhs = rhs_type.cast_llvm_value(state, rhs, result_type);
+
+	auto p_rhs = dynamic_cast<const type_primitive *>(&rhs_type);
+	if (p_rhs == nullptr) return nullptr;
 
 	if (!is_float && !p_rhs->is_float) {
 		return state.Builder.CreateAdd(value, rhs, "add");
 	} else {
 		// at least one of us is a fp
-		if (!is_float)
-			value = cast_llvm_value(state, value, rhs_type.get());
-		if (!p_rhs->is_float)
-			rhs = rhs_type->cast_llvm_value(state, rhs, this);
+		if (!is_float) value = cast_llvm_value(state, value, rhs_type);
+		if (!p_rhs->is_float) rhs = rhs_type.cast_llvm_value(state, rhs, *this);
 		return state.Builder.CreateFAdd(value, rhs, "add");
+	}
+}
+
+llvm::Value *type_primitive::create_sub(codegen::state &state, const type &result_type, llvm::Value *value,
+	                        const type &rhs_type, llvm::Value *rhs) {
+	if (*this != result_type) value = cast_llvm_value(state, value, result_type);
+	if (rhs_type != result_type) rhs = rhs_type.cast_llvm_value(state, rhs, result_type);
+
+	auto p_rhs = dynamic_cast<const type_primitive *>(&rhs_type);
+	if (p_rhs == nullptr) return nullptr;
+
+	if (!is_float && !p_rhs->is_float) {
+		return state.Builder.CreateSub(value, rhs, "sub");
+	} else {
+		// at least one of us is a fp
+		if (!is_float) value = cast_llvm_value(state, value, rhs_type);
+		if (!p_rhs->is_float) rhs = rhs_type.cast_llvm_value(state, rhs, *this);
+		return state.Builder.CreateFSub(value, rhs, "sub");
+	}
+}
+
+llvm::Value *type_primitive::create_mul(codegen::state &state, const type &result_type, llvm::Value *value,
+	                        const type &rhs_type, llvm::Value *rhs) {
+	if (*this != result_type) value = cast_llvm_value(state, value, result_type);
+	if (rhs_type != result_type) rhs = rhs_type.cast_llvm_value(state, rhs, result_type);
+
+	auto p_rhs = dynamic_cast<const type_primitive *>(&rhs_type);
+	if (p_rhs == nullptr) return nullptr;
+
+	if (!is_float && !p_rhs->is_float) {
+		return state.Builder.CreateMul(value, rhs, "mul");
+	} else {
+		// at least one of us is a fp
+		if (!is_float) value = cast_llvm_value(state, value, rhs_type);
+		if (!p_rhs->is_float) rhs = rhs_type.cast_llvm_value(state, rhs, *this);
+		return state.Builder.CreateFMul(value, rhs, "mul");
+	}
+}
+
+llvm::Value *type_primitive::create_div(codegen::state &state, const type &result_type, llvm::Value *value,
+	                        const type &rhs_type, llvm::Value *rhs) {
+	if (*this != result_type) value = cast_llvm_value(state, value, result_type);
+	if (rhs_type != result_type) rhs = rhs_type.cast_llvm_value(state, rhs, result_type);
+
+	auto p_rhs = dynamic_cast<const type_primitive *>(&rhs_type);
+	if (p_rhs == nullptr) return nullptr;
+
+	if (!is_float && !p_rhs->is_float) {
+		if (is_signed && p_rhs->is_signed) return state.Builder.CreateSDiv(value, rhs, "div");
+		return state.Builder.CreateUDiv(value, rhs, "div");
+	} else {
+		// at least one of us is a fp
+		if (!is_float) value = cast_llvm_value(state, value, rhs_type);
+		if (!p_rhs->is_float) rhs = rhs_type.cast_llvm_value(state, rhs, *this);
+		return state.Builder.CreateFDiv(value, rhs, "div");
 	}
 }
 
@@ -326,7 +395,7 @@ bool type_primitive::is_assignable_from(const std::shared_ptr<type> &type) const
 	}
 }
 
-llvm::Type *type_function::get_llvm_type(state &state) {
+llvm::Type *type_function::get_llvm_type(state &state) const {
 	std::vector<llvm::Type *> params;
 
 	if (this->is_method()) {
@@ -395,7 +464,7 @@ std::shared_ptr<type> type::create_struct(const std::string &name, std::vector<m
 	return std::make_shared<type_struct>(name, members);
 }
 
-llvm::Type *type_struct::get_llvm_type(state &state) {
+llvm::Type *type_struct::get_llvm_type(state &state) const {
 	if (structType == nullptr) {
 		std::vector<llvm::Type *> fields;
 		for (const auto &member : members) {
@@ -404,7 +473,8 @@ llvm::Type *type_struct::get_llvm_type(state &state) {
 			}
 		}
 
-		structType = llvm::StructType::create(*state.TheContext, fields, name, true);
+		auto self = const_cast<type_struct*>(this);
+		self->structType = llvm::StructType::create(*state.TheContext, fields, name, true);
 	}
 	return structType;
 }
@@ -452,7 +522,7 @@ type_object::type_object(std::shared_ptr<type_custom> object_type)
 	: type("object"), object_type(object_type) {
 }
 
-llvm::Type *type_object::get_llvm_type(state &state) {
+llvm::Type *type_object::get_llvm_type(state &state) const {
 	return object_type->get_llvm_type(state);
 }
 

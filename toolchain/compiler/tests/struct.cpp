@@ -24,7 +24,7 @@ TEST_CASE("struct concept") {
             return a.i + a.k
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 19);
 }
 
@@ -52,7 +52,7 @@ TEST_CASE("copy on assign") {
             return b.i + b.k
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 19);
 }
 
@@ -83,7 +83,7 @@ TEST_CASE("copy on pass") {
             return a.i + a.k
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 19);
 }
 
@@ -109,7 +109,7 @@ TEST_CASE("copy on return") {
             return a.i + a.k
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 14);
 }
 
@@ -139,7 +139,7 @@ TEST_CASE("copy on return and pass as parameter 1") {
             return a
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 13);
 }
 
@@ -175,7 +175,7 @@ TEST_CASE("copy on return and pass as parameter 2") {
             return b.k
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 33);
 }
 
@@ -200,7 +200,7 @@ TEST_CASE("copy on return and pass as parameter 3") {
             return a.i
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 44);
 }
 
@@ -235,7 +235,7 @@ TEST_CASE("copy on return and pass as parameter 4") {
             return piz(r) + r.k
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 96);
 }
 
@@ -271,7 +271,7 @@ TEST_CASE("copy on return and pass as parameter 5") {
             return a.i
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 1);
 }
 
@@ -297,7 +297,7 @@ TEST_CASE("copy on return and pass as parameter 6") {
             return a
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 188);
 }
 
@@ -335,7 +335,7 @@ TEST_CASE("advanced 1") {
             return a.g.poeder
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 7779);
 }
 
@@ -358,7 +358,7 @@ TEST_CASE("method 1") {
             return b.k
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 32);
 }
 
@@ -391,7 +391,7 @@ TEST_CASE("method 2") {
             return a.k + b.k
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 131);
 }
 
@@ -409,7 +409,7 @@ TEST_CASE("struct initializers") {
             return b.i
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 4);
 }
 
@@ -431,7 +431,7 @@ TEST_CASE("struct new()") {
             return b.k
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 321);
 }
 
@@ -453,7 +453,7 @@ TEST_CASE("struct initializers + new()") {
             return b.k + b.i
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 325);
 }
 
@@ -475,7 +475,7 @@ TEST_CASE("struct new(i64)") {
             return b.k
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 43);
 }
 
@@ -501,7 +501,7 @@ TEST_CASE("struct new overloading 1") {
             return b.k
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 44);
 }
 
@@ -527,7 +527,7 @@ TEST_CASE("struct new overloading 2") {
             return b.k
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 123);
 }
 

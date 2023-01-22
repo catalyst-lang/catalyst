@@ -10,6 +10,7 @@
 #include <string>
 #include <variant>
 #include <vector>
+#include <bit>
 
 #include "catalyst/platform.hpp"
 #include "catalyst/version.hpp"
@@ -45,7 +46,7 @@ int main(const cli_options &opts) {
 
 
 	if (opts.run) {
-		auto ret = run(result);
+		auto ret = run<int64_t>(result);
 		std::cout << "Result as bool: " << std::boolalpha << *(bool *)&ret << std::endl;
 		std::cout << "Result as   i8: " << (int)*(int8_t *)&ret << std::endl;
 		std::cout << "Result as  i16: " << *(int16_t *)&ret << std::endl;
@@ -56,7 +57,7 @@ int main(const cli_options &opts) {
 		std::cout << "Result as  u32: " << *(uint32_t *)&ret << std::endl;
 		std::cout << "Result as  u64: " << *(uint64_t *)&ret << std::endl;
 		std::cout << "Result as  f32: " << *(((float*)&ret) + 1) << std::endl;
-		std::cout << "Result as  f64: " << *(double*)&ret << std::endl;
+		std::cout << "Result as  f64: " << std::bit_cast<double>(ret) << std::endl;
 		return ret;
 	}
 	else

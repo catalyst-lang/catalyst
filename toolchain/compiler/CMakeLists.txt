@@ -6,6 +6,8 @@ add_library(libcompiler
     src/compiler.hpp 
     src/codegen/expr.cpp 
     src/codegen/expr.hpp 
+    src/codegen/expr_arithmetic.cpp 
+    src/codegen/expr_arithmetic.hpp 
     src/codegen/codegen.cpp 
     src/codegen/codegen.hpp 
     src/codegen/decl.cpp 
@@ -59,6 +61,7 @@ target_include_directories(compiler PRIVATE ${cli11_SOURCE_DIR})
 add_executable(test-compiler 
     tests/doctest_main.cpp
     tests/functions.cpp
+    tests/arithmetics.cpp
     tests/struct.cpp
 )
 target_compile_features(test-compiler PRIVATE cxx_std_17)

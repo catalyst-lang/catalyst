@@ -1,17 +1,3 @@
-        fn test() -> i32 {
-            return 4
+fn main() {
+            return 4u32 - 6i32
         }
-
-        fn test() -> i64 {
-            return 5
-        }
-
-        fn test() -> f64 {
-            return 6.0
-        }
-
-        fn main() {
-            var a: f64 = test()
-            return a
-        }
-

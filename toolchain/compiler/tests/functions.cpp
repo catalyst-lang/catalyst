@@ -15,7 +15,7 @@ TEST_CASE("function concept") {
             return 123i64;
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 123);
 }
 
@@ -27,7 +27,7 @@ TEST_CASE("initialize globals") {
             return hi;
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 4);
 }
 
@@ -40,7 +40,7 @@ TEST_CASE("changing globals") {
             return hi;
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 56);
 }
 
@@ -56,7 +56,7 @@ TEST_CASE("return void (explicit)") {
             return 123i64;
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 123);
 }
 
@@ -72,7 +72,7 @@ TEST_CASE("return void (implicit)") {
             return 123i64
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 123);
 }
 
@@ -88,7 +88,7 @@ TEST_CASE("return void (implicit no-return)") {
             return 123i64
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 123);
 }
 
@@ -103,7 +103,7 @@ TEST_CASE("returning") {
             return func();
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 246);
 }
 
@@ -118,7 +118,7 @@ TEST_CASE("parameter") {
             return func(321i64);
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 321);
 }
 
@@ -141,7 +141,7 @@ TEST_CASE("function overloading (exact parameter match)") {
             return test(1i32)
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     CHECK(ret == 5);
 }
 
@@ -188,7 +188,7 @@ TEST_CASE("function overloading (no parameter case)") {
             return test()
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     REQUIRE(result.is_successful);
     CHECK(ret == 4);
 }
@@ -213,7 +213,7 @@ TEST_CASE("function overloading (return value)") {
             return a
         }
     )catalyst_source", opts);
-	auto ret = compiler::run(result);
+	auto ret = compiler::run<int64_t>(result);
     REQUIRE(result.is_successful);
     CHECK(ret == 5);
 }

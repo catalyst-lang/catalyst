@@ -26,7 +26,8 @@ struct runtime {
     codegen::state *state = nullptr;
     std::unordered_map<std::string, llvm::JITTargetAddress> functions;
 
-    friend int64_t run_jit(codegen::state &state); 
+    template <typename T> 
+    friend T run_jit(codegen::state &state, const std::string &); 
 };
 
 } // namespace catalyst::compiler

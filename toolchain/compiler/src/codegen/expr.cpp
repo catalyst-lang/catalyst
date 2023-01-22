@@ -87,7 +87,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_literal_numeric &expr,
 		fstr << ".";
 		fstr << expr.fraction.value();
 	}
-	llvm::APFloat f = llvm::APFloat(0.0);
+	auto f = llvm::APFloat(0.0);
 	auto *semantics = &llvm::APFloat::IEEEhalf();
 	if (definitive_type->get_fqn() == "f16")
 		semantics = &llvm::APFloat::IEEEhalf();
@@ -114,7 +114,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_literal_numeric &expr,
 }
 
 llvm::Value *codegen(codegen::state &state, ast::expr_literal_bool &expr,
-                     std::shared_ptr<type> expecting_type) {
+                     [[maybe_unused]] std::shared_ptr<type> expecting_type) {
 	return llvm::ConstantInt::get(*state.TheContext, llvm::APInt(1, expr.value));
 }
 
@@ -176,70 +176,6 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr,
 	}
 }
 
-llvm::Value *codegen(codegen::state &state, ast::expr_binary_arithmetic &expr,
-                     std::shared_ptr<type> expecting_type) {
-	auto lhs = codegen(state, expr.lhs);
-	auto rhs = codegen(state, expr.rhs);
-
-	if (lhs == nullptr || rhs == nullptr)
-		return nullptr;
-
-	// below only works for primitive types
-
-	auto expr_type = expr_resulting_type(state, expr);
-	auto lhs_type = expr_resulting_type(state, expr.lhs);
-	auto rhs_type = expr_resulting_type(state, expr.rhs);
-
-	if (*lhs_type != *expr_type) {
-		lhs = lhs_type->cast_llvm_value(state, lhs, expr_type.get());
-	}
-
-	if (*rhs_type != *expr_type) {
-		rhs = rhs_type->cast_llvm_value(state, rhs, expr_type.get());
-	}
-
-	switch (expr.op) {
-	case ast::expr_binary_arithmetic::op_t::plus: {
-		auto add = lhs_type->create_add(state, lhs, rhs_type, rhs);
-		lhs_type->cast_llvm_value(state, add, expr_type.get());
-		return add;
-	}
-	case ast::expr_binary_arithmetic::op_t::minus:
-		return state.Builder.CreateSub(lhs, rhs, "subtmp");
-	case ast::expr_binary_arithmetic::op_t::times:
-		return state.Builder.CreateMul(lhs, rhs, "multmp");
-	case ast::expr_binary_arithmetic::op_t::div:
-		return state.Builder.CreateSDiv(lhs, rhs, "divtmp");
-	default:
-		state.report_message(report_type::error, "Operator not implemented", &expr);
-		return nullptr;
-	}
-}
-
-llvm::Value *codegen(codegen::state &state, ast::expr_unary_arithmetic &expr,
-                     std::shared_ptr<type> expecting_type) {
-	auto rhs = codegen(state, expr.rhs);
-
-	if (rhs == nullptr)
-		return nullptr;
-
-	switch (expr.op) {
-	case ast::expr_unary_arithmetic::op_t::complement:
-		return state.Builder.CreateXor(rhs, -1, "xortmp");
-	case ast::expr_unary_arithmetic::op_t::negate:
-		return state.Builder.CreateNeg(rhs, "negtmp");
-	default:
-		state.report_message(report_type::error, "Operator not implemented", &expr);
-		return nullptr;
-	}
-}
-
-llvm::Value *codegen(codegen::state &state, ast::expr_binary_logical &expr,
-                     std::shared_ptr<type> expecting_type) {
-	state.report_message(report_type::error, "expr_binary_logical: Not implemented", &expr);
-	return nullptr;
-}
-
 llvm::Value *structure_to_pointer(codegen::state &state, llvm::Value *struct_val) {
 	llvm::IRBuilder<> TmpB(&state.current_function->getEntryBlock(), state.current_function->getEntryBlock().begin());
 	auto ptr = TmpB.CreateAlloca(struct_val->getType(), nullptr, "struct_ptr");
@@ -248,6 +184,10 @@ llvm::Value *structure_to_pointer(codegen::state &state, llvm::Value *struct_val
 }
 
 llvm::Value *codegen_call_new(codegen::state &state, symbol *sym, ast::expr_call &expr, llvm::Value *this_) {
+	if (!sym) {
+		return nullptr;
+	}
+	
 	if (!isa<type_custom>(sym->type)) {
 		// should never happen, but just to be sure we report an error if somebody calls this function in the
 		// future with a non type_custom type.
@@ -321,7 +261,7 @@ llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &ex
 		if (!arg) return nullptr;
 		if (!arg_type->equals(type->parameters[i])) {
 			// TODO: warn if casting happens
-			arg = arg_type->cast_llvm_value(state, arg, type->parameters[i].get());
+			arg = arg_type->cast_llvm_value(state, arg, *type->parameters[i]);
 		}
 
 		if (llvm::isa<llvm::StructType>(arg->getType())) {
@@ -450,7 +390,7 @@ void codegen_assignment(codegen::state &state, llvm::Value *dest_ptr,
 
 	if (*dest_type != *rhs_type) {
 		// need to cast
-		auto new_rhs_value = rhs_type->cast_llvm_value(state, rhs_value, dest_type.get());
+		auto new_rhs_value = rhs_type->cast_llvm_value(state, rhs_value, *dest_type);
 		if (new_rhs_value) {
 			rhs_value = new_rhs_value;
 		} else {
@@ -497,7 +437,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_cast &expr,
                      std::shared_ptr<type> expecting_type) {
 	auto expr_type = expr_resulting_type(state, expr.lhs);
 	auto value = codegen(state, expr.lhs);
-	return expr_type->cast_llvm_value(state, value, type::create(state, expr.type).get());
+	return expr_type->cast_llvm_value(state, value, *type::create(state, expr.type));
 }
 
 } // namespace catalyst::compiler::codegen

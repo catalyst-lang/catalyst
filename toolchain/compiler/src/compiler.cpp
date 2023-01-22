@@ -111,15 +111,30 @@ compile_result compile_file(const std::string &filename, options options) {
 	}
 }
 
-uint64_t run(compile_result &result) {
-	return run_jit(*std::static_pointer_cast<codegen::state>(result.state));
-}
-
 void compiler_debug_print(compile_result &result) {
 	auto state = std::static_pointer_cast<codegen::state>(result.state);
 	printf("Read module:\n");
 	state->TheModule->print(llvm::outs(), nullptr);
 	printf("\n");
 }
+
+codegen::state &get_state(const compile_result &result) {
+	return *std::static_pointer_cast<codegen::state>(result.state);
+}
+
+template<typename T>
+T run(const compile_result &result) {
+	return run_jit<T>(get_state(result));
+}
+
+template int16_t run(const compile_result &);
+template int32_t run(const compile_result &);
+template int64_t run(const compile_result &);
+template uint16_t run(const compile_result &);
+template uint32_t run(const compile_result &);
+template uint64_t run(const compile_result &);
+template void* run(const compile_result &);
+template float run(const compile_result &);
+template double run(const compile_result &);
 
 } // namespace catalyst::compiler

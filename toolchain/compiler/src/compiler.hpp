@@ -10,6 +10,10 @@
 
 namespace catalyst::compiler {
 
+namespace codegen {
+	struct state;
+}
+
 constexpr struct {
 	int major = 0, minor = 0, patch = 1;
 
@@ -41,6 +45,9 @@ compile_result compile(catalyst::ast::translation_unit &tu, options);
 
 void compiler_debug_print(compile_result &);
 
-uint64_t run(compile_result &);
+codegen::state &get_state(const compile_result &result);
+
+template<typename T>
+T run(const compile_result &result);
 
 } // namespace catalyst
