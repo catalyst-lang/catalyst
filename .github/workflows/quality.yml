@@ -40,7 +40,7 @@ jobs:
         uses: SonarSource/sonarcloud-github-c-cpp@v1
 
       - name: Configure
-        run: cmake -GNinja -B build -DCMAKE_CXX_COMPILER=clang++-15 -DCMAKE_C_COMPILER=clang-15 -DCMAKE_BUILD_TYPE=Release -DCOVERAGE=true
+        run: cmake -GNinja -B build -DCMAKE_CXX_COMPILER=clang++-15 -DCMAKE_C_COMPILER=clang-15 -DCMAKE_BUILD_TYPE=Release -DCOVERAGE=true -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
       - name: Build
         run: build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build build
@@ -79,7 +79,7 @@ jobs:
           cd $GITHUB_WORKSPACE
 
           # 1. Run Clang-Tidy
-          clang-tidy .clang-tidy | \
+          clang-tidy -p ./build | \
           # 2. Convert the Clang-Tidy output to a format that the Codacy API accepts
           ~/codacy-clang-tidy-linux-1.3.5 | \
           # 3. Send the results to Codacy
