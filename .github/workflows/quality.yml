@@ -83,7 +83,7 @@ jobs:
           wget https://github.com/codacy/codacy-clang-tidy/releases/download/1.3.5/codacy-clang-tidy-linux-1.3.5
           chmod a+x codacy-clang-tidy-linux-1.3.5
           cd $GITHUB_WORKSPACE
-          git clean -fdx
+          git ls-files --exclude-standard -oz | xargs -0 rm -f
 
           # 1. Run Clang-Tidy
           clang-tidy .clang-tidy | \
