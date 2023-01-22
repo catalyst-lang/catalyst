@@ -67,13 +67,7 @@ jobs:
           sonar-scanner \
             --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}" \
             --define sonar.cfamily.llvm-cov.reportPath=coverage.txt
-      
-      - name: Run Codacy Analysis CLI
-        uses: codacy/codacy-analysis-cli-action@master
-        with:
-          tool: <CLIENT_SIDE_TOOL_NAME>
-          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-          upload: true
+          rm -rf .sonar .scannerwork
 
       - name: Codacy
         env:
@@ -83,8 +77,6 @@ jobs:
           wget https://github.com/codacy/codacy-clang-tidy/releases/download/1.3.5/codacy-clang-tidy-linux-1.3.5
           chmod a+x codacy-clang-tidy-linux-1.3.5
           cd $GITHUB_WORKSPACE
-          git stash
-          echo "hiero"
 
           # 1. Run Clang-Tidy
           clang-tidy .clang-tidy | \
