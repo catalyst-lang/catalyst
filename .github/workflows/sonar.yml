@@ -72,6 +72,9 @@ jobs:
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
         run: |
-          bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.lcov
+          alias codacy='bash <(curl -Ls https://coverage.codacy.com/get.sh)'
+          codacy report --partial -l C -r coverage.lcov
+          codacy report --partial -l CPP -r coverage.lcov
+          codacy final
 
 
