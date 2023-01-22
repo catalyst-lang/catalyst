@@ -79,7 +79,7 @@ jobs:
           cd $GITHUB_WORKSPACE
 
           # 1. Run Clang-Tidy
-          sudo apt-get install clang-tidy
+          sudo apt-get install clang-tidy-${LLVM_VER%%.*}
           /usr/lib/llvm-${LLVM_VER%%.*}/share/clang/run-clang-tidy.py -p ./build | \
           # 2. Convert the Clang-Tidy output to a format that the Codacy API accepts
           ~/codacy-clang-tidy-linux-1.3.5 | \
