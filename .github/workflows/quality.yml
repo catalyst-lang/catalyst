@@ -6,7 +6,7 @@ on:
       - main
       - poc
 
-name: SonarCloud
+name: Code Quality Scan
 
 env:
   LLVM_VER: 15.0.6
@@ -72,9 +72,8 @@ jobs:
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
         run: |
-          alias codacy='bash <(curl -Ls https://coverage.codacy.com/get.sh)'
-          codacy report --partial -l C -r coverage.lcov
-          codacy report --partial -l CPP -r coverage.lcov
-          codacy final
+          bash <(curl -Ls https://coverage.codacy.com/get.sh) report --partial -l C -r coverage.lcov
+          bash <(curl -Ls https://coverage.codacy.com/get.sh) report --partial -l CPP -r coverage.lcov
+          bash <(curl -Ls https://coverage.codacy.com/get.sh) final
 
 
