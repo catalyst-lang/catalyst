@@ -57,6 +57,7 @@ jobs:
       - name: Collect the coverage
         run: |
           llvm-cov-15 show --instr-profile merged.profdata build/toolchain/parser/test-parser -object build/toolchain/compiler/test-compiler > coverage.txt
+          llvm-cov-15 export --format=lcov -instr-profile merged.profdata build/toolchain/parser/test-parser -object build/toolchain/compiler/test-compiler > coverage.lcov
 
       - name: Run sonar-scanner
         env:
@@ -66,3 +67,11 @@ jobs:
           sonar-scanner \
             --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}" \
             --define sonar.cfamily.llvm-cov.reportPath=coverage.txt
+      
+      - name: Upload to Codacy
+        env:
+          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        run: |
+          bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.lcov
+
+

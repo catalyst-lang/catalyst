@@ -109,7 +109,7 @@ class KaleidoscopeJIT {
 };
 
 template<typename T>
-T run_jit(codegen::state &state, const std::string &symbol_name = "main") {
+T run_jit(codegen::state &state, const std::string &symbol_name) {
 	ExitOnError ExitOnErr;
 
 	llvm::InitializeNativeTarget();

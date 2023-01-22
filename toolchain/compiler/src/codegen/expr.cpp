@@ -209,7 +209,7 @@ llvm::Value *codegen_call_new(codegen::state &state, symbol *sym, ast::expr_call
 
 	auto key = sym_c->name + "." + "new";
 	auto sym_new = find_function_overload(state, key, expr, type::create_builtin("void"));
-	if (sym) {
+	if (sym_new) {
 		auto new_call = codegen_call(state, sym_new, expr, new_object, type::create_builtin("void"));
 	} else if (!expr.parameters.empty()) {
 		state.report_message(report_type::error, std::string("No constructor has been defined on type `") + sym_c->name + "`", &expr);

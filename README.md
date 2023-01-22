@@ -1,6 +1,7 @@
 # The Catalyst Programming Language
 
 [![continuous-integration](https://github.com/catalyst-lang/catalyst/actions/workflows/ci.yml/badge.svg)](https://github.com/catalyst-lang/catalyst/actions/workflows/ci.yml)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/604b1c6c59004203810367fcd8ae6816)](https://www.codacy.com/gh/catalyst-lang/catalyst/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=catalyst-lang/catalyst&amp;utm_campaign=Badge_Grade)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=catalyst-lang_catalyst&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=catalyst-lang_catalyst)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=catalyst-lang_catalyst&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=catalyst-lang_catalyst)
 [![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=catalyst-lang_catalyst&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=catalyst-lang_catalyst)

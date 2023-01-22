@@ -124,7 +124,7 @@ codegen::state &get_state(const compile_result &result) {
 
 template<typename T>
 T run(const compile_result &result) {
-	return run_jit<T>(get_state(result));
+	return run_jit<T>(get_state(result), "main");
 }
 
 template int16_t run(const compile_result &);
