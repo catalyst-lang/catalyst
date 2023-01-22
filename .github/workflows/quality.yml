@@ -87,6 +87,11 @@ jobs:
           curl -XPOST -L -H "project-token: $CODACY_PROJECT_TOKEN" \
               -H "Content-type: application/json" -d @- \
               "https://api.codacy.com/2.0/commit/$GITHUB_SHA/issuesRemoteResults"
+          
+          # 4. Signal that Codacy can use the sent results and start a new analysis
+          curl -XPOST -L -H "project-token: $CODACY_PROJECT_TOKEN" \
+            -H "Content-type: application/json" \
+            "https://api.codacy.com/2.0/commit/$GITHUB_SHA/resultsFinal"
 
           bash <(curl -Ls https://coverage.codacy.com/get.sh) report --partial -l C -r coverage.lcov
           bash <(curl -Ls https://coverage.codacy.com/get.sh) report --partial -l CPP -r coverage.lcov
