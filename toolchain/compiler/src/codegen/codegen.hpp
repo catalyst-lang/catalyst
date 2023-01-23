@@ -64,11 +64,10 @@ struct state {
 
 	state();
 
-	static void report_message_static(report_type type, const std::string &message);
-	void report_message(report_type type, const std::string &message);
+	void report_message(report_type type, const std::string &message, std::ostream& os = std::cout);
 	void report_message(report_type type, const std::string &message,
 	                    const parser::ast_node *positional,
-	                    const std::string &pos_comment = "here");
+	                    const std::string &pos_comment = "here", std::ostream& os = std::cout);
 
 	scope &current_scope() { return scopes.current_scope(); }
 

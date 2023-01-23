@@ -77,30 +77,30 @@ struct production {
 	static constexpr auto rule = 0; // Need a rule member to make it a production.
 };
 
-void report_message(report_type t, const std::string &message) {
+void report_message(report_type t, const std::string &message, std::ostream& os) {
 	switch (t) {
 	case report_type::error:
-		std::cout << rang::fg::red << "Error" << rang::fg::reset << ": ";
+		os << rang::fg::red << "Error" << rang::fg::reset << ": ";
 		break;
 	case report_type::warning:
-		std::cout << rang::fg::yellow << "Warning" << rang::fg::reset << ": ";
+		os << rang::fg::yellow << "Warning" << rang::fg::reset << ": ";
 		break;
 	case report_type::info:
-		std::cout << rang::fg::blue << "Info" << rang::fg::reset << ": ";
+		os << rang::fg::blue << "Info" << rang::fg::reset << ": ";
 		break;
 	case report_type::debug:
-		std::cout << "Debug" << ": ";
+		os << "Debug" << ": ";
 		break;
 	case report_type::help:
-		std::cout << rang::fg::green << "Help" << rang::fg::reset << ": ";
+		os << rang::fg::green << "Help" << rang::fg::reset << ": ";
 		break;
 	}
-	std::cout << message << std::endl;
+	os << message << std::endl;
 }
 
 void report_message(report_type type, parser_state_ptr parser_state,
                     const std::string &message_title, const parser::ast_node &positional,
-                    const std::string &message_positional_title) {
+                    const std::string &message_positional_title, std::ostream& os) {
 	auto write = [parser_state](const auto &context, const auto &message) {
 		std::wstring str;
 		// lexy_ext::_detail::write_error(std::back_insert_iterator(str), context, message,
@@ -117,12 +117,12 @@ void report_message(report_type type, parser_state_ptr parser_state,
 	auto error = lexy::error<lexy::_pr8, void>(positional.lexeme.begin, positional.lexeme.end,
 	                                           message_positional_title.c_str());
 
-	report_message(type, message_title);
+	report_message(type, message_title, os);
 
 	auto out = write(context, error);
 	using convert_type = std::codecvt_utf8<wchar_t>;
 	std::wstring_convert<convert_type, wchar_t> converter;
-	std::cout << converter.to_bytes(out) << std::endl;
+	os << converter.to_bytes(out) << std::endl;
 }
 
 } // namespace catalyst::parser

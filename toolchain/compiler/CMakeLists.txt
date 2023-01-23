@@ -57,13 +57,16 @@ add_executable(compiler src/main.cpp ../common/catalyst/ast/stmt.hpp)
 target_link_libraries(compiler PUBLIC libcompiler)
 target_include_directories(compiler PRIVATE ${rang_SOURCE_DIR})
 target_include_directories(compiler PRIVATE ${cli11_SOURCE_DIR})
+target_compile_features(compiler PUBLIC cxx_std_20)
 
 add_executable(test-compiler 
     tests/doctest_main.cpp
     tests/functions.cpp
     tests/arithmetics.cpp
     tests/struct.cpp
+    tests/frontend.cpp
+    tests/types.cpp
 )
-target_compile_features(test-compiler PRIVATE cxx_std_17)
+target_compile_features(test-compiler PRIVATE cxx_std_20)
 target_link_libraries(test-compiler PUBLIC libcompiler)
 target_include_directories(test-compiler PRIVATE ${doctest_SOURCE_DIR})

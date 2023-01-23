@@ -57,7 +57,7 @@ int main(const cli_options &opts) {
 		std::cout << "Result as  u32: " << *(uint32_t *)&ret << std::endl;
 		std::cout << "Result as  u64: " << *(uint64_t *)&ret << std::endl;
 		std::cout << "Result as  f32: " << *(((float*)&ret) + 1) << std::endl;
-		std::cout << "Result as  f64: " << std::bit_cast<double>(ret) << std::endl;
+		//std::cout << "Result as  f64: " << std::bit_cast<double>(ret) << std::endl;
 		return ret;
 	}
 	else

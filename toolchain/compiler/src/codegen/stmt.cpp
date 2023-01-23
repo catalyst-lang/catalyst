@@ -40,7 +40,12 @@ void codegen(codegen::state &state, ast::statement_return &stmt) {
 	
 	if (isa<type_void>(expecting_type)) {
 		if (stmt.expr.has_value()) {	
-			state.report_message(report_type::error, "‘return’ with a value, in function returning void", &stmt);
+			auto expr_type = expr_resulting_type(state, stmt.expr.value(), expecting_type);
+			if (isa<type_void>(expr_type)) {
+				state.report_message(report_type::warning, "‘return’ with a value of type void, in function returning void", &stmt);
+			} else {
+				state.report_message(report_type::error, "‘return’ with a value, in function returning void", &stmt);
+			}
 			return;
 		}
 		state.Builder.CreateBr(state.current_return_block);

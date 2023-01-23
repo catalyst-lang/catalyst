@@ -1,3 +1,1 @@
-fn main() {
-            return 4u32 - 6i32
-        }
+        fn main() => 56

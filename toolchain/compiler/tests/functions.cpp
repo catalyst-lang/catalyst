@@ -60,6 +60,19 @@ TEST_CASE("return void (explicit)") {
     CHECK(ret == 123);
 }
 
+TEST_CASE("return value in void function") {
+    compiler::options opts;
+    std::cout.setstate(std::ios_base::failbit);
+    auto result = compiler::compile_string(R"catalyst_source(
+        fn main() -> void {
+            return 123i64;
+        }
+    )catalyst_source", opts);
+    compiler::run<int64_t>(result);
+    std::cout.clear();
+    CHECK_FALSE(result.is_successful);
+}
+
 TEST_CASE("return void (implicit)") {
     compiler::options opts;
     auto result = compiler::compile_string(R"catalyst_source(
@@ -216,6 +229,33 @@ TEST_CASE("function overloading (return value)") {
 	auto ret = compiler::run<int64_t>(result);
     REQUIRE(result.is_successful);
     CHECK(ret == 5);
+}
+
+TEST_CASE("function variables (FP)") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        fn test() -> i32 {
+            return 4
+        }
+
+        fn main() {
+            var a = test
+            return a()
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run<int32_t>(result);
+    REQUIRE(result.is_successful);
+    CHECK(ret == 4);
+}
+
+TEST_CASE("function body expression") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        fn main() => 56
+    )catalyst_source", opts);
+	auto ret = compiler::run<int64_t>(result);
+    REQUIRE(result.is_successful);
+    CHECK(ret == 56);
 }
 
 }

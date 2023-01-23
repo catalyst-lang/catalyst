@@ -144,7 +144,9 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr,
 		return nullptr;
 	}
 
-	if (llvm::isa<llvm::Function>(symbol->value)) {
+	if (isa<type_void>(symbol->type)) {
+		return nullptr;
+	} else if (llvm::isa<llvm::Function>(symbol->value)) {
 		auto *a = (llvm::Function *)symbol->value;
 		// return state.Builder.CreateLoad(a->getType(), a, expr.ident.name.c_str());
 		auto *container = state.Builder.CreateAlloca(llvm::PointerType::get(*state.TheContext, 0));
@@ -415,6 +417,11 @@ void codegen_assignment(codegen::state &state, llvm::Value *dest_ptr,
 			}
 			return;
 		}
+	}
+
+	if (isa<type_void>(rhs_type)) {
+		state.report_message(report_type::warning, "Assigning variable of type void has no effect", rhs.get());
+		return;
 	}
 
 	state.Builder.CreateStore(rhs_value, dest_ptr);

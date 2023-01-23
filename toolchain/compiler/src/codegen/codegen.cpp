@@ -10,27 +10,23 @@
 
 namespace catalyst::compiler::codegen {
 
-void state::report_message_static(report_type type, const std::string &message) {
-	parser::report_message(type, message);
-}
-
-void state::report_message(report_type type, const std::string &message) {
+void state::report_message(report_type type, const std::string &message, std::ostream& os) {
 	if (type == report_type::error) num_errors++;
 	if (type == report_type::warning) num_warnings++;
-	parser::report_message(type, message);
+	parser::report_message(type, message, os);
 }
 
 void state::report_message(report_type type, const std::string &message,
                            const parser::ast_node *positional,
-                           const std::string &pos_comment) {
+                           const std::string &pos_comment, std::ostream& os) {
 	if (type == report_type::error) num_errors++;
 	if (type == report_type::warning) num_warnings++;
 	if (positional == nullptr) {
-		parser::report_message(type, message);
+		parser::report_message(type, message, os);
 		return;
 	}
 	parser::report_message(type, this->translation_unit->parser_state, message, *positional,
-	                       pos_comment);
+	                       pos_comment, os);
 }
 
 state::state()

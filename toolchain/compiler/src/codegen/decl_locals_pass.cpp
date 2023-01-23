@@ -67,6 +67,21 @@ int locals_pass::process(ast::statement_return &stmt) {
     return 0;
 }
 
+int locals_pass::process(ast::fn_body_expr &body) {
+	state.current_function_has_return = true;
+
+	std::shared_ptr<type> expr_type = expr_resulting_type(state, body.expr);
+
+	auto fn_type = (type_function *)state.current_function_symbol->type.get();
+
+	if (!fn_type->return_type->is_valid() && expr_type->is_valid()) {
+		fn_type->return_type = expr_type;
+		return 1;
+	}
+    
+    return 0;
+}
+
 /// Perform a locals pass for a function declaration
 int locals_pass::process(ast::decl_fn &decl) {
 	state.scopes.enter(decl.ident.name);

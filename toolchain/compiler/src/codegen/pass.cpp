@@ -57,12 +57,16 @@ int pass::walk(ast::decl_fn &decl) {
 			res += walk(stmt);
 		}
 	} else if (std::holds_alternative<ast::fn_body_expr>(decl.body)) {
-		//auto &expr = std::get<ast::fn_body_expr>(decl.body);
-		//res += walk(expr.expr);
+		auto &expr = std::get<ast::fn_body_expr>(decl.body);
+		res += walk(expr);
 	}
 	state.scopes.leave();
 	res += process_after(decl);
 	return res;
+}
+
+int pass::walk(ast::fn_body_expr &expr) {
+	return process(expr) + process_after(expr);
 }
 
 int pass::walk(ast::decl_var &decl) {
