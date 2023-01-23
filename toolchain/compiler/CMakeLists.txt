@@ -66,6 +66,8 @@ add_executable(test-compiler
     tests/struct.cpp
     tests/frontend.cpp
     tests/types.cpp
+    tests/branching.cpp
+    tests/scopes.cpp
 )
 target_compile_features(test-compiler PRIVATE cxx_std_20)
 target_link_libraries(test-compiler PUBLIC libcompiler)
