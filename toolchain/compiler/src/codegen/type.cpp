@@ -521,8 +521,8 @@ llvm::Value* type_struct::get_sizeof(catalyst::compiler::codegen::state &state) 
 	// to mimic a sizeof()
 	
 	auto constant = llvm::Constant::getNullValue(get_llvm_type(state)->getPointerTo());
-	auto size = state.Builder.CreateConstGEP1_64(get_llvm_type(state), constant, 1, "sizep");
-	return state.Builder.CreatePtrToInt(size, llvm::IntegerType::get(*state.TheContext, 32), "sizei");
+	auto size = state.Builder.CreateConstGEP1_64(get_llvm_struct_type(state), constant, 1, "sizep");
+	return state.Builder.CreatePtrToInt(size, llvm::IntegerType::get(*state.TheContext, 64), "sizei");
 }
 
 type_class::type_class(const std::string &name, std::vector<member> const &members)
@@ -588,7 +588,7 @@ llvm::Value* type_class::get_sizeof(catalyst::compiler::codegen::state &state) {
 	// to mimic a sizeof()
 	
 	auto constant = llvm::Constant::getNullValue(get_llvm_type(state)->getPointerTo());
-	auto size = state.Builder.CreateConstGEP1_64(get_llvm_type(state), constant, 1, "sizep");
+	auto size = state.Builder.CreateConstGEP1_64(get_llvm_struct_type(state), constant, 1, "sizep");
 	return state.Builder.CreatePtrToInt(size, llvm::IntegerType::get(*state.TheContext, 64), "sizei");
 }
 

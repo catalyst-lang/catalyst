@@ -316,7 +316,6 @@ llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &ex
 				callinstr->addParamAttr(i + method_offset, llvm::Attribute::getWithByValType(*state.TheContext, to->object_type->get_llvm_type(state)));
 			} else if (isa<type_class>(to->object_type)) {
 				callinstr->addParamAttr(i + method_offset, llvm::Attribute::NoUndef);
-				callinstr->addParamAttr(i + method_offset, llvm::Attribute::getWithByRefType(*state.TheContext, to->object_type->get_llvm_type(state)));
 			}
 		}
 	}
