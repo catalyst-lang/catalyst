@@ -87,6 +87,7 @@ void codegen(codegen::state &state) {
 
 	state.Builder.SetInsertPoint(BB);
 	state.Builder.CreateRetVoid();
+	state.FPM->run(*state.init_function);
 }
 
 } // namespace catalyst::compiler::codegen
