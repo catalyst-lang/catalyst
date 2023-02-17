@@ -65,11 +65,14 @@ void runtime::insert_function(const char* name, llvm::JITTargetAddress target, c
 }
 
 llvm::FunctionCallee runtime::get_malloc() {
-	return this->state->TheModule->getOrInsertFunction(
+	auto m = this->state->TheModule->getOrInsertFunction(
 		"malloc", 
+		llvm::AttributeList::get(*state->TheContext, 0, { llvm::Attribute::NoAlias }),
 		llvm::PointerType::get(*state->TheContext, 0), 
 		llvm::IntegerType::get(*state->TheContext, sizeof(size_t) * 8)
 	);
+
+	return m;
 }
 
 llvm::FunctionCallee runtime::get_realloc() {
