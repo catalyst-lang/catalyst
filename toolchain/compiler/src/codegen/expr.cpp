@@ -10,9 +10,9 @@
 #include "catalyst/rtti.hpp"
 #include "expr.hpp"
 #include "expr_type.hpp"
+#include "function_overloading.hpp"
 #include "value.hpp"
 #include "llvm/IR/Value.h"
-#include "function_overloading.hpp"
 
 namespace catalyst::compiler::codegen {
 
@@ -119,15 +119,17 @@ llvm::Value *codegen(codegen::state &state, ast::expr_literal_bool &expr,
 }
 
 llvm::Value *codegen_this(codegen::state &state, ast::expr_ident &expr,
-                     std::shared_ptr<type> expecting_type) {
-	auto fn_type = (type_function*)state.current_function_symbol->type.get();
+                          std::shared_ptr<type> expecting_type) {
+	auto fn_type = (type_function *)state.current_function_symbol->type.get();
 	if (!fn_type) {
 		state.report_message(report_type::error, "`this` referenced outside of function.", &expr);
 		return nullptr;
 	}
 	if (!fn_type->is_method()) {
-		state.report_message(report_type::error, "`this` referenced in non-member function.", &expr);
-		state.report_message(report_type::info, "In function:", state.current_function_symbol->ast_node);
+		state.report_message(report_type::error, "`this` referenced in non-member function.",
+		                     &expr);
+		state.report_message(report_type::info,
+		                     "In function:", state.current_function_symbol->ast_node);
 		return nullptr;
 	}
 	return state.current_function->getArg(0);
@@ -135,7 +137,8 @@ llvm::Value *codegen_this(codegen::state &state, ast::expr_ident &expr,
 
 llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr,
                      std::shared_ptr<type> expecting_type) {
-	if (expr.ident.name == "this") return codegen_this(state, expr, expecting_type);
+	if (expr.ident.name == "this")
+		return codegen_this(state, expr, expecting_type);
 
 	// Look this variable up in the function.
 	auto *symbol = state.scopes.find_named_symbol(expr.ident.name);
@@ -179,61 +182,68 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr,
 }
 
 llvm::Value *structure_to_pointer(codegen::state &state, llvm::Value *struct_val) {
-	llvm::IRBuilder<> TmpB(&state.current_function->getEntryBlock(), state.current_function->getEntryBlock().begin());
+	llvm::IRBuilder<> TmpB(&state.current_function->getEntryBlock(),
+	                       state.current_function->getEntryBlock().begin());
 	auto ptr = TmpB.CreateAlloca(struct_val->getType(), nullptr, "struct_ptr");
 	state.Builder.CreateStore(struct_val, ptr);
 	return ptr;
 }
 
-llvm::Value *codegen_call_new(codegen::state &state, symbol *sym, ast::expr_call &expr, llvm::Value *this_) {
+llvm::Value *codegen_call_new(codegen::state &state, symbol *sym, ast::expr_call &expr,
+                              llvm::Value *this_) {
 	if (!sym) {
 		return nullptr;
 	}
-	
+
 	if (!isa<type_custom>(sym->type)) {
-		// should never happen, but just to be sure we report an error if somebody calls this function in the
-		// future with a non type_custom type.
-		state.report_message(report_type::error, "Constructor call performed on non-constructor function", &expr);
+		// should never happen, but just to be sure we report an error if somebody calls this
+		// function in the future with a non type_custom type.
+		state.report_message(report_type::error,
+		                     "Constructor call performed on non-constructor function", &expr);
 		return nullptr;
 	}
-	auto sym_c = (type_custom*)sym->type.get();
+	auto sym_c = (type_custom *)sym->type.get();
 
 	llvm::Value *new_object = nullptr;
 
 	if (isa<type_struct>(sym->type)) {
 		new_object = state.Builder.CreateAlloca(sym_c->get_llvm_type(state), nullptr, "new");
 	} else if (isa<type_class>(sym->type)) {
-		//new_object = state.Builder.CreateAlloca(sym_c->get_llvm_type(state), nullptr, "new");
-		new_object = state.Builder.CreateCall(
-			state.target->get_malloc(), 
-			{ sym->type->get_sizeof(state) }, 
-			"instance");
+		// new_object = state.Builder.CreateAlloca(sym_c->get_llvm_type(state), nullptr, "new");
+		new_object = state.Builder.CreateCall(state.target->get_malloc(),
+		                                      {sym->type->get_sizeof(state)}, "instance");
 	} else {
 		state.report_message(report_type::error, "TODO " CATALYST_AT, &expr);
 		return nullptr;
 	}
 
-	state.Builder.CreateCall(sym_c->init_function, { new_object });
+	state.Builder.CreateCall(sym_c->init_function, {new_object});
 
 	auto key = sym_c->name + "." + "new";
 	auto sym_new = find_function_overload(state, key, expr, type::create_builtin("void"));
 	if (sym_new) {
-		auto new_call = codegen_call(state, sym_new, expr, new_object, type::create_builtin("void"));
+		auto new_call =
+			codegen_call(state, sym_new, expr, new_object, type::create_builtin("void"));
 	} else if (!expr.parameters.empty()) {
-		state.report_message(report_type::error, std::string("No constructor has been defined on type `") + sym_c->name + "`", &expr);
+		state.report_message(
+			report_type::error,
+			std::string("No constructor has been defined on type `") + sym_c->name + "`", &expr);
 		return nullptr;
 	}
 
 	return new_object;
 }
 
-llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &expr, llvm::Value *this_, std::shared_ptr<type> expecting_type) {
-	if (!sym) return nullptr;
+llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &expr,
+                          llvm::Value *this_, std::shared_ptr<type> expecting_type) {
+	if (!sym)
+		return nullptr;
 	llvm::Function *CalleeF;
 	if (isa<type_function>(sym->type)) {
 		CalleeF = (llvm::Function *)sym->value;
 		if (!CalleeF) {
-			state.report_message(report_type::error, "Unknown function referenced (symbol undefined)", &expr);
+			state.report_message(report_type::error,
+			                     "Unknown function referenced (symbol undefined)", &expr);
 			return nullptr;
 		}
 	} else if (isa<type_custom>(sym->type)) {
@@ -244,7 +254,7 @@ llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &ex
 		return nullptr;
 	}
 
-	auto type = (type_function*)sym->type.get();
+	auto type = (type_function *)sym->type.get();
 
 	// If argument mismatch error.
 	if (type->parameters.size() != expr.parameters.size()) {
@@ -253,7 +263,7 @@ llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &ex
 		str << "expected " << type->parameters.size() << ", but got " << expr.parameters.size();
 
 		state.report_message(report_type::error, "Incorrect number of arguments passed", &expr,
-								str.str());
+		                     str.str());
 		return nullptr;
 	}
 
@@ -266,7 +276,8 @@ llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &ex
 	for (unsigned i = 0, e = expr.parameters.size(); i != e; ++i) {
 		auto arg_type = expr_resulting_type(state, expr.parameters[i], type->parameters[i]);
 		auto arg = codegen(state, expr.parameters[i], type->parameters[i]);
-		if (!arg) return nullptr;
+		if (!arg)
+			return nullptr;
 		if (!arg_type->equals(type->parameters[i])) {
 			// TODO: warn if casting happens
 			arg = arg_type->cast_llvm_value(state, arg, *type->parameters[i]);
@@ -300,7 +311,7 @@ llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &ex
 			callinstr = state.Builder.CreateCall(fty, ptr, ArgsV, "ptrcalltmp");
 		}
 	} else {
-		state.report_message(report_type::error, "unsupported base type for function call",	&expr);
+		state.report_message(report_type::error, "unsupported base type for function call", &expr);
 		return nullptr;
 	}
 
@@ -313,7 +324,10 @@ llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &ex
 			auto to = (type_object *)arg_type.get();
 			if (isa<type_struct>(to->object_type)) {
 				callinstr->addParamAttr(i + method_offset, llvm::Attribute::NoUndef);
-				callinstr->addParamAttr(i + method_offset, llvm::Attribute::getWithByValType(*state.TheContext, to->object_type->get_llvm_type(state)));
+				callinstr->addParamAttr(
+					i + method_offset,
+					llvm::Attribute::getWithByValType(*state.TheContext,
+				                                      to->object_type->get_llvm_type(state)));
 			} else if (isa<type_class>(to->object_type)) {
 				callinstr->addParamAttr(i + method_offset, llvm::Attribute::NoUndef);
 			}
@@ -322,7 +336,8 @@ llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &ex
 	return callinstr;
 }
 
-llvm::Value *codegen(codegen::state &state, ast::expr_call &expr, std::shared_ptr<type> expecting_type) {
+llvm::Value *codegen(codegen::state &state, ast::expr_call &expr,
+                     std::shared_ptr<type> expecting_type) {
 	if (isa<ast::expr_ident>(expr.lhs)) {
 		auto &callee = *(ast::expr_ident *)expr.lhs.get();
 		// Look up the name in the global module table.
@@ -352,8 +367,11 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 		auto ident = &((ast::expr_ident *)expr.rhs.get())->ident;
 
 		if (ident->name == "this") {
-			state.report_message(report_type::error, "`this` is a reserved identifier", expr.rhs.get());
-			state.report_message(report_type::help, "`this` can't be used to the right side of `.`. It can only be the left-most in a chain of member accesses.");
+			state.report_message(report_type::error, "`this` is a reserved identifier",
+			                     expr.rhs.get());
+			state.report_message(report_type::help,
+			                     "`this` can't be used to the right side of `.`. It can only be "
+			                     "the left-most in a chain of member accesses.");
 			return nullptr;
 		}
 
@@ -364,13 +382,19 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 			lhs_value = structure_to_pointer(state, lhs_value);
 		}
 
-		auto ptr = state.Builder.CreateStructGEP(lhs_custom->get_llvm_struct_type(state), lhs_value, index);
+		auto ptr = state.Builder.CreateStructGEP(lhs_custom->get_llvm_struct_type(state), lhs_value,
+		                                         index);
 
 		auto rhs_type = lhs_custom->members[index].type;
 		if (isa<type_object>(rhs_type) && (!expecting_type || !isa<type_object>(expecting_type))) {
-			// member is a struct or class, return the pointer if we don't request the
-			// object value itself
-			return ptr;
+			auto to = (type_object *)rhs_type.get();
+			if (isa<type_struct>(to->object_type)) {
+				// member is a struct, return the pointer if we don't request the object value
+				// itself Note that this is only valid for a struct. With a class, the pointer IS
+				// the value, so we want to retrieve that value and dereference it to a pointer to a
+				// class structure.
+				return ptr;
+			}
 		}
 
 		return state.Builder.CreateLoad(rhs_type->get_llvm_type(state), ptr);
@@ -383,7 +407,8 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 		}
 
 		auto &ident = ((ast::expr_ident *)call->lhs.get())->ident;
-		auto sym = find_function_overload(state, lhs_custom->name + "." + ident.name, *call, expecting_type);
+		auto sym = find_function_overload(state, lhs_custom->name + "." + ident.name, *call,
+		                                  expecting_type);
 		auto this_ = lhs_value;
 
 		return codegen_call(state, sym, *call, this_, expecting_type);
@@ -413,11 +438,11 @@ void codegen_assignment(codegen::state &state, llvm::Value *dest_ptr,
 
 	if (isa<type_object>(rhs_type)) {
 		auto to = (type_object *)rhs_type.get();
-		if (isa<type_struct>(to->object_type)) {	
+		if (isa<type_struct>(to->object_type)) {
 			auto size = to->object_type->get_sizeof(state);
 			if (llvm::isa<llvm::PointerType>(rhs_value->getType())) {
-				state.Builder.CreateMemCpy(dest_ptr, llvm::MaybeAlign(0), rhs_value, 
-					llvm::MaybeAlign(0), size);
+				state.Builder.CreateMemCpy(dest_ptr, llvm::MaybeAlign(0), rhs_value,
+				                           llvm::MaybeAlign(0), size);
 			} else if (llvm::isa<llvm::StructType>(rhs_value->getType())) {
 				state.Builder.CreateStore(rhs_value, dest_ptr);
 			} else {
@@ -428,7 +453,8 @@ void codegen_assignment(codegen::state &state, llvm::Value *dest_ptr,
 	}
 
 	if (isa<type_void>(rhs_type)) {
-		state.report_message(report_type::warning, "Assigning variable of type void has no effect", rhs.get());
+		state.report_message(report_type::warning, "Assigning variable of type void has no effect",
+		                     rhs.get());
 		return;
 	}
 

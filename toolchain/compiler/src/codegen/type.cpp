@@ -544,7 +544,7 @@ llvm::Type *type_class::get_llvm_struct_type(state &state) const {
 		}
 
 		auto self = const_cast<type_class*>(this);
-		self->structType = llvm::StructType::create(*state.TheContext, fields, name, false);
+		self->structType = llvm::StructType::create(*state.TheContext, fields, name, true);
 	}
 	return structType;
 }
