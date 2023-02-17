@@ -112,6 +112,12 @@ struct decl_struct : decl {
 	std::vector<decl_ptr> declarations;
 };
 
+struct decl_class : decl {
+	decl_class(const parser::char_type *begin, const parser::char_type *end, ast::ident &ident, std::vector<decl_ptr> declarations)
+		: decl(begin, end, ident), declarations(declarations) {}
+
+	std::vector<decl_ptr> declarations;
+};
 
 struct translation_unit {
 	std::vector<decl_ptr> declarations;
