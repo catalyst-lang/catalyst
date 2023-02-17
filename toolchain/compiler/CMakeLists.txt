@@ -15,10 +15,9 @@ add_library(libcompiler
     src/codegen/decl_type.cpp 
     src/codegen/decl_type.hpp 
     src/codegen/decl_struct.cpp 
+    src/codegen/decl_class.cpp 
     src/codegen/stmt.cpp 
     src/codegen/stmt.hpp 
-    src/jit.cpp 
-    src/jit.hpp 
     src/codegen/value.hpp 
     src/codegen/value.cpp 
     src/codegen/scope.hpp 
@@ -37,8 +36,11 @@ add_library(libcompiler
     src/codegen/function_overloading.hpp
     src/codegen/pass.hpp
     src/codegen/pass.cpp
+    src/target.hpp
     src/runtime.cpp 
     src/runtime.hpp
+    src/jit.cpp 
+    src/jit.hpp 
 )
 target_include_directories(libcompiler PUBLIC ../common)
 target_compile_features(libcompiler PUBLIC cxx_std_20)
@@ -64,6 +66,7 @@ add_executable(test-compiler
     tests/functions.cpp
     tests/arithmetics.cpp
     tests/struct.cpp
+    tests/class.cpp
     tests/frontend.cpp
     tests/types.cpp
     tests/branching.cpp

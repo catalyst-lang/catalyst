@@ -41,9 +41,9 @@ compile_result compile(catalyst::ast::translation_unit &tu, options options) {
 	state->TheModule = std::make_unique<llvm::Module>(tu.parser_state->filename, *state->TheContext);
 	state->FPM = std::make_unique<llvm::legacy::FunctionPassManager>(state->TheModule.get());
 
-	state->runtime->register_symbols();
+	state->target->register_symbols();
 
-	options.optimizer_level = 2;
+	//options.optimizer_level = 2;
 
 	if (options.optimizer_level >= 1) {
 		// Standard mem2reg pass to construct SSA form from alloca's and stores.

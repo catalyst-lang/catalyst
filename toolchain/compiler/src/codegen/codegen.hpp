@@ -30,7 +30,7 @@ struct state;
 #include "../compiler.hpp"
 #include "scope.hpp"
 #include "symbol.hpp"
-#include "../runtime.hpp"
+#include "../target.hpp"
 
 namespace catalyst::compiler::codegen {
 
@@ -60,7 +60,7 @@ struct state {
 
 	scope_stack scopes;
 
-	runtime *runtime;
+	target *target;
 
 	state();
 

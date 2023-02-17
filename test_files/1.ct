@@ -1,1 +1,28 @@
-        fn main() => 56
+class bla { 
+        var i = 4
+        var j = 9
+        var k = 9i32
+}
+
+fn test() -> bla {
+        var a = bla()
+        a.i = 1
+        a.j = 3
+        a.k = 13
+        return a
+}
+
+fn test2(b: bla) -> bla {
+        b.i = 83
+        return b
+}
+
+fn piz(b: bla) {
+        b.j = 123
+        return b.i
+}
+
+fn main() {
+        var r = test2(test())
+        return piz(r) + r.k + r.j
+}

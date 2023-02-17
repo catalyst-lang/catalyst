@@ -17,7 +17,7 @@ int proto_pass::process(ast::decl_fn &decl) {
 	symbol* method_of = nullptr;
 	if (state.symbol_table.contains(state.scopes.get_fully_qualified_scope_name())) {
 		auto parent = state.symbol_table[state.scopes.get_fully_qualified_scope_name()];
-		if (isa<type_struct>(parent.type)) method_of = &parent;
+		if (isa<type_custom>(parent.type)) method_of = &parent;
 	}
 
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
@@ -112,6 +112,10 @@ int proto_pass::process(ast::decl_fn &decl) {
 				if (isa<type_struct>(to->object_type)) {
 					Arg.addAttr(llvm::Attribute::NoUndef);
 					Arg.addAttr(llvm::Attribute::getWithByValType(
+						*state.TheContext, current_fn_type->parameters[i]->get_llvm_type(state)));
+				} else if (isa<type_class>(to->object_type)) {
+					Arg.addAttr(llvm::Attribute::NoUndef);
+					Arg.addAttr(llvm::Attribute::getWithByRefType(
 						*state.TheContext, current_fn_type->parameters[i]->get_llvm_type(state)));
 				}
 			}

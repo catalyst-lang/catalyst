@@ -202,6 +202,12 @@ llvm::Value *codegen_call_new(codegen::state &state, symbol *sym, ast::expr_call
 
 	if (isa<type_struct>(sym->type)) {
 		new_object = state.Builder.CreateAlloca(sym_c->get_llvm_type(state), nullptr, "new");
+	} else if (isa<type_class>(sym->type)) {
+		//new_object = state.Builder.CreateAlloca(sym_c->get_llvm_type(state), nullptr, "new");
+		new_object = state.Builder.CreateCall(
+			state.target->get_malloc(), 
+			{ sym->type->get_sizeof(state) }, 
+			"instance");
 	} else {
 		state.report_message(report_type::error, "TODO " CATALYST_AT, &expr);
 		return nullptr;
@@ -308,6 +314,9 @@ llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &ex
 			if (isa<type_struct>(to->object_type)) {
 				callinstr->addParamAttr(i + method_offset, llvm::Attribute::NoUndef);
 				callinstr->addParamAttr(i + method_offset, llvm::Attribute::getWithByValType(*state.TheContext, to->object_type->get_llvm_type(state)));
+			} else if (isa<type_class>(to->object_type)) {
+				callinstr->addParamAttr(i + method_offset, llvm::Attribute::NoUndef);
+				callinstr->addParamAttr(i + method_offset, llvm::Attribute::getWithByRefType(*state.TheContext, to->object_type->get_llvm_type(state)));
 			}
 		}
 	}
@@ -338,7 +347,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 	}
 
 	auto lhs_object = (type_object *)lhs_type.get();
-	auto lhs_struct = lhs_object->object_type;
+	auto lhs_custom = lhs_object->object_type;
 
 	if (isa<ast::expr_ident>(expr.rhs)) {
 		auto ident = &((ast::expr_ident *)expr.rhs.get())->ident;
@@ -349,16 +358,16 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 			return nullptr;
 		}
 
-		int index = lhs_struct->index_of(ident->name);
+		int index = lhs_custom->index_of(ident->name);
 
 		if (llvm::isa<llvm::StructType>(lhs_value->getType())) {
 			// we expect a pointer, but we got a structure value
 			lhs_value = structure_to_pointer(state, lhs_value);
 		}
 
-		auto ptr = state.Builder.CreateStructGEP(lhs_struct->get_llvm_type(state), lhs_value, index);
+		auto ptr = state.Builder.CreateStructGEP(lhs_custom->get_llvm_struct_type(state), lhs_value, index);
 
-		auto rhs_type = lhs_struct->members[index].type;
+		auto rhs_type = lhs_custom->members[index].type;
 		if (isa<type_object>(rhs_type) && (!expecting_type || !isa<type_object>(expecting_type))) {
 			// member is a struct or class, return the pointer if we don't request the
 			// object value itself
@@ -375,7 +384,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 		}
 
 		auto &ident = ((ast::expr_ident *)call->lhs.get())->ident;
-		auto sym = find_function_overload(state, lhs_struct->name + "." + ident.name, *call, expecting_type);
+		auto sym = find_function_overload(state, lhs_custom->name + "." + ident.name, *call, expecting_type);
 		auto this_ = lhs_value;
 
 		return codegen_call(state, sym, *call, this_, expecting_type);

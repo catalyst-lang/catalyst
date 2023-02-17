@@ -46,6 +46,8 @@ struct type {
 	                std::vector<std::shared_ptr<type>> const &parameters);
 		static std::shared_ptr<type>
 	create_struct(const std::string &name, std::vector<member> const &members);
+		static std::shared_ptr<type>
+	create_class(const std::string &name, std::vector<member> const &members);
 
 	virtual llvm::Type *get_llvm_type(codegen::state &state) const = 0;
 	virtual llvm::Value *cast_llvm_value(codegen::state &state, llvm::Value *value, const type& to) const;
@@ -313,6 +315,8 @@ struct type_custom : type {
 
 	llvm::Function *init_function = nullptr;
 
+	virtual llvm::Type *get_llvm_struct_type(codegen::state &state) const = 0;
+
 	int index_of(const std::string &name);
 };
 
@@ -322,10 +326,29 @@ struct type_struct : type_custom {
 	bool is_valid() override;
 
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
+	llvm::Type *get_llvm_struct_type(codegen::state &state) const override;
 
 	virtual std::string get_fqn() const override;
 
 	void copy_from(type_struct &other);
+
+	inline virtual llvm::Value* get_sizeof(catalyst::compiler::codegen::state &state) override;
+
+	private:
+	llvm::StructType* structType = nullptr; 
+};
+
+struct type_class : type_custom {
+	explicit type_class(const std::string &name, std::vector<member> const &members);
+
+	bool is_valid() override;
+
+	llvm::Type *get_llvm_type(codegen::state &state) const override;
+	llvm::Type *get_llvm_struct_type(codegen::state &state) const override;
+
+	virtual std::string get_fqn() const override;
+
+	void copy_from(type_class &other);
 
 	inline virtual llvm::Value* get_sizeof(catalyst::compiler::codegen::state &state) override;
 

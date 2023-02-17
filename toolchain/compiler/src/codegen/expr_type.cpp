@@ -189,13 +189,13 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_membe
 	}
 
 	auto lhs_object = (type_object*)lhs_type.get();
-	auto lhs_struct = lhs_object->object_type;
+	auto lhs_custom = lhs_object->object_type;
 
 	if (isa<ast::expr_ident>(expr.rhs)) {
 		auto ident = &((ast::expr_ident*)expr.rhs.get())->ident;
-		int index = lhs_struct->index_of(ident->name);
+		int index = lhs_custom->index_of(ident->name);
 
-		return lhs_struct->members[index].type;
+		return lhs_custom->members[index].type;
 	} else if (isa<ast::expr_call>(expr.rhs)) {
 		auto call = (ast::expr_call *)expr.rhs.get();
 
@@ -204,7 +204,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_membe
 		}
 
 		auto &ident = ((ast::expr_ident *)call->lhs.get())->ident;
-		auto sym = find_function_overload(state, lhs_struct->name + "." + ident.name, *call, expecting_type);
+		auto sym = find_function_overload(state, lhs_custom->name + "." + ident.name, *call, expecting_type);
 		if (sym == nullptr) return type::create_builtin();
 		if (!sym->type->is_valid()) return type::create_builtin();
 		if (isa<type_function>(sym->type)) {

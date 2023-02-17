@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "codegen.hpp"
+#include "../runtime.hpp"
 #include "../../../parser/src/parser.hpp"
 #include "decl.hpp"
 #include "decl_proto_pass.hpp"
@@ -31,7 +32,7 @@ void state::report_message(report_type type, const std::string &message,
 
 state::state()
 		: TheContext(std::make_unique<llvm::LLVMContext>()), Builder(*TheContext),
-		  scopes(&symbol_table), runtime(new compiler::runtime(*this)) {}
+		  scopes(&symbol_table), target(new compiler::runtime(*this)) {}
 
 void codegen(codegen::state &state, ast::translation_unit &tu) {
 	overloading_pass op(state);

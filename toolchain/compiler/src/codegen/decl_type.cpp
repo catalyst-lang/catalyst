@@ -47,6 +47,18 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_st
     return type::create_struct(decl.ident.name, members);
 }
 
+std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_class &decl) {
+    std::vector<member> members;
+	for (auto &mmbr : decl.declarations) {
+		auto type = decl_get_type(state, mmbr);
+		//if (auto fn = dynamic_cast<type_function*>(type.get())) {
+		//	fn->is_method = true;
+		//}
+		members.emplace_back(mmbr->ident.name, type, mmbr);
+	}
+    return type::create_class(decl.ident.name, members);
+}
+
 std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, const ast::decl_ptr &decl) {
 	if (isa<ast::decl_fn>(decl)) {
 		return decl_get_type(state, *(ast::decl_fn *)decl.get());
@@ -54,6 +66,8 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, const ast::d
 		return decl_get_type(state, *(ast::decl_var *)decl.get());
 	} else if (isa<ast::decl_struct>(decl)) {
 		return decl_get_type(state, *(ast::decl_struct *)decl.get());
+	} else if (isa<ast::decl_class>(decl)) {
+		return decl_get_type(state, *(ast::decl_class *)decl.get());
 	} else {
 		state.report_message(report_type::error, "Decl type not implemented", decl.get());
         return nullptr;

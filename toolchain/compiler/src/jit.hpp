@@ -25,6 +25,7 @@
 #include <string>
 #include <vector>
 
+#include "runtime.hpp"
 #include "codegen/codegen.hpp"
 
 namespace catalyst::compiler {
@@ -122,7 +123,9 @@ T run_jit(codegen::state &state, const std::string &symbol_name) {
 	 ExitOnErr(TheJIT->addModule(
 			ThreadSafeModule(std::move(state.TheModule), std::move(state.TheContext))));
 
-	for(const auto& [key, value] : state.runtime->functions)
+	auto rt = (runtime*)state.target;
+
+	for(const auto& [key, value] : rt->functions)
         TheJIT->define_symbol(key.c_str(), value);
 
 	auto ExprSymbol = TheJIT->lookup(symbol_name);

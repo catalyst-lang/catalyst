@@ -33,12 +33,12 @@ float pizza() {
     return 1.23f;
 }
 
-runtime::runtime(codegen::state &state) : state(&state) {
+runtime::runtime(codegen::state &state) : target(state) {
     
 }
 
-void runtime::register_symbols() {
-    insert_function("foo", llvm::pointerToJITTargetAddress(&foo), type::create_builtin("i32"));
+void runtime::register_symbols() {    
+	insert_function("foo", llvm::pointerToJITTargetAddress(&foo), type::create_builtin("i32"));
     insert_function("bar", llvm::pointerToJITTargetAddress(&bar), type::create_builtin("i32"));
     insert_function("baz", llvm::pointerToJITTargetAddress(&baz), type::create_builtin("i32"), { type::create_builtin("i64") });
     insert_function("nacho", llvm::pointerToJITTargetAddress(&nacho), type::create_builtin("i32"), { type::create_builtin("f64") });
@@ -62,6 +62,31 @@ void runtime::insert_function(const char* name, llvm::JITTargetAddress target, c
 	auto funty = type::create_function(return_type, parameters);
 	this->state->symbol_table[name] = codegen::symbol(nullptr, fun.getCallee(), funty);
     functions[name] = target;
+}
+
+llvm::FunctionCallee runtime::get_malloc() {
+	return this->state->TheModule->getOrInsertFunction(
+		"malloc", 
+		llvm::PointerType::get(*state->TheContext, 0), 
+		llvm::IntegerType::get(*state->TheContext, sizeof(size_t) * 8)
+	);
+}
+
+llvm::FunctionCallee runtime::get_realloc() {
+	return this->state->TheModule->getOrInsertFunction(
+		"realloc", 
+		llvm::PointerType::get(*state->TheContext, 0),
+		llvm::PointerType::get(*state->TheContext, 0),
+		llvm::IntegerType::get(*state->TheContext, sizeof(size_t) * 8)
+	);
+}
+
+llvm::FunctionCallee runtime::get_free() {
+	return this->state->TheModule->getOrInsertFunction(
+		"free", 
+		llvm::Type::getVoidTy(*state->TheContext), 
+		llvm::PointerType::get(*state->TheContext, 0)
+	);
 }
 
 }

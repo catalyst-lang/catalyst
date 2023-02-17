@@ -28,6 +28,8 @@ void codegen(codegen::state &state, ast::decl_ptr decl) {
 		codegen(state, *(ast::decl_var *)decl.get());
 	} else if (isa<ast::decl_struct>(decl)) {
 		codegen(state, *(ast::decl_struct *)decl.get());
+	} else if (isa<ast::decl_class>(decl)) {
+		codegen(state, *(ast::decl_class *)decl.get());
 	} else {
 		state.report_message(report_type::error, "Decl type not implemented", decl.get());
 	}
@@ -91,6 +93,8 @@ void codegen(codegen::state &state, ast::decl_fn &decl) {
 		if (isa<type_object>(arg_local.type)) {
 			auto to = (type_object *)arg_local.type.get();
 			if (isa<type_struct>(to->object_type)) {
+				arg_local.value = &Arg;
+			} else if (isa<type_class>(to->object_type)) {
 				arg_local.value = &Arg;
 			} else {
 				state.Builder.CreateStore(&Arg, arg_local.value);

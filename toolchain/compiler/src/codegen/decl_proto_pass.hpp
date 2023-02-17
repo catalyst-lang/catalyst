@@ -15,6 +15,8 @@ struct proto_pass : pass {
     int process(ast::decl_var &decl) override;
     int process(ast::decl_struct &decl) override;
     int process_after(ast::decl_struct &decl) override;
+    int process(ast::decl_class &decl) override;
+    int process_after(ast::decl_class &decl) override;
 };
 
 }

@@ -26,14 +26,14 @@ llvm::Value *get_lvalue(codegen::state &state, ast::expr_ptr expr) {
 		auto lhs_value = codegen(state, expr_ma->lhs);
 		auto lhs_type = expr_resulting_type(state, expr_ma->lhs);
 		auto lhs_object = (type_object *)lhs_type.get();
-		auto lhs_struct = lhs_object->object_type;
+		auto lhs_custom = lhs_object->object_type;
 
 		auto ident = &((ast::expr_ident *)expr_ma->rhs.get())->ident;
 
-		int index = lhs_struct->index_of(ident->name);
+		int index = lhs_custom->index_of(ident->name);
 
 		auto ptr =
-			state.Builder.CreateStructGEP(lhs_struct->get_llvm_type(state), lhs_value, index);
+			state.Builder.CreateStructGEP(lhs_custom->get_llvm_struct_type(state), lhs_value, index);
 
 		return ptr;
 	} else {

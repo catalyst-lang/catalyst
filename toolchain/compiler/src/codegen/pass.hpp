@@ -23,6 +23,7 @@ struct pass {
     virtual int process(ast::decl_fn &decl) { return 0; };
     virtual int process(ast::decl_var &decl) { return 0; };
     virtual int process(ast::decl_struct &decl) { return 0; };
+    virtual int process(ast::decl_class &decl) { return 0; };
     virtual int process(ast::fn_body_expr &decl) { return 0; };
     virtual int process(ast::statement_decl &decl) { return 0; };
     virtual int process(ast::statement_expr &decl) { return 0; };
@@ -35,6 +36,7 @@ struct pass {
     virtual int process_after(ast::decl_fn &decl) { return 0; };
     virtual int process_after(ast::decl_var &decl) { return 0; };
     virtual int process_after(ast::decl_struct &decl) { return 0; };
+    virtual int process_after(ast::decl_class &decl) { return 0; };
     virtual int process_after(ast::fn_body_expr &decl) { return 0; };
     virtual int process_after(ast::statement_decl &decl) { return 0; };
     virtual int process_after(ast::statement_expr &decl) { return 0; };
@@ -50,6 +52,7 @@ struct pass {
     int walk(ast::decl_fn &decl);
     int walk(ast::decl_var &decl);
     int walk(ast::decl_struct &decl);
+    int walk(ast::decl_class &decl);
     int walk(ast::fn_body_expr &decl);
     int walk(ast::statement_ptr &stmt);
     int walk(ast::statement_decl &stmt);
