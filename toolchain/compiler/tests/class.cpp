@@ -313,13 +313,13 @@ TEST_CASE("advanced 1") {
             var g: gleam
         }
 
+        class test1{ var b: i8; var c: i8; var d: i32; var e: i16 }
+
         class gleam {
             var io = true
             var poeder = 3
-            var zz: test1
+            var zz = test1()
         }
-
-        class test1{ var b: i8; var c: i8; var d: i32; var e: i16 }
 
         fn main() {
             var a = bla();
