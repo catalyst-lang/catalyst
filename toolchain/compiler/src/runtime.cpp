@@ -64,19 +64,32 @@ void runtime::insert_function(const char* name, llvm::JITTargetAddress target, c
     functions[name] = target;
 }
 
-void* my_malloc(uint64_t size) {
-	return malloc(size);
-}
+// void* my_malloc(uint64_t size) {
+// 	return malloc(size);
+// }
+
+// llvm::FunctionCallee runtime::get_malloc() {
+// 	auto m = this->state->TheModule->getOrInsertFunction(
+// 		"my_malloc", 
+// 		llvm::AttributeList::get(*state->TheContext, 0, { llvm::Attribute::NoAlias }),
+// 		llvm::PointerType::get(*state->TheContext, 0), 
+// 		llvm::IntegerType::get(*state->TheContext, 64)
+// 	);
+
+// 	functions["my_malloc"] = llvm::pointerToJITTargetAddress(&my_malloc);
+
+// 	return m;
+// }
 
 llvm::FunctionCallee runtime::get_malloc() {
 	auto m = this->state->TheModule->getOrInsertFunction(
-		"my_malloc", 
+		"malloc", 
 		llvm::AttributeList::get(*state->TheContext, 0, { llvm::Attribute::NoAlias }),
 		llvm::PointerType::get(*state->TheContext, 0), 
-		llvm::IntegerType::get(*state->TheContext, 64)
+		llvm::IntegerType::get(*state->TheContext, sizeof(size_t) * 8)
 	);
 
-	functions["my_malloc"] = llvm::pointerToJITTargetAddress(&my_malloc);
+	functions["malloc"] = llvm::pointerToJITTargetAddress(&malloc);
 
 	return m;
 }
