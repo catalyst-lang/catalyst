@@ -73,7 +73,7 @@ llvm::FunctionCallee runtime::get_malloc() {
 		"my_malloc", 
 		llvm::AttributeList::get(*state->TheContext, 0, { llvm::Attribute::NoAlias }),
 		llvm::PointerType::get(*state->TheContext, 0), 
-		llvm::IntegerType::get(*state->TheContext, sizeof(size_t) * 8)
+		llvm::IntegerType::get(*state->TheContext, 64)
 	);
 
 	functions["my_malloc"] = llvm::pointerToJITTargetAddress(&my_malloc);
