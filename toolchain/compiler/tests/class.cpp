@@ -306,19 +306,19 @@ TEST_CASE("ref on return and pass as parameter 6") {
 TEST_CASE("advanced 1") {
     compiler::options opts;
     auto result = compiler::compile_string(R"catalyst_source(
-        class bla { 
-            var i = 4
-            var j = 9.8
-            //fn lskd() {}
-            var g: gleam
-        }
-
         class test1{ var b: i8; var c: i8; var d: i32; var e: i16 }
 
         class gleam {
             var io = true
             var poeder = 3
             var zz = test1()
+        }
+
+        class bla { 
+            var i = 4
+            var j = 9.8
+            //fn lskd() {}
+            var g = gleam()
         }
 
         fn main() {
