@@ -65,6 +65,14 @@ int proto_pass::process_after(ast::decl_struct &decl) {
 		s->copy_from(*struct_type);
 		return 1;
 	}
+
+	if (n == 0) {
+		// create class init function
+		auto *FT = llvm::FunctionType::get(llvm::Type::getVoidTy(*state.TheContext), { state.Builder.getPtrTy() }, false);
+		s->init_function = 
+			llvm::Function::Create(FT, llvm::Function::ExternalLinkage, key + "..__CATA_INIT", state.TheModule.get());
+		s->init_function->setDSOLocal(true);
+	}
 	
 	return 0;
 }
@@ -79,10 +87,6 @@ void codegen(codegen::state &state, ast::decl_struct &decl) {
     // auto structAlloca = state.Builder.CreateAlloca(llvm_type);
 
 	// create struct init function
-	auto *FT = llvm::FunctionType::get(llvm::Type::getVoidTy(*state.TheContext), { state.Builder.getPtrTy() }, false);
-	type->init_function = 
-		llvm::Function::Create(FT, llvm::Function::ExternalLinkage, key + "..__CATA_INIT", state.TheModule.get());
-	type->init_function->setDSOLocal(true);
 	auto this_ = type->init_function->getArg(0);
 	auto *BB = llvm::BasicBlock::Create(*state.TheContext, "init", type->init_function);
 	

@@ -43,10 +43,10 @@ int proto_pass::process(ast::decl_class &decl) {
 int proto_pass::process_after(ast::decl_class &decl) {
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 	auto &sym = state.symbol_table[key];
-    auto s = (type_struct*)sym.type.get();
+    auto s = (type_class*)sym.type.get();
 
 	auto class_type_sptr = decl_get_type(state, decl);
-    auto class_type = (type_struct*)class_type_sptr.get();
+    auto class_type = (type_class*)class_type_sptr.get();
 
 	state.scopes.enter(decl.ident.name);
 
@@ -66,6 +66,14 @@ int proto_pass::process_after(ast::decl_class &decl) {
 		return 1;
 	}
 	
+	if (n == 0) {
+		// create class init function
+		auto *FT = llvm::FunctionType::get(llvm::Type::getVoidTy(*state.TheContext), { state.Builder.getPtrTy() }, false);
+		s->init_function = 
+			llvm::Function::Create(FT, llvm::Function::ExternalLinkage, key + "..__CATA_INIT", state.TheModule.get());
+		s->init_function->setDSOLocal(true);
+	}
+
 	return 0;
 }
 
@@ -79,10 +87,6 @@ void codegen(codegen::state &state, ast::decl_class &decl) {
     // auto structAlloca = state.Builder.CreateAlloca(llvm_type);
 
 	// create class init function
-	auto *FT = llvm::FunctionType::get(llvm::Type::getVoidTy(*state.TheContext), { state.Builder.getPtrTy() }, false);
-	type->init_function = 
-		llvm::Function::Create(FT, llvm::Function::ExternalLinkage, key + "..__CATA_INIT", state.TheModule.get());
-	type->init_function->setDSOLocal(true);
 	auto this_ = type->init_function->getArg(0);
 	auto *BB = llvm::BasicBlock::Create(*state.TheContext, "init", type->init_function);
 	
