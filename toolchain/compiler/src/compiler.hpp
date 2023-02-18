@@ -30,7 +30,9 @@ struct options {
 
 struct compile_result {
 	bool is_successful = false;
+	bool is_runnable = false;
 	std::shared_ptr<void> state;
+	std::string result_type_name;
 
 	static compile_result create_failed() {
 		compile_result s;

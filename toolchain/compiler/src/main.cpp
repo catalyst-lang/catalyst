@@ -44,21 +44,38 @@ int main(const cli_options &opts) {
 	auto result = compile_file(opts.input.c_str(), opts.compiler_options);
 	compiler_debug_print(result);
 
-
 	if (opts.run) {
-		auto ret = run<int64_t>(result);
-		std::cout << "Result as bool: " << std::boolalpha << *(bool *)&ret << std::endl;
-		std::cout << "Result as   i8: " << (int)*(int8_t *)&ret << std::endl;
-		std::cout << "Result as  i16: " << *(int16_t *)&ret << std::endl;
-		std::cout << "Result as  i32: " << *(int32_t *)&ret << std::endl;
-		std::cout << "Result as  i64: " << *(int64_t *)&ret << std::endl;
-		std::cout << "Result as   u8: " << (unsigned int)*(uint8_t *)&ret << std::endl;
-		std::cout << "Result as  u16: " << *(uint16_t *)&ret << std::endl;
-		std::cout << "Result as  u32: " << *(uint32_t *)&ret << std::endl;
-		std::cout << "Result as  u64: " << *(uint64_t *)&ret << std::endl;
-		std::cout << "Result as  f32: " << *(((float*)&ret) + 1) << std::endl;
-		//std::cout << "Result as  f64: " << std::bit_cast<double>(ret) << std::endl;
-		return ret;
+		if (!result.is_runnable) {
+			std::cout << "Error: entry point `main` not found or not a function." << std::endl;
+			return 2;
+		}
+
+		if (result.result_type_name == "i8")
+			std::cout << "Result: <i8> " << (int) run<int8_t>(result) << std::endl;
+		else if (result.result_type_name == "u8")
+			std::cout << "Result: <u8> " << (unsigned) run<uint8_t>(result) << std::endl;
+		else if (result.result_type_name == "i16")
+			std::cout << "Result: <i16> " << run<int16_t>(result) << std::endl;
+		else if (result.result_type_name == "u16")
+			std::cout << "Result: <u16> " << run<uint16_t>(result) << std::endl;
+		else if (result.result_type_name == "i32")
+			std::cout << "Result: <i32> " << run<int32_t>(result) << std::endl;
+		else if (result.result_type_name == "u32")
+			std::cout << "Result: <u32> " << run<uint32_t>(result) << std::endl;
+		else if (result.result_type_name == "i64")
+			std::cout << "Result: <i64> " << run<int64_t>(result) << std::endl;
+		else if (result.result_type_name == "u64")
+			std::cout << "Result: <u64> " << run<uint64_t>(result) << std::endl;
+		else if (result.result_type_name == "f32")
+			std::cout << "Result: <f32> " << run<float>(result) << std::endl;
+		else if (result.result_type_name == "f64")
+			std::cout << "Result: <f64> " << run<double>(result) << std::endl;
+		else if (result.result_type_name == "bool")
+			std::cout << "Result: <bool> " << run<bool>(result) << std::endl;
+		else 
+			std::cout << "Result: <" << result.result_type_name << "> " << std::showbase << std::hex << run<int64_t>(result) << std::endl;
+		
+		return 0;
 	}
 	else
 		return result.is_successful ? 0 : 1;

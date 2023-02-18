@@ -55,6 +55,8 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_liter
 	case ast::numeric_classifier::unsigned32: return type::create_builtin("u32");
 	case ast::numeric_classifier::signed64: return type::create_builtin("i64");
 	case ast::numeric_classifier::unsigned64: return type::create_builtin("u64");
+	case ast::numeric_classifier::signed128: return type::create_builtin("i128");
+	case ast::numeric_classifier::unsigned128: return type::create_builtin("u128");
 	case ast::numeric_classifier::float_: return type::create_builtin("f64");
 	case ast::numeric_classifier::float16: return type::create_builtin("f16");
 	case ast::numeric_classifier::float32: return type::create_builtin("f32");

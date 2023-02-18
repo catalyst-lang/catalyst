@@ -7,6 +7,7 @@
 #include "codegen/codegen.hpp"
 #include "codegen/expr.hpp"
 #include "codegen/type.hpp"
+#include "catalyst/rtti.hpp"
 
 #pragma warning( push )
 #pragma warning( disable : 4244 )
@@ -89,6 +90,16 @@ compile_result compile(catalyst::ast::translation_unit &tu, options options) {
 
 	compile_result result;
 	result.is_successful = state->num_errors == 0;
+	if (state->symbol_table.contains("main")) {
+		auto sym_type = state->symbol_table["main"].type;
+		if (catalyst::isa<codegen::type_function>(sym_type.get())) {
+			auto sym_fun = (codegen::type_function*)sym_type.get();
+			result.result_type_name = sym_fun->return_type->get_fqn();
+			result.is_runnable = true;
+		} else {
+			result.is_runnable = false;
+		}
+	}
 	result.state = std::move(state);
 	return result;
 }
@@ -127,14 +138,17 @@ T run(const compile_result &result) {
 	return run_jit<T>(get_state(result), "main");
 }
 
+template int8_t run(const compile_result &);
 template int16_t run(const compile_result &);
 template int32_t run(const compile_result &);
 template int64_t run(const compile_result &);
+template uint8_t run(const compile_result &);
 template uint16_t run(const compile_result &);
 template uint32_t run(const compile_result &);
 template uint64_t run(const compile_result &);
 template void* run(const compile_result &);
 template float run(const compile_result &);
 template double run(const compile_result &);
+template bool run(const compile_result &);
 
 } // namespace catalyst::compiler
