@@ -66,7 +66,7 @@ int proto_pass::process_after(ast::decl_struct &decl) {
 		return 1;
 	}
 
-	if (n == 0) {
+	if (!s->init_function) {
 		// create class init function
 		auto *FT = llvm::FunctionType::get(llvm::Type::getVoidTy(*state.TheContext), { state.Builder.getPtrTy() }, false);
 		s->init_function = 
