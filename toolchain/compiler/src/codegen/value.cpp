@@ -32,6 +32,13 @@ llvm::Value *get_lvalue(codegen::state &state, ast::expr_ptr expr) {
 
 		int index = lhs_custom->index_of(ident->name);
 
+		if (index == -1) {
+			state.report_message(report_type::error, 
+			std::string("Type `") + lhs_custom->name + "` does not have a member named `" + ident->name + "`", 
+			ident);
+			return nullptr;
+		}
+
 		auto ptr =
 			state.Builder.CreateStructGEP(lhs_custom->get_llvm_struct_type(state), lhs_value, index);
 
