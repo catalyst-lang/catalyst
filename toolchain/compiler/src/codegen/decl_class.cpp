@@ -41,6 +41,8 @@ int proto_pass::process(ast::decl_class &decl) {
 }
 
 int proto_pass::process_after(ast::decl_class &decl) {
+	int changes = 0;
+
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 	auto &sym = state.symbol_table[key];
     auto s = (type_class*)sym.type.get();
@@ -63,7 +65,7 @@ int proto_pass::process_after(ast::decl_class &decl) {
 		// structure pointed to by sym.type at this point.
 		// We only want one instance of type_class to ever exist per definition.
 		s->copy_from(*class_type);
-		return 1;
+		changes++;
 	}
 	
 	if (!s->init_function) {
@@ -72,6 +74,7 @@ int proto_pass::process_after(ast::decl_class &decl) {
 		s->init_function = 
 			llvm::Function::Create(FT, llvm::Function::ExternalLinkage, key + "..__CATA_INIT", state.TheModule.get());
 		s->init_function->setDSOLocal(true);
+		changes++;
 	}
 
 	// Super class (inheritance)
@@ -86,10 +89,13 @@ int proto_pass::process_after(ast::decl_class &decl) {
 			state.report_message(report_type::error, std::string("`") + super_name + "` is not a valid parent class", &decl.super.value());
 			return 0;
 		}
-		s->super = std::static_pointer_cast<type_class>(super_sym->type);
+		if (s->super.get() != super_sym->type.get()) {
+			s->super = std::static_pointer_cast<type_class>(super_sym->type);
+			changes++;
+		}
 	}
 
-	return 0;
+	return changes;
 }
 
 void codegen(codegen::state &state, ast::decl_class &decl) {
