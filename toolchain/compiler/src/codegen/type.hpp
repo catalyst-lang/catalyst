@@ -352,6 +352,8 @@ struct type_class : type_custom {
 
 	inline virtual llvm::Value* get_sizeof(catalyst::compiler::codegen::state &state) override;
 
+	std::shared_ptr<type_class> super;
+
 	private:
 	llvm::StructType* structType = nullptr; 
 };

@@ -31,11 +31,11 @@ int proto_pass::process(ast::decl_class &decl) {
 
 	int changed_num = n == 0 ? 1 : 0;
 
-    auto class_type_sptr = decl_get_type(state, decl);
-    auto class_type = (type_class*)class_type_sptr.get();
+    auto class_type_shared_ptr = decl_get_type(state, decl);
+    auto class_type = (type_class*)class_type_shared_ptr.get();
 	class_type->name = key;
 
-	const auto [res, symbol_introduced] = state.symbol_table.try_emplace(key, &decl, nullptr, class_type_sptr);
+	const auto [res, symbol_introduced] = state.symbol_table.try_emplace(key, &decl, nullptr, class_type_shared_ptr);
 
 	return changed_num;
 }
@@ -45,8 +45,8 @@ int proto_pass::process_after(ast::decl_class &decl) {
 	auto &sym = state.symbol_table[key];
     auto s = (type_class*)sym.type.get();
 
-	auto class_type_sptr = decl_get_type(state, decl);
-    auto class_type = (type_class*)class_type_sptr.get();
+	auto class_type_shared_ptr = decl_get_type(state, decl);
+    auto class_type = (type_class*)class_type_shared_ptr.get();
 
 	state.scopes.enter(decl.ident.name);
 
@@ -72,6 +72,21 @@ int proto_pass::process_after(ast::decl_class &decl) {
 		s->init_function = 
 			llvm::Function::Create(FT, llvm::Function::ExternalLinkage, key + "..__CATA_INIT", state.TheModule.get());
 		s->init_function->setDSOLocal(true);
+	}
+
+	// Super class (inheritance)
+	if (decl.super.has_value()) {
+		auto super_name = decl.super.value().ident.name;
+		auto super_sym = state.scopes.find_named_symbol(super_name);
+		if (!super_sym) {
+			state.report_message(report_type::error, std::string("Undefined class `") + super_name + "`", &decl.super.value());
+			return 0;
+		}
+		if (!isa<type_class>(super_sym->type)) {
+			state.report_message(report_type::error, std::string("`") + super_name + "` is not a valid parent class", &decl.super.value());
+			return 0;
+		}
+		s->super = std::static_pointer_cast<type_class>(super_sym->type);
 	}
 
 	return 0;

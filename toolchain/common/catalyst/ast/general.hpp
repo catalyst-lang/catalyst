@@ -61,7 +61,7 @@ struct fn_body_block : parser::ast_node {
 	std::vector<statement_ptr> statements;
 };
 
-}
+} // namespace catalyst::ast
 
 #include "expr.hpp"
 
@@ -89,7 +89,7 @@ struct decl_fn : decl {
 
 struct decl_var : decl {
 	decl_var(const parser::char_type *begin, const parser::char_type *end, ast::ident ident,
-	              std::optional<ast::type> type, std::optional<ast::expr_ptr> expr)
+	         std::optional<ast::type> type, std::optional<ast::expr_ptr> expr)
 		: decl(begin, end, ident), type(type), expr(expr) {}
 
 	std::optional<ast::type> type = std::nullopt;
@@ -99,23 +99,26 @@ struct decl_var : decl {
 
 struct decl_const : decl_var {
 	decl_const(const parser::char_type *begin, const parser::char_type *end, ast::ident ident,
-	                std::optional<ast::type> type, std::optional<ast::expr_ptr> expr)
+	           std::optional<ast::type> type, std::optional<ast::expr_ptr> expr)
 		: decl_var(begin, end, ident, type, expr) {
 		is_const = true;
 	}
 };
 
 struct decl_struct : decl {
-	decl_struct(const parser::char_type *begin, const parser::char_type *end, ast::ident &ident, std::vector<decl_ptr> declarations)
+	decl_struct(const parser::char_type *begin, const parser::char_type *end, ast::ident &ident,
+	            std::vector<decl_ptr> declarations)
 		: decl(begin, end, ident), declarations(declarations) {}
 
 	std::vector<decl_ptr> declarations;
 };
 
 struct decl_class : decl {
-	decl_class(const parser::char_type *begin, const parser::char_type *end, ast::ident &ident, std::vector<decl_ptr> declarations)
+	decl_class(const parser::char_type *begin, const parser::char_type *end, ast::ident &ident,
+	           std::optional<ast::type> super, std::vector<decl_ptr> declarations)
 		: decl(begin, end, ident), declarations(declarations) {}
 
+	std::optional<ast::type> super = std::nullopt;
 	std::vector<decl_ptr> declarations;
 };
 

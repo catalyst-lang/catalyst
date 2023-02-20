@@ -54,6 +54,7 @@ constexpr auto kw_type = LEXY_KEYWORD("type", id);
 constexpr auto kw_unsafe = LEXY_KEYWORD("unsafe", id);
 constexpr auto kw_use = LEXY_KEYWORD("use", id);
 constexpr auto kw_var = LEXY_KEYWORD("var", id);
+constexpr auto kw_virtual = LEXY_KEYWORD("virtual", id);
 constexpr auto kw_where = LEXY_KEYWORD("where", id);
 constexpr auto kw_while = LEXY_KEYWORD("while", id);
 constexpr auto kw_async = LEXY_KEYWORD("async", id);
@@ -72,8 +73,8 @@ struct ident : lexy::token_production {
 		                  kw_extern, kw_false, kw_fn, kw_for, kw_if, kw_impl, kw_in, kw_let,
 		                  kw_loop, kw_match, kw_mod, kw_move, kw_mut, kw_pub, kw_ref, kw_return,
 		                  kw_self, kw_Self, kw_static, kw_struct, kw_class, kw_super, kw_trait,
-		                  kw_true, kw_type, kw_unsafe, kw_use, kw_var, kw_where, kw_while, kw_async,
-		                  kw_await, kw_yield) |
+		                  kw_true, kw_type, kw_unsafe, kw_use, kw_var, kw_virtual, kw_where,
+		                  kw_while, kw_async, kw_await, kw_yield) |
 		       dsl::error<expected_identifier>;
 	}();
 
@@ -536,11 +537,18 @@ struct decl_struct {
 };
 
 struct decl_class {
-	static constexpr auto rule = kw_class >> dsl::p<ident> + dsl::p<decl_list> + dsl::position;
+	static constexpr auto
+		rule = kw_class >>
+	           dsl::p<ident> +
+	               dsl::opt(dsl::colon >> dsl::p<type>) + dsl::p<decl_list> + dsl::position;
 
-	static constexpr auto value =
-		lexy::callback<ast::decl_ptr>([](auto ident, auto decls, auto end) {
-			return std::make_shared<ast::decl_class>(ident.lexeme.begin, end, ident, decls);
+	static constexpr auto value = lexy::callback<ast::decl_ptr>(
+		[](auto ident, lexy::nullopt, auto decls, auto end) {
+			return std::make_shared<ast::decl_class>(ident.lexeme.begin, end, ident, std::nullopt,
+		                                             decls);
+		},
+		[](auto ident, auto super, auto decls, auto end) {
+			return std::make_shared<ast::decl_class>(ident.lexeme.begin, end, ident, super, decls);
 		});
 };
 
