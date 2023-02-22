@@ -54,8 +54,12 @@ std::shared_ptr<type> type::create_builtin(const std::string &name) {
 	return std::make_shared<type_undefined>();
 }
 
-std::shared_ptr<type> type::create_builtin(const ast::type &ast_type) {
-	return create_builtin(ast_type.ident.name);
+std::shared_ptr<type> type::create_builtin(const ast::type_ptr &ast_type) {
+	if (isa<ast::type_ident>(ast_type)) {
+		return create_builtin(std::static_pointer_cast<ast::type_ident>(ast_type)->ident.name);
+	} else {
+		std::cout << "NOT IMPLEMENTED" << std::endl;
+	}
 }
 
 std::shared_ptr<type> type::create(codegen::state &state, const std::string &name) {
@@ -72,8 +76,12 @@ std::shared_ptr<type> type::create(codegen::state &state, const std::string &nam
 	return create_builtin(name);
 }
 
-std::shared_ptr<type> type::create(codegen::state &state, const ast::type &ast_type) {
-	return create(state, ast_type.ident.name);
+std::shared_ptr<type> type::create(codegen::state &state, const ast::type_ptr &ast_type) {
+	if (isa<ast::type_ident>(ast_type)) {
+		return create(state, std::static_pointer_cast<ast::type_ident>(ast_type)->ident.name);
+	} else {
+		std::cout << "NOT IMPLEMENTED @ type::create" << std::endl;
+	}
 }
 
 std::shared_ptr<type> type::create_function(const std::shared_ptr<type> &return_type) {

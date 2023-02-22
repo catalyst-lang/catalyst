@@ -4,26 +4,26 @@
 #include "decl_locals_pass.hpp"
 
 #include "catalyst/rtti.hpp"
-#include "expr_type.hpp"
 #include "decl_type.hpp"
+#include "expr_type.hpp"
 
 namespace catalyst::compiler::codegen {
-
 
 int proto_pass::process(ast::decl_fn &decl) {
 	// First, check for an existing function from a previous 'extern' declaration.
 	// llvm::Function *the_function = state.TheModule->getFunction(decl.ident.name);
 
-	symbol* method_of = nullptr;
+	symbol *method_of = nullptr;
 	if (state.symbol_table.contains(state.scopes.get_fully_qualified_scope_name())) {
 		auto parent = state.symbol_table[state.scopes.get_fully_qualified_scope_name()];
-		if (isa<type_custom>(parent.type)) method_of = &parent;
+		if (isa<type_custom>(parent.type))
+			method_of = &parent;
 	}
 
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 
-	// TODO: fix this. Is broken after function overloading was added. No error is reported if function
-	// with same name and type is added.
+	// TODO: fix this. Is broken after function overloading was added. No error is reported if
+	// function with same name and type is added.
 	if (n == 0 && state.symbol_table.contains(key)) {
 		auto other = state.symbol_table[key];
 		state.report_message(report_type::error, "Function name already exists", &decl.ident);
@@ -64,13 +64,19 @@ int proto_pass::process(ast::decl_fn &decl) {
 	}
 
 	if (!state.current_function_has_return) {
-		if (!decl.type.has_value() || (decl.type.has_value() && decl.type.value().ident.name == "void")) {
+		bool is_return_void = !decl.type.has_value();
+		if (decl.type.has_value() && isa<ast::type_ident>(decl.type.value())) {
+			auto ti = std::static_pointer_cast<ast::type_ident>(decl.type.value());
+			if (ti->ident.name == "void") is_return_void = true;
+		}
+		if (is_return_void) {
 			if (!isa<type_void>(current_fn_type->return_type)) {
 				current_fn_type->return_type = type::create(state, "void");
 				changed_num++;
 			}
 		} else {
-			state.report_message(report_type::error, "control reaches end of non-void function", &decl);
+			state.report_message(report_type::error, "control reaches end of non-void function",
+			                     &decl);
 		}
 	}
 
@@ -93,9 +99,9 @@ int proto_pass::process(ast::decl_fn &decl) {
 		if (sym.value) {
 			((llvm::Function *)sym.value)->eraseFromParent();
 		}
-		auto the_function = llvm::Function::Create(
-			(llvm::FunctionType *)current_fn_type->get_llvm_type(state),
-			llvm::Function::ExternalLinkage, key, state.TheModule.get());
+		auto the_function =
+			llvm::Function::Create((llvm::FunctionType *)current_fn_type->get_llvm_type(state),
+		                           llvm::Function::ExternalLinkage, key, state.TheModule.get());
 
 		// Set names for all arguments.
 		unsigned i = method_of != nullptr ? -1 : 0;
@@ -129,12 +135,14 @@ int proto_pass::process(ast::decl_fn &decl) {
 }
 
 int proto_pass::process(ast::decl_var &decl) {
-	if (!state.is_root_scope()) return 0;
+	if (!state.is_root_scope())
+		return 0;
 
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 	if (n == 0 && state.symbol_table.contains(key)) {
 		auto other = state.symbol_table[key];
-		state.report_message(report_type::error, "Global variable name already exists", &decl.ident);
+		state.report_message(report_type::error, "Global variable name already exists",
+		                     &decl.ident);
 		state.report_message(report_type::info, "Previous declaration here", other.ast_node);
 		return 0;
 	}
@@ -163,5 +171,4 @@ int proto_pass::process(ast::decl_var &decl) {
 	return 0;
 }
 
-
-}
+} // namespace catalyst::compiler::codegen

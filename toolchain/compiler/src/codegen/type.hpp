@@ -33,9 +33,9 @@ struct type {
 		: fqn(std::move(fqn)), specialization_score(specialization_score) {}
 
 	static std::shared_ptr<type> create_builtin(const std::string &name = "");
-	static std::shared_ptr<type> create_builtin(const catalyst::ast::type &ast_type);
+	static std::shared_ptr<type> create_builtin(const catalyst::ast::type_ptr &ast_type);
 	static std::shared_ptr<type> create(codegen::state &state, const std::string &name = "");
-	static std::shared_ptr<type> create(codegen::state &state, const catalyst::ast::type &ast_type);
+	static std::shared_ptr<type> create(codegen::state &state, const catalyst::ast::type_ptr &ast_type);
 	static std::shared_ptr<type> create_function(const std::shared_ptr<type> &return_type);
 	static std::shared_ptr<type>
 	create_function(const std::shared_ptr<type> &return_type,

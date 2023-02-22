@@ -52,19 +52,21 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_cl
 	std::vector<member> members;
 	for (auto &mmbr : decl.declarations) {
 		auto type = decl_get_type(state, mmbr);
-		// if (auto fn = dynamic_cast<type_function*>(type.get())) {
-		//	fn->is_method = true;
-		// }
 		members.emplace_back(mmbr->ident.name, type, mmbr);
 	}
+
 	if (decl.super.has_value()) {
-		auto super_name = decl.super.value().ident.name;
+		if (!isa<ast::type_ident>(decl.super.value())) {
+			return type::create_class(decl.ident.name, type_class::unknown(), members);
+		}
+
+		auto super_name = std::static_pointer_cast<ast::type_ident>(decl.super.value())->ident.name;
 		auto super_sym = state.scopes.find_named_symbol(super_name);
 		if (!super_sym) {
 			return type::create_class(decl.ident.name, type_class::unknown(), members);
 		}
 		if (!isa<type_class>(super_sym->type)) {
-			state.report_message(report_type::error, "Unexpected base class", &decl.super.value());
+			state.report_message(report_type::error, "Unexpected base class", decl.super.value().get());
 		}
 		auto super_class = std::static_pointer_cast<type_class>(super_sym->type);
 		return type::create_class(decl.ident.name, super_class, members);

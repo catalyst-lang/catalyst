@@ -145,10 +145,10 @@ struct expr_binary_logical : expr {
 
 struct expr_cast : expr {
 	expr_ptr lhs;
-	ast::type type;
+	ast::type_ptr type;
 
 	explicit expr_cast(const parser::char_type *begin, const parser::char_type *end, expr_ptr lhs,
-	                   ast::type type)
+	                   ast::type_ptr type)
 		: expr(begin, end), lhs(lhs), type(type) {}
 };
 

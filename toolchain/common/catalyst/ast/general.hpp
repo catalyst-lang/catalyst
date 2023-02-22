@@ -33,8 +33,18 @@ struct ident : parser::ast_node {
 };
 
 struct type : parser::ast_node {
-	explicit type(parser::char_type const *begin, parser::char_type const *end, ident const &ident)
-		: parser::ast_node(begin, end), ident(ident) {}
+	explicit type(parser::char_type const *begin, parser::char_type const *end)
+		: parser::ast_node(begin, end) {}
+	
+	virtual ~type() = default;
+};
+
+using type_ptr = std::shared_ptr<type>;
+
+struct type_ident : type {
+	explicit type_ident(parser::char_type const *begin, parser::char_type const *end, ident const &ident)
+		: type(begin, end), ident(ident) {}
+
 	ident ident;
 };
 
@@ -51,7 +61,15 @@ struct fn_parameter : parser::ast_node {
 	//              std::optional<type> &type)
 	// 	: parser::ast_node(begin, end), ident(ident), type(type) {}
 	ident ident;
-	std::optional<type> type;
+	std::optional<type_ptr> type;
+};
+
+struct type_function : type {
+	explicit type_function(parser::char_type const *begin, parser::char_type const *end, std::vector<ast::fn_parameter> &parameter_list, type_ptr &return_type)
+		: parameter_list(parameter_list), return_type(return_type), type(begin, end) {}
+
+	std::vector<ast::fn_parameter> parameter_list;
+	type_ptr return_type;
 };
 
 struct fn_body_block : parser::ast_node {
@@ -79,27 +97,27 @@ using fn_body = std::variant<fn_body_block, fn_body_expr>;
 
 struct decl_fn : decl {
 	decl_fn(const parser::char_type *begin, const parser::char_type *end, ast::ident &ident,
-	        std::vector<ast::fn_parameter> &parameter_list, std::optional<ast::type> type,
+	        std::vector<ast::fn_parameter> &parameter_list, std::optional<type_ptr> type,
 	        fn_body &body)
 		: decl(begin, end, ident), parameter_list(parameter_list), type(type), body(body) {}
 	std::vector<ast::fn_parameter> parameter_list;
-	std::optional<ast::type> type;
+	std::optional<ast::type_ptr> type = std::nullopt;
 	fn_body body;
 };
 
 struct decl_var : decl {
 	decl_var(const parser::char_type *begin, const parser::char_type *end, ast::ident ident,
-	         std::optional<ast::type> type, std::optional<ast::expr_ptr> expr)
+	         std::optional<ast::type_ptr> type, std::optional<ast::expr_ptr> expr)
 		: decl(begin, end, ident), type(type), expr(expr) {}
 
-	std::optional<ast::type> type = std::nullopt;
+	std::optional<ast::type_ptr> type = std::nullopt;
 	std::optional<ast::expr_ptr> expr = std::nullopt;
 	bool is_const = false;
 };
 
 struct decl_const : decl_var {
 	decl_const(const parser::char_type *begin, const parser::char_type *end, ast::ident ident,
-	           std::optional<ast::type> type, std::optional<ast::expr_ptr> expr)
+	           std::optional<ast::type_ptr> type, std::optional<ast::expr_ptr> expr)
 		: decl_var(begin, end, ident, type, expr) {
 		is_const = true;
 	}
@@ -115,10 +133,10 @@ struct decl_struct : decl {
 
 struct decl_class : decl {
 	decl_class(const parser::char_type *begin, const parser::char_type *end, ast::ident &ident,
-	           std::optional<ast::type> super, std::vector<decl_ptr> declarations)
+	           std::optional<ast::type_ptr> super, std::vector<decl_ptr> declarations)
 		: decl(begin, end, ident), declarations(declarations), super(super) {}
 
-	std::optional<ast::type> super = std::nullopt;
+	std::optional<ast::type_ptr> super = std::nullopt;
 	std::vector<decl_ptr> declarations;
 };
 

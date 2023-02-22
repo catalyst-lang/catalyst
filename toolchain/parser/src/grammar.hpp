@@ -86,8 +86,8 @@ struct ident : lexy::token_production {
 
 struct type : lexy::token_production {
 	static constexpr auto rule = dsl::position + dsl::p<ident> + dsl::position;
-	static constexpr auto value = lexy::callback<ast::type>([](auto begin, auto ident, auto end) {
-		return ast::type((parser::char_type *)begin, (parser::char_type *)end, ident);
+	static constexpr auto value = lexy::callback<ast::type_ptr>([](auto begin, auto ident, auto end) {
+		return std::make_shared<ast::type_ident>((parser::char_type *)begin, (parser::char_type *)end, ident);
 	});
 };
 
@@ -292,7 +292,7 @@ struct expr : lexy::expression_production {
 		lexy::new_<ast::expr_assignment, ast::expr_ptr>,
 
 		[](auto lhs, lexy::op<op_cast::op>, auto type) {
-			return std::make_shared<ast::expr_cast>(lhs->lexeme.end, type.lexeme.begin, lhs, type);
+			return std::make_shared<ast::expr_cast>(lhs->lexeme.end, type->lexeme.begin, lhs, type);
 		},
 
 		// call
@@ -460,7 +460,10 @@ struct decl_fn {
 	                                 + dsl::p<fn_body>;
 
 	// static constexpr auto value = lexy::construct<ast::decl_fn>;
-	static constexpr auto value = lexy::callback<ast::decl_ptr>(
+	static constexpr auto value = lexy::callback<ast::decl_ptr>( 
+		[](auto begin, auto ident, auto parameter_list, lexy::nullopt, auto end, auto body) {
+			return std::make_shared<ast::decl_fn>(begin, end, ident, parameter_list, std::nullopt, body);
+		},
 		[](auto begin, auto ident, auto parameter_list, auto type, auto end, auto body) {
 			return std::make_shared<ast::decl_fn>(begin, end, ident, parameter_list, type, body);
 		});
