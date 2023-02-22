@@ -60,6 +60,7 @@ int proto_pass::process(ast::decl_fn &decl) {
 	locals_pass lp(state, n);
 	while (locals_updated > 0) {
 		locals_updated = lp(&decl);
+		if (state.num_errors > 0) return 0;
 		changed_num += locals_updated;
 	}
 

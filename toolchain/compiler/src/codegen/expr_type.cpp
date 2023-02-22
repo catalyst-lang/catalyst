@@ -153,7 +153,11 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_ident
 		return expr_resulting_type_this(state, expr, expecting_type);
 
 	// Look this variable up in the function.
-	auto *symbol = state.scopes.find_named_symbol(expr.ident.name);
+	symbol *symbol = state.scopes.find_named_symbol(expr.ident.name);
+	if (isa<type_function>(expecting_type) || isa<type_function>(symbol->type)) {
+		symbol = find_function_overload(
+			state, expr.ident.name, std::static_pointer_cast<type_function>(expecting_type), &expr);
+	}
 	if (!symbol)
 		return type::create_builtin();
 	return symbol->type;

@@ -1,4 +1,12 @@
-fn main() {
-    var a : (num: i64, ll i32)  ->    i64
-    return 5
-}
+        fn bla() {
+            return 8
+        }
+
+        fn bla(ks: i64) {
+            return ks + 1
+        }
+
+        fn main() {
+            var a = bla
+            return a(99)
+        }

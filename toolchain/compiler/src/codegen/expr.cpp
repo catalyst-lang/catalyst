@@ -141,7 +141,14 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr,
 		return codegen_this(state, expr, expecting_type);
 
 	// Look this variable up in the function.
-	auto *symbol = state.scopes.find_named_symbol(expr.ident.name);
+	symbol *symbol;
+	if (isa<type_function>(expecting_type)) {
+		symbol = find_function_overload(
+			state, expr.ident.name, std::static_pointer_cast<type_function>(expecting_type), &expr);
+	} else {
+		symbol = state.scopes.find_named_symbol(expr.ident.name);
+	}
+
 	if (!symbol) {
 		state.report_message(report_type::error, "Unknown variable name", &expr);
 		return nullptr;

@@ -258,4 +258,26 @@ TEST_CASE("function body expression") {
     CHECK(ret == 56);
 }
 
+TEST_CASE("function pointer to overloaded") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        fn bla() {
+            return 8
+        }
+
+        fn bla(ks: i64) {
+            return ks + 1
+        }
+
+        fn main() {
+            var a : (num: i64) -> i64
+            a = bla
+            return a(99)
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run<int64_t>(result);
+    REQUIRE(result.is_successful);
+    CHECK(ret == 100);
+}
+
 }

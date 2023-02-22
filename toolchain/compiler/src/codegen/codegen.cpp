@@ -34,9 +34,17 @@ state::state()
 		: TheContext(std::make_unique<llvm::LLVMContext>()), Builder(*TheContext),
 		  scopes(&symbol_table), target(new compiler::runtime(*this)) {}
 
+#define STOP_IF_ERROR() {\
+	if (state.num_errors > 0) {\
+		state.report_message(report_type::info, "Compilation stopped due to errors");\
+		return;\
+	}\
+}
+
 void codegen(codegen::state &state, ast::translation_unit &tu) {
 	overloading_pass op(state);
 	op(tu);
+	STOP_IF_ERROR();
 
 	// fill prototypes
 	proto_pass proto_pass(state);
@@ -44,10 +52,7 @@ void codegen(codegen::state &state, ast::translation_unit &tu) {
 	while (pass_changes > 0) {
 		pass_changes = 0;
 		pass_changes += proto_pass(tu);
-		if (state.num_errors > 0) {
-			state.report_message(report_type::info, "Compilation stopped due to errors");
-			return;
-		}
+		STOP_IF_ERROR();
 	}
 
 	#ifndef NDEBUG
