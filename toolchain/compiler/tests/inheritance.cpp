@@ -234,6 +234,60 @@ TEST_CASE("Simple polymorphism") {
     CHECK(ret == 91);
 }
 
+TEST_CASE("Simple polymorphism unhappy flow") {
+    compiler::options opts;
+    std::cout.setstate(std::ios_base::failbit);
+    auto result = compiler::compile_string(R"catalyst_source(
+        class A {
+            var i = 91i32
+        }
+
+        class B : A {
+            var j = 2i64
+            var k = 65i16
+        }
+
+        class C : A {
+            var e = 8i64
+            var q = 53i16
+        }
+
+        fn main() {
+            var i : B = A()
+            return 5
+        }
+    )catalyst_source", opts);
+    std::cout.clear();
+    REQUIRE_FALSE(result.is_successful);
+}
+
+TEST_CASE("Simple polymorphism unhappy flow 2") {
+    compiler::options opts;
+    std::cout.setstate(std::ios_base::failbit);
+    auto result = compiler::compile_string(R"catalyst_source(
+        class A {
+            var i = 91i32
+        }
+
+        class B : A {
+            var j = 2i64
+            var k = 65i16
+        }
+
+        class C : A {
+            var e = 8i64
+            var q = 53i16
+        }
+
+        fn main() {
+            var i : C = B()
+            return 5
+        }
+    )catalyst_source", opts);
+    std::cout.clear();
+    REQUIRE_FALSE(result.is_successful);
+}
+
 TEST_CASE("Simple polymorphism with constructor") {
     compiler::options opts;
     auto result = compiler::compile_string(R"catalyst_source(

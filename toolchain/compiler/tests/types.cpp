@@ -9,6 +9,7 @@ TEST_SUITE("types") {
 
 TEST_CASE("type: void") {
     compiler::options opts;
+    std::cout.setstate(std::ios_base::failbit);
     auto result = compiler::compile_string(R"catalyst_source(
         fn main() {
             var a: void
@@ -16,7 +17,6 @@ TEST_CASE("type: void") {
             return a
         }
     )catalyst_source", opts);
-    std::cout.setstate(std::ios_base::failbit);
 	auto ret = compiler::run<int32_t>(result);
     std::cout.clear();
     REQUIRE(result.is_successful);
