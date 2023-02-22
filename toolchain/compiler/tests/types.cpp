@@ -54,7 +54,6 @@ TEST_CASE("type: function (mismatch)") {
             return a()
         }
     )catalyst_source", opts);
-	auto ret = compiler::run<int64_t>(result);
     std::cout.clear();
     REQUIRE_FALSE(result.is_successful);
 }

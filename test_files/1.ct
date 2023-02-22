@@ -1,12 +1,9 @@
         fn bla() {
-            return 8
-        }
-
-        fn bla(ks: i64) {
             return ks + 1
         }
 
         fn main() {
-            var a = bla
-            return a(99)
+            var a : (num: i64) -> i64
+            a = bla
+            return a()
         }

@@ -90,7 +90,7 @@ compile_result compile(catalyst::ast::translation_unit &tu, options options) {
 
 	compile_result result;
 	result.is_successful = state->num_errors == 0;
-	if (state->symbol_table.contains("main")) {
+	if (result.is_successful && state->symbol_table.contains("main")) {
 		auto sym_type = state->symbol_table["main"].type;
 		if (catalyst::isa<codegen::type_function>(sym_type.get())) {
 			auto sym_fun = (codegen::type_function*)sym_type.get();

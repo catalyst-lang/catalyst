@@ -154,7 +154,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_ident
 
 	// Look this variable up in the function.
 	symbol *symbol = state.scopes.find_named_symbol(expr.ident.name);
-	if (isa<type_function>(expecting_type) || isa<type_function>(symbol->type)) {
+	if (isa<type_function>(expecting_type) || symbol && isa<type_function>(symbol->type)) {
 		symbol = find_function_overload(
 			state, expr.ident.name, std::static_pointer_cast<type_function>(expecting_type), &expr);
 	}
