@@ -1,8 +1,8 @@
 // Copyright (c) 2021-2022 Bas du Pré and Catalyst contributors
 // SPDX-License-Identifier: MIT
 
-#include "catalyst/rtti.hpp"
 #include "value.hpp"
+#include "catalyst/rtti.hpp"
 #include "expr.hpp"
 #include "expr_type.hpp"
 
@@ -30,17 +30,19 @@ llvm::Value *get_lvalue(codegen::state &state, ast::expr_ptr expr) {
 
 		auto ident = &((ast::expr_ident *)expr_ma->rhs.get())->ident;
 
-		int index = lhs_custom->index_of(ident->name);
+		auto member_loc = lhs_custom->get_member(ident->name);
 
-		if (index == -1) {
-			state.report_message(report_type::error, 
-			std::string("Type `") + lhs_custom->name + "` does not have a member named `" + ident->name + "`", 
-			ident);
+		if (!member_loc.is_valid()) {
+			state.report_message(report_type::error,
+			                     std::string("Type `") + lhs_custom->name +
+			                         "` does not have a member named `" + ident->name + "`",
+			                     ident);
 			return nullptr;
 		}
 
-		auto ptr =
-			state.Builder.CreateStructGEP(lhs_custom->get_llvm_struct_type(state), lhs_value, index);
+		auto ptr = state.Builder.CreateStructGEP(
+			member_loc.residence->get_llvm_struct_type(state), lhs_value,
+			member_loc.residence->get_member_index_in_llvm_struct(member_loc));
 
 		return ptr;
 	} else {

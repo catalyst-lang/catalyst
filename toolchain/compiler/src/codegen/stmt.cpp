@@ -55,8 +55,14 @@ void codegen(codegen::state &state, ast::statement_return &stmt) {
 			return;
 		}
 		auto expr_type = expr_resulting_type(state, stmt.expr.value(), expecting_type);
-		auto return_type = ((type_function *)state.current_function_symbol->type.get())->return_type;
 
+		if (!expr_type->is_valid()) {
+			state.report_message(report_type::error, "Undefined expression", stmt.expr.value().get());
+			state.Builder.CreateBr(state.current_return_block);
+			return;
+		}
+
+		auto return_type = ((type_function *)state.current_function_symbol->type.get())->return_type;
 		if (*expr_type != *return_type) {
 			state.report_message(report_type::error, "Conflicting return type", &stmt);
 			std::string message = "Got ";

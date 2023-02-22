@@ -1,28 +1,26 @@
-class bla { 
-        var i = 4
-        var j = 9
-        var k = 9i32
-}
+        class A {
+            var i = 91i32
+        }
 
-fn test() -> bla {
-        var a = bla()
-        a.i = 1
-        a.j = 3
-        a.k = 13
-        return a
-}
+        class B : A {
+            fn new() {
+                this.i = 321
+            }
 
-fn test2(b: bla) -> bla {
-        b.i = 83
-        return b
-}
+            var j = 2i64
+            var k = 65i16
+        }
 
-fn piz(b: bla) {
-        b.j = 123
-        return b.i
-}
+        class C : A {
+            fn new() {
+                this.i = 567
+            }
 
-fn main() {
-        var r = test2(test())
-        return piz(r) + r.k + r.j
-}
+            var e = 8i64
+            var q = 53i16
+        }
+
+        fn main() {
+            var i : A = B()
+            return i.i
+        }

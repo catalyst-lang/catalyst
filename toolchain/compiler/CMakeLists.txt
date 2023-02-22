@@ -14,8 +14,12 @@ add_library(libcompiler
     src/codegen/decl.hpp 
     src/codegen/decl_type.cpp 
     src/codegen/decl_type.hpp 
-    src/codegen/decl_struct.cpp 
-    src/codegen/decl_class.cpp 
+    src/codegen/object/struct/decl_struct.cpp 
+    src/codegen/object/struct/struct_type.cpp 
+    src/codegen/object/class/decl_class.cpp 
+    src/codegen/object/class/class_type.cpp 
+    src/codegen/object/object_type.cpp 
+    src/codegen/object/object_type.hpp 
     src/codegen/stmt.cpp 
     src/codegen/stmt.hpp 
     src/codegen/value.hpp 
@@ -71,6 +75,7 @@ add_executable(test-compiler
     tests/types.cpp
     tests/branching.cpp
     tests/scopes.cpp
+    tests/inheritance.cpp
 )
 target_compile_features(test-compiler PRIVATE cxx_std_20)
 target_link_libraries(test-compiler PUBLIC libcompiler)

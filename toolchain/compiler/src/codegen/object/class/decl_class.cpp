@@ -10,19 +10,18 @@
 
 #include "catalyst/rtti.hpp"
 
-#include "decl.hpp"
-#include "decl_proto_pass.hpp"
-#include "decl_type.hpp"
-#include "expr.hpp"
-#include "expr_type.hpp"
+#include "../../decl.hpp"
+#include "../../decl_proto_pass.hpp"
+#include "../../decl_type.hpp"
+#include "../../expr.hpp"
+#include "../../expr_type.hpp"
 
 namespace catalyst::compiler::codegen {
 
 int proto_pass::process(ast::decl_class &decl) {
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 
-	if (n == 0 &&
-	    state.symbol_table.contains(key)) {
+	if (n == 0 && state.symbol_table.contains(key)) {
 		auto other = state.symbol_table[key];
 		state.report_message(report_type::error, "Class name already exists", &decl.ident);
 		state.report_message(report_type::info, "Previous declaration here", other.ast_node);
@@ -31,11 +30,12 @@ int proto_pass::process(ast::decl_class &decl) {
 
 	int changed_num = n == 0 ? 1 : 0;
 
-    auto class_type_shared_ptr = decl_get_type(state, decl);
-    auto class_type = (type_class*)class_type_shared_ptr.get();
+	auto class_type_shared_ptr = decl_get_type(state, decl);
+	auto class_type = (type_class *)class_type_shared_ptr.get();
 	class_type->name = key;
 
-	const auto [res, symbol_introduced] = state.symbol_table.try_emplace(key, &decl, nullptr, class_type_shared_ptr);
+	const auto [res, symbol_introduced] =
+		state.symbol_table.try_emplace(key, &decl, nullptr, class_type_shared_ptr);
 
 	return changed_num;
 }
@@ -45,16 +45,19 @@ int proto_pass::process_after(ast::decl_class &decl) {
 
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 	auto &sym = state.symbol_table[key];
-    auto s = (type_class*)sym.type.get();
+	auto s = (type_class *)sym.type.get();
 
 	auto class_type_shared_ptr = decl_get_type(state, decl);
-    auto class_type = (type_class*)class_type_shared_ptr.get();
+	auto class_type = (type_class *)class_type_shared_ptr.get();
 
 	state.scopes.enter(decl.ident.name);
 
 	for (auto &member : class_type->members) {
 		if (isa<type_function>(member.type)) {
-			member.type = state.symbol_table[state.scopes.get_fully_qualified_scope_name(member.name)].type;
+			auto key = state.scopes.get_fully_qualified_scope_name(member.name);
+			if (state.symbol_table.contains(key)) {
+				member.type = state.symbol_table[key].type;
+			}
 		}
 	}
 
@@ -67,33 +70,47 @@ int proto_pass::process_after(ast::decl_class &decl) {
 		s->copy_from(*class_type);
 		changes++;
 	}
-	
+
 	if (!s->init_function) {
 		// create class init function
-		auto *FT = llvm::FunctionType::get(llvm::Type::getVoidTy(*state.TheContext), { state.Builder.getPtrTy() }, false);
-		s->init_function = 
-			llvm::Function::Create(FT, llvm::Function::ExternalLinkage, key + "..__CATA_INIT", state.TheModule.get());
+		auto *FT = llvm::FunctionType::get(llvm::Type::getVoidTy(*state.TheContext),
+		                                   {state.Builder.getPtrTy()}, false);
+		s->init_function = llvm::Function::Create(FT, llvm::Function::ExternalLinkage,
+		                                          key + "..__CATA_INIT", state.TheModule.get());
 		s->init_function->setDSOLocal(true);
 		changes++;
 	}
 
 	// Super class (inheritance)
-	if (decl.super.has_value()) {
+	/*if (decl.super.has_value()) {
 		auto super_name = decl.super.value().ident.name;
 		auto super_sym = state.scopes.find_named_symbol(super_name);
+		// if (!super_sym) {
+		// 	state.report_message(report_type::error,
+		// 	                     std::string("Undefined class `") + super_name + "`",
+		// 	                     &decl.super.value());
+		// 	return 0;
+		// }
 		if (!super_sym) {
-			state.report_message(report_type::error, std::string("Undefined class `") + super_name + "`", &decl.super.value());
-			return 0;
+			s->super = nullptr;
 		}
-		if (!isa<type_class>(super_sym->type)) {
-			state.report_message(report_type::error, std::string("`") + super_name + "` is not a valid parent class", &decl.super.value());
-			return 0;
+		// if (!isa<type_class>(super_sym->type)) {
+		// 	state.report_message(report_type::error,
+		// 	                     std::string("`") + super_name + "` is not a valid parent class",
+		// 	                     &decl.super.value());
+		// 	return 0;
+		// }
+		else if (!isa<type_class>(super_sym->type)) {
+			s->super = type_class::unknown();
 		}
-		if (s->super.get() != super_sym->type.get()) {
+		 else if (s->super.get() != super_sym->type.get()) {
 			s->super = std::static_pointer_cast<type_class>(super_sym->type);
 			changes++;
+		} else {
+			// should not happen
+			s->super = nullptr;
 		}
-	}
+	}*/
 
 	return changes;
 }
@@ -103,25 +120,32 @@ void codegen(codegen::state &state, ast::decl_class &decl) {
 	auto &sym = state.symbol_table[key];
 	auto type = (type_class *)sym.type.get();
 
-    // auto llvm_type = type->get_llvm_type(state);
+	// auto llvm_type = type->get_llvm_type(state);
 
-    // auto structAlloca = state.Builder.CreateAlloca(llvm_type);
+	// auto structAlloca = state.Builder.CreateAlloca(llvm_type);
 
 	// create class init function
 	auto this_ = type->init_function->getArg(0);
 	auto *BB = llvm::BasicBlock::Create(*state.TheContext, "init", type->init_function);
-	
+
 	state.scopes.enter(decl.ident.name);
 
+	if (type->super) {
+		state.Builder.SetInsertPoint(BB);
+		state.Builder.CreateCall(type->super->init_function, {this_});
+	}
+
 	for (auto &member : type->members) {
-		if (isa<type_function>(member.type)) {
+		if (isa<ast::decl_fn>(member.decl)) {
 			codegen(state, member.decl);
 		} else if (isa<ast::decl_var>(member.decl)) {
 			state.Builder.SetInsertPoint(BB);
-			auto decl = (ast::decl_var*)member.decl.get();
+			auto decl = (ast::decl_var *)member.decl.get();
 
-			int index = type->index_of(member.name);
-			auto ptr = state.Builder.CreateStructGEP(type->get_llvm_struct_type(state), this_, index);
+			auto member_loc = type->get_member(member.name);
+			auto ptr = state.Builder.CreateStructGEP(
+				member_loc.residence->get_llvm_struct_type(state), this_,
+				member_loc.residence->get_member_index_in_llvm_struct(member_loc));
 
 			if (decl->expr.has_value() && decl->expr.value() != nullptr) {
 				codegen_assignment(state, ptr, member.type, decl->expr.value());
@@ -140,9 +164,17 @@ void codegen(codegen::state &state, ast::decl_class &decl) {
 
 	state.scopes.leave();
 
-	state.FPM->run(*type->init_function);
-
+	std::string err;
+	llvm::raw_string_ostream err_output(err);
+	if (!llvm::verifyFunction(*type->init_function, &err_output)) {
+		state.FPM->run(*type->init_function);
+	} else {
+		// Error reading body, remove function.
+		state.report_message(report_type::error, err, &decl);
+		type->init_function->print(llvm::errs());
+		type->init_function->eraseFromParent();
+		type->init_function = nullptr;
+	}
 }
-
 
 } // namespace catalyst::compiler::codegen

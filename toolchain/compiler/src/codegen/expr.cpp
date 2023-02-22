@@ -189,29 +189,29 @@ llvm::Value *structure_to_pointer(codegen::state &state, llvm::Value *struct_val
 	return ptr;
 }
 
-llvm::Value *codegen_call_new(codegen::state &state, symbol *sym, ast::expr_call &expr,
-                              llvm::Value *this_) {
-	if (!sym) {
+llvm::Value *codegen_call_new(codegen::state &state, std::shared_ptr<type> stype,
+                              ast::expr_call &expr, llvm::Value *this_) {
+	if (!stype) {
 		return nullptr;
 	}
 
-	if (!isa<type_custom>(sym->type)) {
+	if (!isa<type_custom>(stype)) {
 		// should never happen, but just to be sure we report an error if somebody calls this
 		// function in the future with a non type_custom type.
 		state.report_message(report_type::error,
 		                     "Constructor call performed on non-constructor function", &expr);
 		return nullptr;
 	}
-	auto sym_c = (type_custom *)sym->type.get();
+	auto sym_c = (type_custom *)stype.get();
 
 	llvm::Value *new_object = nullptr;
 
-	if (isa<type_struct>(sym->type)) {
+	if (isa<type_struct>(stype)) {
 		new_object = state.Builder.CreateAlloca(sym_c->get_llvm_type(state), nullptr, "new");
-	} else if (isa<type_class>(sym->type)) {
+	} else if (isa<type_class>(stype)) {
 		// new_object = state.Builder.CreateAlloca(sym_c->get_llvm_type(state), nullptr, "new");
 		new_object = state.Builder.CreateCall(state.target->get_malloc(),
-		                                      {sym->type->get_sizeof(state)}, "instance");
+		                                      {stype->get_sizeof(state)}, "instance");
 	} else {
 		state.report_message(report_type::error, "TODO " CATALYST_AT, &expr);
 		return nullptr;
@@ -234,27 +234,28 @@ llvm::Value *codegen_call_new(codegen::state &state, symbol *sym, ast::expr_call
 	return new_object;
 }
 
-llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &expr,
-                          llvm::Value *this_, std::shared_ptr<type> expecting_type) {
-	if (!sym)
+llvm::Value *codegen_call(codegen::state &state, std::shared_ptr<codegen::type> stype,
+                          llvm::Value *value, ast::expr_call &expr, llvm::Value *this_,
+                          std::shared_ptr<type> expecting_type) {
+	if (!stype)
 		return nullptr;
 	llvm::Function *CalleeF;
-	if (isa<type_function>(sym->type)) {
-		CalleeF = (llvm::Function *)sym->value;
+	if (isa<type_function>(stype)) {
+		CalleeF = (llvm::Function *)value;
 		if (!CalleeF) {
 			state.report_message(report_type::error,
 			                     "Unknown function referenced (symbol undefined)", &expr);
 			return nullptr;
 		}
-	} else if (isa<type_custom>(sym->type)) {
+	} else if (isa<type_custom>(stype)) {
 		// constructor
-		return codegen_call_new(state, sym, expr, this_);
+		return codegen_call_new(state, stype, expr, this_);
 	} else {
 		state.report_message(report_type::error, "Unknown function referenced", &expr);
 		return nullptr;
 	}
 
-	auto type = (type_function *)sym->type.get();
+	auto type = (type_function *)stype.get();
 
 	// If argument mismatch error.
 	if (type->parameters.size() != expr.parameters.size()) {
@@ -294,17 +295,18 @@ llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &ex
 	}
 
 	llvm::CallInst *callinstr = nullptr;
-	if (llvm::isa<llvm::Function>(sym->value)) {
+	if (llvm::isa<llvm::Function>(value)) {
 		// This is a straight function value
 		if (isa<type_void>(type->return_type)) {
 			callinstr = state.Builder.CreateCall(CalleeF, ArgsV);
 		} else {
 			callinstr = state.Builder.CreateCall(CalleeF, ArgsV, "calltmp");
 		}
-	} else if (llvm::isa<llvm::AllocaInst>(sym->value)) {
+	} else if (llvm::isa<llvm::UnaryInstruction>(value) ||
+	           llvm::isa<llvm::GetElementPtrInst>(value)) {
 		// This is a function pointer
-		llvm::Value *ptr = state.Builder.CreateLoad(sym->value->getType(), sym->value);
-		auto *fty = (llvm::FunctionType *)sym->type->get_llvm_type(state);
+		llvm::Value *ptr = state.Builder.CreateLoad(value->getType(), value);
+		auto *fty = (llvm::FunctionType *)stype->get_llvm_type(state);
 		if (isa<type_void>(type->return_type)) {
 			callinstr = state.Builder.CreateCall(fty, ptr, ArgsV);
 		} else {
@@ -334,6 +336,13 @@ llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &ex
 		}
 	}
 	return callinstr;
+}
+
+llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &expr,
+                          llvm::Value *this_, std::shared_ptr<type> expecting_type) {
+	if (!sym)
+		return nullptr;
+	return codegen_call(state, sym->type, sym->value, expr, this_, expecting_type);
 }
 
 llvm::Value *codegen(codegen::state &state, ast::expr_call &expr,
@@ -375,17 +384,18 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 			return nullptr;
 		}
 
-		int index = lhs_custom->index_of(ident->name);
-
 		if (llvm::isa<llvm::StructType>(lhs_value->getType())) {
 			// we expect a pointer, but we got a structure value
 			lhs_value = structure_to_pointer(state, lhs_value);
 		}
 
-		auto ptr = state.Builder.CreateStructGEP(lhs_custom->get_llvm_struct_type(state), lhs_value,
-		                                         index);
+		auto member_loc = lhs_custom->get_member(ident->name);
 
-		auto rhs_type = lhs_custom->members[index].type;
+		auto ptr = state.Builder.CreateStructGEP(
+			member_loc.residence->get_llvm_struct_type(state), lhs_value,
+			member_loc.residence->get_member_index_in_llvm_struct(member_loc));
+
+		auto rhs_type = member_loc.member->type;
 		if (isa<type_object>(rhs_type) && (!expecting_type || !isa<type_object>(expecting_type))) {
 			auto to = (type_object *)rhs_type.get();
 			if (isa<type_struct>(to->object_type)) {
@@ -407,11 +417,31 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 		}
 
 		auto &ident = ((ast::expr_ident *)call->lhs.get())->ident;
-		auto sym = find_function_overload(state, lhs_custom->name + "." + ident.name, *call,
-		                                  expecting_type);
-		auto this_ = lhs_value;
 
-		return codegen_call(state, sym, *call, this_, expecting_type);
+		auto member_loc = lhs_custom->get_member(ident.name);
+		if (isa<ast::decl_fn>(member_loc.member->decl)) {
+			auto sym = find_function_overload(
+				state, member_loc.residence->name + "." + member_loc.member->name, *call,
+				expecting_type);
+			auto this_ = lhs_value;
+			return codegen_call(state, sym, *call, this_, expecting_type);
+		} else {
+			if (!isa<type_function>(member_loc.member->type)) {
+				state.report_message(report_type::error,
+				                     std::string("`") + ident.name + "` is not a callable",
+				                     member_loc.member->decl.get());
+				return nullptr;
+			} else {
+				auto ptr = state.Builder.CreateStructGEP(
+					member_loc.residence->get_llvm_struct_type(state), lhs_value,
+					member_loc.residence->get_member_index_in_llvm_struct(member_loc));
+
+				// auto this_ = lhs_value;
+				//  no this available on such call
+				return codegen_call(state, member_loc.member->type, ptr, *call, nullptr,
+				                    expecting_type);
+			}
+		}
 	} else {
 		state.report_message(report_type::error, "Identifier or name expected", expr.rhs.get());
 		return nullptr;
@@ -430,8 +460,11 @@ void codegen_assignment(codegen::state &state, llvm::Value *dest_ptr,
 			rhs_value = new_rhs_value;
 		} else {
 			// TODO casting
-			state.report_message(report_type::warning,
-			                     "probably failing assignment due to type mismatch", rhs.get());
+			state.report_message(report_type::error,
+			                     std::string("Cannot assign value of type `") +
+			                         rhs_type->get_fqn() + "` where type `" + dest_type->get_fqn() +
+			                         "` is expected",
+			                     rhs.get());
 			return;
 		}
 	}

@@ -47,7 +47,7 @@ struct state {
 	llvm::Function *current_function = nullptr;
 	llvm::AllocaInst *current_return = nullptr;
 	llvm::BasicBlock *current_return_block = nullptr;
-	bool current_function_has_return = false;
+	bool current_function_has_return = false; // TODO: move this to the locals pass
 
 	int num_errors = 0;
 	int num_warnings = 0;

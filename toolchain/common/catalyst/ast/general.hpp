@@ -116,7 +116,7 @@ struct decl_struct : decl {
 struct decl_class : decl {
 	decl_class(const parser::char_type *begin, const parser::char_type *end, ast::ident &ident,
 	           std::optional<ast::type> super, std::vector<decl_ptr> declarations)
-		: decl(begin, end, ident), declarations(declarations) {}
+		: decl(begin, end, ident), declarations(declarations), super(super) {}
 
 	std::optional<ast::type> super = std::nullopt;
 	std::vector<decl_ptr> declarations;

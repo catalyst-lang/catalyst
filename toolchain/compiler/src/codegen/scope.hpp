@@ -85,7 +85,7 @@ struct scope_stack : public std::deque<scope> {
 		if (!exact_match) for (auto it = rbegin(); it != rend(); ++it) {
 			int i = 1;
 			auto potential_local_name = (*it).get_fully_qualified_scope_name(name);
-			auto key = potential_local_name; 
+			auto key = potential_local_name;
 			while (symbol_table->count(key) > 0) {
 				results.insert(&(*symbol_table)[key]);
 				key = potential_local_name + "`" + std::to_string(i++);

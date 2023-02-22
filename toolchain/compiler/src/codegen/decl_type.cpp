@@ -7,7 +7,8 @@
 namespace catalyst::compiler::codegen {
 
 std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_fn &decl) {
-	auto return_type = decl.type.has_value() ? type::create(state, decl.type.value()) : type::create_builtin();
+	auto return_type =
+		decl.type.has_value() ? type::create(state, decl.type.value()) : type::create_builtin();
 
 	std::vector<std::shared_ptr<type>> params;
 	for (const auto &param : decl.parameter_list) {
@@ -36,27 +37,40 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_va
 }
 
 std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_struct &decl) {
-    std::vector<member> members;
+	std::vector<member> members;
 	for (auto &mmbr : decl.declarations) {
 		auto type = decl_get_type(state, mmbr);
-		//if (auto fn = dynamic_cast<type_function*>(type.get())) {
+		// if (auto fn = dynamic_cast<type_function*>(type.get())) {
 		//	fn->is_method = true;
-		//}
+		// }
 		members.emplace_back(mmbr->ident.name, type, mmbr);
 	}
-    return type::create_struct(decl.ident.name, members);
+	return type::create_struct(decl.ident.name, members);
 }
 
 std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_class &decl) {
-    std::vector<member> members;
+	std::vector<member> members;
 	for (auto &mmbr : decl.declarations) {
 		auto type = decl_get_type(state, mmbr);
-		//if (auto fn = dynamic_cast<type_function*>(type.get())) {
+		// if (auto fn = dynamic_cast<type_function*>(type.get())) {
 		//	fn->is_method = true;
-		//}
+		// }
 		members.emplace_back(mmbr->ident.name, type, mmbr);
 	}
-    return type::create_class(decl.ident.name, members);
+	if (decl.super.has_value()) {
+		auto super_name = decl.super.value().ident.name;
+		auto super_sym = state.scopes.find_named_symbol(super_name);
+		if (!super_sym) {
+			return type::create_class(decl.ident.name, type_class::unknown(), members);
+		}
+		if (!isa<type_class>(super_sym->type)) {
+			state.report_message(report_type::error, "Unexpected base class", &decl.super.value());
+		}
+		auto super_class = std::static_pointer_cast<type_class>(super_sym->type);
+		return type::create_class(decl.ident.name, super_class, members);
+	} else {
+		return type::create_class(decl.ident.name, members);
+	}
 }
 
 std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, const ast::decl_ptr &decl) {
@@ -70,7 +84,7 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, const ast::d
 		return decl_get_type(state, *(ast::decl_class *)decl.get());
 	} else {
 		state.report_message(report_type::error, "Decl type not implemented", decl.get());
-        return nullptr;
+		return nullptr;
 	}
 }
 
