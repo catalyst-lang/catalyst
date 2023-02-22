@@ -35,17 +35,36 @@ struct ident : parser::ast_node {
 struct type : parser::ast_node {
 	explicit type(parser::char_type const *begin, parser::char_type const *end)
 		: parser::ast_node(begin, end) {}
-	
+
 	virtual ~type() = default;
 };
 
 using type_ptr = std::shared_ptr<type>;
 
 struct type_ident : type {
-	explicit type_ident(parser::char_type const *begin, parser::char_type const *end, ident const &ident)
+	explicit type_ident(parser::char_type const *begin, parser::char_type const *end,
+	                    ident const &ident)
 		: type(begin, end), ident(ident) {}
 
 	ident ident;
+};
+
+struct type_function_parameter : parser::ast_node {
+	// fn_parameter(parser::char_type *begin, parser::char_type *end, ast::ident &ident,
+	//              std::optional<type> &type)
+	// 	: parser::ast_node(begin, end), ident(ident), type(type) {}
+	std::optional<ident> ident;
+	type_ptr type;
+};
+
+struct type_function : type {
+	explicit type_function(parser::char_type const *begin, parser::char_type const *end,
+	                       std::vector<ast::type_function_parameter> &parameter_list,
+	                       type_ptr &return_type)
+		: parameter_list(parameter_list), return_type(return_type), type(begin, end) {}
+
+	std::vector<ast::type_function_parameter> parameter_list;
+	type_ptr return_type;
 };
 
 struct decl : parser::ast_node {
@@ -62,14 +81,6 @@ struct fn_parameter : parser::ast_node {
 	// 	: parser::ast_node(begin, end), ident(ident), type(type) {}
 	ident ident;
 	std::optional<type_ptr> type;
-};
-
-struct type_function : type {
-	explicit type_function(parser::char_type const *begin, parser::char_type const *end, std::vector<ast::fn_parameter> &parameter_list, type_ptr &return_type)
-		: parameter_list(parameter_list), return_type(return_type), type(begin, end) {}
-
-	std::vector<ast::fn_parameter> parameter_list;
-	type_ptr return_type;
 };
 
 struct fn_body_block : parser::ast_node {

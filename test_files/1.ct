@@ -1,26 +1,4 @@
-        class A {
-            var i = 91i32
-        }
-
-        class B : A {
-            fn new() {
-                this.i = 321
-            }
-
-            var j = 2i64
-            var k = 65i16
-        }
-
-        class C : A {
-            fn new() {
-                this.i = 567
-            }
-
-            var e = 8i64
-            var q = 53i16
-        }
-
-        fn main() {
-            var i : A = B()
-            return i.i
-        }
+fn main() {
+    var a : (num: i64, ll i32)  ->    i64
+    return 5
+}

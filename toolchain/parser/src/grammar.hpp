@@ -84,11 +84,51 @@ struct ident : lexy::token_production {
 	});
 };
 
-struct type : lexy::token_production {
+struct type;
+
+struct type_ident : lexy::token_production {
 	static constexpr auto rule = dsl::position + dsl::p<ident> + dsl::position;
-	static constexpr auto value = lexy::callback<ast::type_ptr>([](auto begin, auto ident, auto end) {
-		return std::make_shared<ast::type_ident>((parser::char_type *)begin, (parser::char_type *)end, ident);
-	});
+	static constexpr auto value =
+		lexy::callback<ast::type_ptr>([](auto begin, auto ident, auto end) {
+			return std::make_shared<ast::type_ident>((parser::char_type *)begin,
+		                                             (parser::char_type *)end, ident);
+		});
+};
+
+struct type_function_parameter {
+	static constexpr auto rule =
+		dsl::position +
+		dsl::opt(dsl::peek(dsl::p<ident> + dsl::colon) >> dsl::p<ident> + dsl::colon) +
+		dsl::recurse<type> + dsl::position;
+	static constexpr auto value = lexy::callback<ast::type_function_parameter>(
+		[](auto begin, auto ident, auto type, auto end) {
+			return ast::type_function_parameter{{begin, end}, ident, type};
+		});
+};
+
+struct type_function_parameter_list {
+	static constexpr auto whitespace = whitespace_incl_nl;
+	static constexpr auto rule =
+		dsl::round_bracketed.opt_list(dsl::p<type_function_parameter>, dsl::sep(dsl::comma));
+	static constexpr auto value = lexy::as_list<std::vector<ast::type_function_parameter>>;
+};
+
+struct type_function : lexy::token_production {
+	static constexpr auto rule = dsl::peek(dsl::lit_c<'('>) >>
+	                             dsl::position + dsl::p<type_function_parameter_list> +
+	                                 (LEXY_LIT("->") >> dsl::recurse<type>)+dsl::position;
+	static constexpr auto value = lexy::callback<ast::type_ptr>(
+		[](auto begin, auto params, auto ret_type, auto end) {
+			return std::make_shared<ast::type_function>((parser::char_type *)begin,
+		                                                (parser::char_type *)end, params, ret_type);
+		});
+};
+
+struct type : lexy::transparent_production {
+	static constexpr auto whitespace = whitespace_normal;
+	static constexpr auto name = "type";
+	static constexpr auto rule = (dsl::p<type_function> | dsl::else_ >> dsl::p<type_ident>);
+	static constexpr auto value = lexy::forward<ast::type_ptr>;
 };
 
 struct expr_ident : lexy::token_production {
@@ -460,9 +500,10 @@ struct decl_fn {
 	                                 + dsl::p<fn_body>;
 
 	// static constexpr auto value = lexy::construct<ast::decl_fn>;
-	static constexpr auto value = lexy::callback<ast::decl_ptr>( 
+	static constexpr auto value = lexy::callback<ast::decl_ptr>(
 		[](auto begin, auto ident, auto parameter_list, lexy::nullopt, auto end, auto body) {
-			return std::make_shared<ast::decl_fn>(begin, end, ident, parameter_list, std::nullopt, body);
+			return std::make_shared<ast::decl_fn>(begin, end, ident, parameter_list, std::nullopt,
+		                                          body);
 		},
 		[](auto begin, auto ident, auto parameter_list, auto type, auto end, auto body) {
 			return std::make_shared<ast::decl_fn>(begin, end, ident, parameter_list, type, body);
