@@ -16,7 +16,9 @@ TEST_CASE("type: void") {
             return a
         }
     )catalyst_source", opts);
+    std::cout.setstate(std::ios_base::failbit);
 	auto ret = compiler::run<int32_t>(result);
+    std::cout.clear();
     REQUIRE(result.is_successful);
 }
 
