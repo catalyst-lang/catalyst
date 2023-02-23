@@ -93,6 +93,7 @@ struct type_qualified_name_list : lexy::transparent_production {
 };
 
 struct type_qualified_name : lexy::token_production {
+	static constexpr auto name = "qualified type name";
 	static constexpr auto rule =
 		dsl::position + dsl::p<type_qualified_name_list> + dsl::position;
 	static constexpr auto value =
@@ -102,7 +103,7 @@ struct type_qualified_name : lexy::token_production {
 		});
 };
 
-struct type_function_parameter {
+struct type_function_parameter : lexy::transparent_production {
 	static constexpr auto rule =
 		dsl::position +
 		dsl::opt(dsl::peek(dsl::p<ident> + dsl::colon) >> dsl::p<ident> + dsl::colon) +
@@ -113,7 +114,7 @@ struct type_function_parameter {
 		});
 };
 
-struct type_function_parameter_list {
+struct type_function_parameter_list : lexy::transparent_production {
 	static constexpr auto whitespace = whitespace_incl_nl;
 	static constexpr auto rule =
 		dsl::round_bracketed.opt_list(dsl::p<type_function_parameter>, dsl::sep(dsl::comma));
@@ -121,6 +122,7 @@ struct type_function_parameter_list {
 };
 
 struct type_function : lexy::token_production {
+	static constexpr auto name = "function type";
 	static constexpr auto rule = dsl::peek(dsl::lit_c<'('>) >>
 	                             dsl::position + dsl::p<type_function_parameter_list> +
 	                                 (LEXY_LIT("->") >> dsl::recurse<type>)+dsl::position;
@@ -266,13 +268,14 @@ struct nested_expr : lexy::transparent_production {
 	static constexpr auto value = lexy::forward<ast::expr_ptr>;
 };
 
-struct expr_with_whitespace {
+struct expr_with_whitespace : lexy::transparent_production {
 	static constexpr auto whitespace = whitespace_incl_nl;
 	static constexpr auto rule = dsl::recurse<expr>;
 	static constexpr auto value = lexy::forward<ast::expr_ptr>;
 };
 
 struct argument_list {
+	static constexpr auto name = "argument list";
 	static constexpr auto rule =
 		dsl::terminator(dsl::lit_c<')'>)
 			.opt_list(dsl::recurse<expr_with_whitespace>, dsl::sep(dsl::comma));
@@ -360,6 +363,7 @@ struct expr : lexy::expression_production {
 };
 
 struct statement_return {
+	static constexpr auto name = "return statement";
 	static constexpr auto
 		rule = dsl::peek(kw_return) >> dsl::position + kw_return >>
 	           (dsl::peek(dsl::semicolon | dsl::newline | dsl::lit_c<'}'>).error<expected_nl_sc> |
@@ -375,6 +379,7 @@ struct statement_return {
 };
 
 struct statement_expr {
+	static constexpr auto name = "expression statement";
 	static constexpr auto rule = dsl::p<expr>;
 	static constexpr auto value = lexy::callback<ast::statement_ptr>(
 		[](auto expr) { return std::make_shared<ast::statement_expr>(expr); });
@@ -383,6 +388,7 @@ struct statement_expr {
 struct decl;
 
 struct statement_decl {
+	static constexpr auto name = "declaration statement";
 	static constexpr auto rule = dsl::recurse_branch<decl>;
 	static constexpr auto value = lexy::callback<ast::statement_ptr>(
 		[](auto decl) { return std::make_shared<ast::statement_decl>(decl); });
@@ -390,6 +396,7 @@ struct statement_decl {
 
 // TODO: if statement is now always a block, this should optionally be a single statement
 struct statement_if {
+	static constexpr auto name = "if statement";
 	static constexpr auto rule = kw_if >> dsl::p<expr> + dsl::position +
 	                                          dsl::recurse<struct statement_block> +
 	                                          dsl::opt(kw_else >> dsl::recurse<struct statement>);
@@ -403,6 +410,7 @@ struct statement_if {
 };
 
 struct statement_for {
+	static constexpr auto name = "for statement";
 	static constexpr auto rule = kw_for >> dsl::p<ident> + kw_in + dsl::p<expr> + LEXY_LIT("..") >>
 	                             dsl::p<expr> + dsl::position + dsl::recurse<struct statement>;
 	static constexpr auto value = lexy::callback<ast::statement_ptr>(
@@ -413,6 +421,7 @@ struct statement_for {
 };
 
 struct statement_block {
+	static constexpr auto name = "block";
 	static constexpr auto rule = [] {
 		auto item = dsl::recurse<statement>;
 		auto sep = dsl::trailing_sep(dsl::while_one(dsl::semicolon | dsl::newline));
@@ -433,7 +442,6 @@ struct statement_block {
 };
 
 struct statement : lexy::transparent_production {
-
 	static constexpr auto name = "statement";
 	static constexpr auto rule =
 		dsl::position +
@@ -485,6 +493,7 @@ struct fn_body : lexy::transparent_production {
 };
 
 struct fn_parameter {
+	static constexpr auto name = "parameter";
 	static constexpr auto rule =
 		dsl::position + dsl::p<ident> + dsl::opt(dsl::colon >> dsl::p<type>) + dsl::position;
 	static constexpr auto value =
@@ -494,6 +503,7 @@ struct fn_parameter {
 };
 
 struct parameter_list {
+	static constexpr auto name = "parameter list";
 	static constexpr auto whitespace = whitespace_incl_nl;
 	static constexpr auto rule =
 		dsl::round_bracketed.opt_list(dsl::p<fn_parameter>, dsl::sep(dsl::comma));
@@ -502,7 +512,6 @@ struct parameter_list {
 
 struct decl_fn {
 	static constexpr auto name = "function declaration";
-
 	static constexpr auto rule = kw_fn >>
 	                             dsl::position + dsl::p<ident> + dsl::p<parameter_list> +
 	                                 dsl::opt(LEXY_LIT("->") >> dsl::p<type>) + dsl::position
@@ -521,7 +530,6 @@ struct decl_fn {
 
 struct decl_var {
 	static constexpr auto name = "variable declaration";
-
 	static constexpr auto rule = kw_var >> dsl::p<ident> +
 	                                           dsl::opt(dsl::colon >> dsl::p<type>) + dsl::position
 	                                           + dsl::opt(dsl::equal_sign >> dsl::p<expr>);
@@ -546,6 +554,7 @@ struct decl_var {
 
 // TODO: refactor this into decl_var
 struct decl_const {
+	static constexpr auto name = "constant declaration";
 	static constexpr auto rule = kw_const >>
 	                             dsl::p<ident> +
 	                                 dsl::opt(dsl::colon >> dsl::p<type>) + dsl::position
@@ -573,6 +582,7 @@ struct decl_list_sep : lexy::transparent_production {
 };
 
 struct decl_list {
+	static constexpr auto name = "declarations";
 	// static constexpr auto whitespace = whitespace_incl_nl;
 	static constexpr auto rule = dsl::curly_bracketed.opt_list(
 		dsl::p<decl_list_sep> + dsl::recurse<decl>,
@@ -581,6 +591,7 @@ struct decl_list {
 };
 
 struct decl_struct {
+	static constexpr auto name = "struct declaration";
 	static constexpr auto rule = kw_struct >> dsl::p<ident> + dsl::p<decl_list> + dsl::position;
 
 	static constexpr auto value =
@@ -590,6 +601,7 @@ struct decl_struct {
 };
 
 struct decl_class {
+	static constexpr auto name = "class declaration";
 	static constexpr auto
 		rule = kw_class >>
 	           dsl::p<ident> +
@@ -606,6 +618,7 @@ struct decl_class {
 };
 
 struct decl_ns {
+	static constexpr auto name = "namespace declaration";
 	static constexpr auto rule = kw_ns >>
 	                             dsl::p<ident> + dsl::opt(dsl::p<decl_list>) + dsl::position;
 
@@ -633,6 +646,7 @@ struct decl_sep : lexy::transparent_production {
 
 // Entry point of the production.
 struct translation_unit {
+	static constexpr auto name = "the input";
 	static constexpr auto whitespace = whitespace_normal;
 
 	static constexpr auto rule = dsl::terminator(dsl::eof).list(
