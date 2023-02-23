@@ -40,7 +40,7 @@ state::state()
 		state.report_message(report_type::info, "Compilation stopped due to errors");\
 		return;\
 	}\
-}
+}0
 
 void codegen(codegen::state &state, ast::translation_unit &tu) {
 	// check for global namespace decl

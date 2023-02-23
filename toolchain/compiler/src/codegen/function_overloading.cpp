@@ -37,10 +37,16 @@ symbol *find_function_overload(codegen::state &state, const std::string &name, a
 	};
 
 	auto check_return_type = [&](symbol *symbol) {
-		auto type = (type_function *)symbol->type.get();
-		if (!expecting_return_type->is_assignable_from(type->return_type))
-			return true;
-		return false;
+		if (isa<type_custom>(symbol->type)) {
+			if (!expecting_return_type->is_assignable_from(symbol->type))
+				return true;
+			return false;
+		} else {
+			auto type = (type_function *)symbol->type.get();
+			if (!expecting_return_type->is_assignable_from(type->return_type))
+				return true;
+			return false;
+		}
 	};
 
 	auto check_exact_return_type = [&](symbol *symbol) {
@@ -74,7 +80,7 @@ symbol *find_function_overload(codegen::state &state, const std::string &name, a
 			state.report_message(report_type::help, "Consider making types explicit.");
 		} else {
 			std::erase_if(symbols, check_return_type);
-			if (exact_symbols.size() == 1) {
+			if (symbols.size() == 1) {
 				// we've found exactly 1 exact match. Winner!
 				return *exact_symbols.begin();
 			}

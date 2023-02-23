@@ -445,6 +445,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 			auto this_ = lhs_value;
 			return codegen_call(state, sym, *call, this_, expecting_type);
 		} else {
+			// function pointer
 			if (!isa<type_function>(member_loc.member->type)) {
 				state.report_message(report_type::error,
 				                     std::string("`") + ident.name + "` is not a callable",

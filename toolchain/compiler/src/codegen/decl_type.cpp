@@ -45,7 +45,8 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_st
 		// }
 		members.emplace_back(mmbr->ident.name, type, mmbr);
 	}
-	return type::create_struct(decl.ident.name, members);
+	return type::create_struct(
+		state.current_scope().get_fully_qualified_scope_name(decl.ident.name), members);
 }
 
 std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_class &decl) {
@@ -55,23 +56,25 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_cl
 		members.emplace_back(mmbr->ident.name, type, mmbr);
 	}
 
+	auto fqn = state.current_scope().get_fully_qualified_scope_name(decl.ident.name);
 	if (decl.super.has_value()) {
 		if (!isa<ast::type_qualified_name>(decl.super.value())) {
-			return type::create_class(decl.ident.name, type_class::unknown(), members);
+			return type::create_class(fqn, type_class::unknown(), members);
 		}
 
 		auto super_qn = std::static_pointer_cast<ast::type_qualified_name>(decl.super.value());
 		auto super_sym = state.scopes.find_named_symbol(*super_qn);
 		if (!super_sym) {
-			return type::create_class(decl.ident.name, type_class::unknown(), members);
+			return type::create_class(fqn, type_class::unknown(), members);
 		}
 		if (!isa<type_class>(super_sym->type)) {
-			state.report_message(report_type::error, "Unexpected base class", decl.super.value().get());
+			state.report_message(report_type::error, "Unexpected base class",
+			                     decl.super.value().get());
 		}
 		auto super_class = std::static_pointer_cast<type_class>(super_sym->type);
-		return type::create_class(decl.ident.name, super_class, members);
+		return type::create_class(fqn, super_class, members);
 	} else {
-		return type::create_class(decl.ident.name, members);
+		return type::create_class(fqn, members);
 	}
 }
 

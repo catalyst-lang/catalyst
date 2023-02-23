@@ -62,10 +62,9 @@ bool type_object::is_assignable_from(const std::shared_ptr<type> &type) const {
 		auto base_class = std::static_pointer_cast<type_class>(object_type);
 		if (isa<type_class>(type)) {
 			auto descending_class = std::static_pointer_cast<type_class>(type);
-			auto d_super = descending_class->super;
-			while (d_super.get() != nullptr && d_super.get() != base_class.get())
-				d_super = d_super->super;
-			return d_super.get() == base_class.get();
+			while (descending_class.get() != nullptr && descending_class.get() != base_class.get())
+				descending_class = descending_class->super;
+			return descending_class.get() == base_class.get();
 		}
 	}
 

@@ -32,7 +32,7 @@ int proto_pass::process(ast::decl_class &decl) {
 
 	auto class_type_shared_ptr = decl_get_type(state, decl);
 	auto class_type = (type_class *)class_type_shared_ptr.get();
-	class_type->name = key;
+	class_type->name = key; // TODO: is there a case where these are not the same???
 
 	const auto [res, symbol_introduced] =
 		state.symbol_table.try_emplace(key, &decl, nullptr, class_type_shared_ptr);

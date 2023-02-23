@@ -105,7 +105,7 @@ struct scope_stack : public std::deque<scope> {
 		return find_named_symbol(name.to_string(), exact_match);
 	}
 
-	std::set<symbol *> find_overloaded_symbol(const std::string &name, bool exact_match = false) {
+	std::set<symbol *> find_overloaded_symbol(const std::string &name, bool exact_match = false, bool look_in_multiple_scopes = false) {
 		std::set<symbol *> results;
 
 		if (!exact_match)
@@ -117,6 +117,7 @@ struct scope_stack : public std::deque<scope> {
 					results.insert(&(*symbol_table)[key]);
 					key = potential_local_name + "`" + std::to_string(i++);
 				}
+				if (!look_in_multiple_scopes && results.size() > 0) break;
 			}
 		if (symbol_table->count(name) > 0) {
 			int i = 1;
