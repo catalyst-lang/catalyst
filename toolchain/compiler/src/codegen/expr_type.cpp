@@ -241,6 +241,15 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_membe
                                           std::shared_ptr<type> expecting_type) {
 	auto lhs_type = expr_resulting_type(state, expr.lhs);
 
+	if (isa<type_ns>(lhs_type)) {
+		auto current_scope = state.current_scope().get_fully_qualified_scope_name();
+		state.scopes.enter_ns(std::static_pointer_cast<type_ns>(lhs_type));
+		auto rhs_type = expr_resulting_type(state, expr.rhs);
+		state.scopes.leave();
+		state.scopes.enter_fqn(current_scope);
+		return rhs_type;
+	}
+
 	if (!isa<type_object>(lhs_type)) {
 		return type::create_builtin();
 	}

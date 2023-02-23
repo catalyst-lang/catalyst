@@ -45,6 +45,8 @@ int pass::walk(ast::decl *decl) {
 		return walk(*(ast::decl_struct *)decl);
 	} else if (isa<ast::decl_class>(decl)) {
 		return walk(*(ast::decl_class *)decl);
+	} else if (isa<ast::decl_ns>(decl)) {
+		return walk(*(ast::decl_ns *)decl);
 	}
 	state.report_message(report_type::error, "Choices exhausted", decl);
 	return 0;
@@ -87,6 +89,17 @@ int pass::walk(ast::decl_struct &decl) {
 }
 
 int pass::walk(ast::decl_class &decl) {
+	int res = process(decl);
+	state.scopes.enter(decl.ident.name);
+	for (auto &decl : decl.declarations) {
+		res += walk(decl);
+	}
+	state.scopes.leave();
+	res += process_after(decl);
+	return res;
+}
+
+int pass::walk(ast::decl_ns &decl) {
 	int res = process(decl);
 	state.scopes.enter(decl.ident.name);
 	for (auto &decl : decl.declarations) {

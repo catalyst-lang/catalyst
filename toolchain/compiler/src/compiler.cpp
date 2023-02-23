@@ -90,8 +90,13 @@ compile_result compile(catalyst::ast::translation_unit &tu, options options) {
 
 	compile_result result;
 	result.is_successful = state->num_errors == 0;
-	if (result.is_successful && state->symbol_table.contains("main")) {
-		auto sym_type = state->symbol_table["main"].type;
+
+	std::string main = "main";
+	if (!state->global_namespace.empty())
+		main = state->global_namespace + "." + main;
+
+	if (result.is_successful && state->symbol_table.contains(main)) {
+		auto sym_type = state->symbol_table[main].type;
 		if (catalyst::isa<codegen::type_function>(sym_type.get())) {
 			auto sym_fun = (codegen::type_function*)sym_type.get();
 			result.result_type_name = sym_fun->return_type->get_fqn();
@@ -124,9 +129,11 @@ compile_result compile_file(const std::string &filename, options options) {
 
 void compiler_debug_print(compile_result &result) {
 	auto state = std::static_pointer_cast<codegen::state>(result.state);
-	printf("Read module:\n");
-	state->TheModule->print(llvm::outs(), nullptr);
-	printf("\n");
+	if (state != nullptr && state->TheModule) {
+		printf("Read module:\n");
+		state->TheModule->print(llvm::outs(), nullptr);
+		printf("\n");
+	}
 }
 
 codegen::state &get_state(const compile_result &result) {
@@ -135,7 +142,12 @@ codegen::state &get_state(const compile_result &result) {
 
 template<typename T>
 T run(const compile_result &result) {
-	return run_jit<T>(get_state(result), "main");
+	auto &state = get_state(result);
+	std::string main = "main";
+
+	if (!state.global_namespace.empty())
+		main = state.global_namespace + "." + main;
+	return run_jit<T>(state, main);
 }
 
 template int8_t run(const compile_result &);

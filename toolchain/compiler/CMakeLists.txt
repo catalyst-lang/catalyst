@@ -76,6 +76,7 @@ add_executable(test-compiler
     tests/branching.cpp
     tests/scopes.cpp
     tests/inheritance.cpp
+    tests/namespaces.cpp
 )
 target_compile_features(test-compiler PRIVATE cxx_std_20)
 target_link_libraries(test-compiler PUBLIC libcompiler)

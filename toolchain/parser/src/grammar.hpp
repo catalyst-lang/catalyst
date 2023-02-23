@@ -39,6 +39,7 @@ constexpr auto kw_match = LEXY_KEYWORD("match", id);
 constexpr auto kw_mod = LEXY_KEYWORD("mod", id);
 constexpr auto kw_move = LEXY_KEYWORD("move", id);
 constexpr auto kw_mut = LEXY_KEYWORD("mut", id);
+constexpr auto kw_ns = LEXY_KEYWORD("ns", id);
 constexpr auto kw_pub = LEXY_KEYWORD("pub", id);
 constexpr auto kw_ref = LEXY_KEYWORD("ref", id);
 constexpr auto kw_return = LEXY_KEYWORD("return", id);
@@ -71,10 +72,10 @@ struct ident : lexy::token_production {
 	static constexpr auto rule = [] {
 		return id.reserve(kw_as, kw_break, kw_const, kw_continue, kw_crate, kw_else, kw_enum,
 		                  kw_extern, kw_false, kw_fn, kw_for, kw_if, kw_impl, kw_in, kw_let,
-		                  kw_loop, kw_match, kw_mod, kw_move, kw_mut, kw_pub, kw_ref, kw_return,
-		                  kw_self, kw_Self, kw_static, kw_struct, kw_class, kw_super, kw_trait,
-		                  kw_true, kw_type, kw_unsafe, kw_use, kw_var, kw_virtual, kw_where,
-		                  kw_while, kw_async, kw_await, kw_yield) |
+		                  kw_loop, kw_match, kw_mod, kw_move, kw_mut, kw_ns, kw_pub, kw_ref,
+		                  kw_return, kw_self, kw_Self, kw_static, kw_struct, kw_class, kw_super,
+		                  kw_trait, kw_true, kw_type, kw_unsafe, kw_use, kw_var, kw_virtual,
+		                  kw_where, kw_while, kw_async, kw_await, kw_yield) |
 		       dsl::error<expected_identifier>;
 	}();
 
@@ -86,12 +87,18 @@ struct ident : lexy::token_production {
 
 struct type;
 
-struct type_ident : lexy::token_production {
-	static constexpr auto rule = dsl::position + dsl::p<ident> + dsl::position;
+struct type_qualified_name_list : lexy::transparent_production {
+	static constexpr auto rule = dsl::list(dsl::p<ident>, dsl::sep(dsl::period));
+	static constexpr auto value = lexy::as_list<std::vector<ast::ident>>;
+};
+
+struct type_qualified_name : lexy::token_production {
+	static constexpr auto rule =
+		dsl::position + dsl::p<type_qualified_name_list> + dsl::position;
 	static constexpr auto value =
-		lexy::callback<ast::type_ptr>([](auto begin, auto ident, auto end) {
-			return std::make_shared<ast::type_ident>((parser::char_type *)begin,
-		                                             (parser::char_type *)end, ident);
+		lexy::callback<ast::type_ptr>([](auto begin, auto idents, auto end) {
+			return std::make_shared<ast::type_qualified_name>((parser::char_type *)begin,
+		                                                      (parser::char_type *)end, idents);
 		});
 };
 
@@ -117,17 +124,18 @@ struct type_function : lexy::token_production {
 	static constexpr auto rule = dsl::peek(dsl::lit_c<'('>) >>
 	                             dsl::position + dsl::p<type_function_parameter_list> +
 	                                 (LEXY_LIT("->") >> dsl::recurse<type>)+dsl::position;
-	static constexpr auto value = lexy::callback<ast::type_ptr>(
-		[](auto begin, auto params, auto ret_type, auto end) {
+	static constexpr auto value =
+		lexy::callback<ast::type_ptr>([](auto begin, auto params, auto ret_type, auto end) {
 			return std::make_shared<ast::type_function>((parser::char_type *)begin,
 		                                                (parser::char_type *)end, params, ret_type);
 		});
 };
 
-struct type : lexy::transparent_production {
+struct type {
 	static constexpr auto whitespace = whitespace_normal;
-	static constexpr auto name = "type";
-	static constexpr auto rule = (dsl::p<type_function> | dsl::else_ >> dsl::p<type_ident>);
+	static constexpr auto name = "typename";
+	static constexpr auto rule =
+		(dsl::p<type_function> | dsl::else_ >> dsl::p<type_qualified_name>);
 	static constexpr auto value = lexy::forward<ast::type_ptr>;
 };
 
@@ -445,8 +453,8 @@ struct statement : lexy::transparent_production {
 };
 
 struct fn_body_block {
+	static constexpr auto name = "in function body";
 	static constexpr auto rule = [] {
-		// dsl::curly_bracketed(dsl::p<statements>);
 		auto item = dsl::recurse<statement>;
 		auto sep = dsl::trailing_sep(dsl::while_one(dsl::semicolon | dsl::newline));
 		auto bracketed =
@@ -461,6 +469,7 @@ struct fn_body_block {
 };
 
 struct fn_body_expr {
+	static constexpr auto name = "function expression";
 	static constexpr auto rule = LEXY_LIT("=>") >> dsl::p<expr>;
 	static constexpr auto value = lexy::construct<ast::fn_body_expr>;
 };
@@ -596,10 +605,24 @@ struct decl_class {
 		});
 };
 
-struct decl : lexy::transparent_production {
+struct decl_ns {
+	static constexpr auto rule = kw_ns >>
+	                             dsl::p<ident> + dsl::opt(dsl::p<decl_list>) + dsl::position;
+
+	static constexpr auto value = lexy::callback<ast::decl_ptr>(
+		[](auto ident, lexy::nullopt, auto end) {
+			return std::make_shared<ast::decl_ns>(ident.lexeme.begin, end, ident,
+		                                          std::vector<ast::decl_ptr>{}, true);
+		},
+		[](auto ident, auto decls, auto end) {
+			return std::make_shared<ast::decl_ns>(ident.lexeme.begin, end, ident, decls);
+		});
+};
+
+struct decl {
 	static constexpr auto name = "declaration";
 	static constexpr auto rule = (dsl::p<decl_fn> | dsl::p<decl_var> | dsl::p<decl_const> |
-	                              dsl::p<decl_struct> | dsl::p<decl_class>);
+	                              dsl::p<decl_struct> | dsl::p<decl_class> | dsl::p<decl_ns>);
 	static constexpr auto value = lexy::forward<ast::decl_ptr>;
 };
 

@@ -5,6 +5,7 @@
 
 namespace catalyst::compiler::codegen {
 struct type;
+struct type_ns;
 struct type_custom;
 struct type_class;
 } // namespace catalyst::compiler::codegen
@@ -305,6 +306,16 @@ struct type_function : type {
 
 	std::shared_ptr<type_custom> method_of = nullptr;
 	inline bool is_method() const { return method_of != nullptr; }
+};
+
+struct type_ns : type {
+	explicit type_ns(std::string name) : type("namespace"), name(name) {}
+	std::string name;
+
+	llvm::Type *get_llvm_type(codegen::state &state) const { return nullptr; }
+
+	virtual llvm::Value *get_sizeof(catalyst::compiler::codegen::state &state) { return nullptr; }
+
 };
 
 } // namespace catalyst::compiler::codegen

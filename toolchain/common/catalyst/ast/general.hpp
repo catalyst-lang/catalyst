@@ -41,18 +41,24 @@ struct type : parser::ast_node {
 
 using type_ptr = std::shared_ptr<type>;
 
-struct type_ident : type {
-	explicit type_ident(parser::char_type const *begin, parser::char_type const *end,
-	                    ident const &ident)
-		: type(begin, end), ident(ident) {}
+struct type_qualified_name : type {
+	explicit type_qualified_name(parser::char_type const *begin, parser::char_type const *end,
+	                    const std::vector<ident> &idents)
+		: type(begin, end), idents(idents) {}
 
-	ident ident;
+	std::vector<ident> idents;
+
+	inline std::string to_string() const {
+		std::string ret = "";
+		for (int i = 0; i < idents.size(); i++) {
+			if (i > 0) ret += ".";
+			ret += idents[i].name;
+		}
+		return ret;
+	}
 };
 
 struct type_function_parameter : parser::ast_node {
-	// fn_parameter(parser::char_type *begin, parser::char_type *end, ast::ident &ident,
-	//              std::optional<type> &type)
-	// 	: parser::ast_node(begin, end), ident(ident), type(type) {}
 	std::optional<ident> ident;
 	type_ptr type;
 };
@@ -149,6 +155,14 @@ struct decl_class : decl {
 
 	std::optional<ast::type_ptr> super = std::nullopt;
 	std::vector<decl_ptr> declarations;
+};
+
+struct decl_ns : decl {
+	decl_ns(const parser::char_type *begin, const parser::char_type *end, ast::ident &ident,
+	        std::vector<decl_ptr> declarations, bool is_global = false)
+		: decl(begin, end, ident), declarations(declarations), is_global(is_global) {}
+	std::vector<decl_ptr> declarations;
+	bool is_global = false;
 };
 
 struct translation_unit {

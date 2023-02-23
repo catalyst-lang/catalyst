@@ -56,12 +56,12 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_cl
 	}
 
 	if (decl.super.has_value()) {
-		if (!isa<ast::type_ident>(decl.super.value())) {
+		if (!isa<ast::type_qualified_name>(decl.super.value())) {
 			return type::create_class(decl.ident.name, type_class::unknown(), members);
 		}
 
-		auto super_name = std::static_pointer_cast<ast::type_ident>(decl.super.value())->ident.name;
-		auto super_sym = state.scopes.find_named_symbol(super_name);
+		auto super_qn = std::static_pointer_cast<ast::type_qualified_name>(decl.super.value());
+		auto super_sym = state.scopes.find_named_symbol(*super_qn);
 		if (!super_sym) {
 			return type::create_class(decl.ident.name, type_class::unknown(), members);
 		}

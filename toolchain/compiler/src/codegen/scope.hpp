@@ -1,6 +1,7 @@
 #pragma once
 #include "../common/catalyst/ast/ast.hpp"
 #include "../compiler.hpp"
+#include "type.hpp"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/BasicBlock.h"
@@ -16,10 +17,30 @@
 #include <deque>
 #include <map>
 #include <memory>
+#include <ranges>
+#include <vector>
 
 #include "symbol.hpp"
+#include "catalyst/rtti.hpp"
 
 namespace catalyst::compiler::codegen {
+
+// TODO: move to string helper
+inline std::vector<std::string> split(const std::string &s, const std::string &delimiter) {
+    size_t pos_start = 0, pos_end, delim_len = delimiter.length();
+    std::string token;
+    std::vector<std::string> res;
+
+    while ((pos_end = s.find(delimiter, pos_start)) != std::string::npos) {
+        token = s.substr (pos_start, pos_end - pos_start);
+        pos_start = pos_end + delim_len;
+        res.push_back (token);
+    }
+
+    res.push_back (s.substr (pos_start));
+    return res;
+}
+
 
 struct scope {
 	std::string name;
@@ -67,33 +88,39 @@ struct scope_stack : public std::deque<scope> {
 	// but do not find "d.e" if the scope tree is 'a.b.c.d.f'.
 
 	symbol *find_named_symbol(const std::string &name, bool exact_match = false) {
-		if (!exact_match) for (auto it = rbegin(); it != rend(); ++it) {
-			auto potential_local_name = (*it).get_fully_qualified_scope_name(name);
-			if (symbol_table->count(potential_local_name) > 0) {
-				return &(*symbol_table)[potential_local_name];
+		if (!exact_match)
+			for (auto it = rbegin(); it != rend(); ++it) {
+				auto potential_local_name = (*it).get_fully_qualified_scope_name(name);
+				if (symbol_table->count(potential_local_name) > 0) {
+					return &(*symbol_table)[potential_local_name];
+				}
 			}
-		}
 		if (symbol_table->count(name) > 0) {
 			return &(*symbol_table)[name];
 		}
 		return nullptr;
 	}
 
+	symbol *find_named_symbol(const ast::type_qualified_name &name, bool exact_match = false) {
+		return find_named_symbol(name.to_string(), exact_match);
+	}
+
 	std::set<symbol *> find_overloaded_symbol(const std::string &name, bool exact_match = false) {
 		std::set<symbol *> results;
 
-		if (!exact_match) for (auto it = rbegin(); it != rend(); ++it) {
-			int i = 1;
-			auto potential_local_name = (*it).get_fully_qualified_scope_name(name);
-			auto key = potential_local_name;
-			while (symbol_table->count(key) > 0) {
-				results.insert(&(*symbol_table)[key]);
-				key = potential_local_name + "`" + std::to_string(i++);
+		if (!exact_match)
+			for (auto it = rbegin(); it != rend(); ++it) {
+				int i = 1;
+				auto potential_local_name = (*it).get_fully_qualified_scope_name(name);
+				auto key = potential_local_name;
+				while (symbol_table->count(key) > 0) {
+					results.insert(&(*symbol_table)[key]);
+					key = potential_local_name + "`" + std::to_string(i++);
+				}
 			}
-		}
 		if (symbol_table->count(name) > 0) {
 			int i = 1;
-			auto key = name; 
+			auto key = name;
 			while (symbol_table->count(key) > 0) {
 				results.insert(&(*symbol_table)[key]);
 				key = name + "`" + std::to_string(i++);
@@ -101,14 +128,38 @@ struct scope_stack : public std::deque<scope> {
 		}
 
 		return results;
-	} 
+	}
 
 	inline void enter(const std::string &name) { emplace_back(&back(), name); }
+	inline void enter_fqn(const std::string &fqn) {
+		while (size() > 1) pop_back(); // clear to root
+
+		for (const auto& ident : split(fqn, ".")) {
+			enter(ident);
+		}
+	}
+	inline void enter_ns(std::shared_ptr<type_ns> ns) {
+		auto q = std::find_if(
+			symbol_table->begin(), symbol_table->end(),
+			[&](const std::pair<std::string, symbol> &pair) { return pair.second.type == ns; });
+		if (q != symbol_table->end()) {
+			std::string key = (*q).first;
+			enter_fqn(key);
+		} else {
+			std::cout << "SHOULD NOT HAPPEN @ scope::enter_ns" << std::endl;
+		}
+	}
 	inline void leave() { pop_back(); }
 
 	inline scope &current_scope() { return back(); }
 
 	inline bool is_root_scope() { return &current_scope() == root_scope; }
+	inline bool is_ns_scope() {
+		auto key = current_scope().get_fully_qualified_scope_name();
+		if (!symbol_table->contains(key)) return false;
+		return isa<type_ns>((*symbol_table)[key].type);
+	}
+	inline bool is_root_or_ns_scope() { return is_root_scope() || is_ns_scope(); }
 
 	inline std::string get_fully_qualified_scope_name(const std::string &append = std::string()) {
 		return current_scope().get_fully_qualified_scope_name(append);
@@ -125,4 +176,4 @@ struct scope_stack : public std::deque<scope> {
 	}
 };
 
-}
+} // namespace catalyst::compiler::codegen

@@ -52,6 +52,8 @@ struct state {
 	int num_errors = 0;
 	int num_warnings = 0;
 
+	std::string global_namespace = "";
+
 	llvm::Function *init_function = nullptr;
 
 	symbol_map symbol_table;
@@ -74,6 +76,8 @@ struct state {
 	scope &root_scope() { return *scopes.root_scope; }
 
 	bool is_root_scope() { return scopes.is_root_scope(); }
+
+	bool is_root_or_ns_scope() { return scopes.is_root_or_ns_scope(); }
 };
 
 void codegen(codegen::state &state, ast::translation_unit &tu);

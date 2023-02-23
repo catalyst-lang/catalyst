@@ -66,9 +66,9 @@ int proto_pass::process(ast::decl_fn &decl) {
 
 	if (!state.current_function_has_return) {
 		bool is_return_void = !decl.type.has_value();
-		if (decl.type.has_value() && isa<ast::type_ident>(decl.type.value())) {
-			auto ti = std::static_pointer_cast<ast::type_ident>(decl.type.value());
-			if (ti->ident.name == "void") is_return_void = true;
+		if (decl.type.has_value() && isa<ast::type_qualified_name>(decl.type.value())) {
+			auto tqn = std::static_pointer_cast<ast::type_qualified_name>(decl.type.value());
+			if (tqn->to_string() == "void") is_return_void = true;
 		}
 		if (is_return_void) {
 			if (!isa<type_void>(current_fn_type->return_type)) {
@@ -136,7 +136,7 @@ int proto_pass::process(ast::decl_fn &decl) {
 }
 
 int proto_pass::process(ast::decl_var &decl) {
-	if (!state.is_root_scope())
+	if (!state.is_root_or_ns_scope())
 		return 0;
 
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
@@ -170,6 +170,28 @@ int proto_pass::process(ast::decl_var &decl) {
 	if (*sym.type != *type)
 		return 1;
 	return 0;
+}
+
+int proto_pass::process(ast::decl_ns &decl) {
+	std::string key;
+	if (decl.is_global) {
+		key = decl.ident.name;
+	} else {
+		key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
+	}
+	if (n == 0 && state.symbol_table.contains(key)) {
+		auto other = state.symbol_table[key];
+		state.report_message(report_type::error, "Namespace name already exists",
+		                     &decl.ident);
+		state.report_message(report_type::info, "Previous declaration here", other.ast_node);
+		return 0;
+	}
+
+	auto type = std::make_shared<type_ns>(decl.ident.name);
+	const auto [res, symbol_introduced] = state.symbol_table.try_emplace(key, &decl, nullptr, type);
+	auto &sym = res->second;
+
+	return symbol_introduced ? 1 : 0;
 }
 
 } // namespace catalyst::compiler::codegen

@@ -5,6 +5,7 @@
 #include "../runtime.hpp"
 #include "../../../parser/src/parser.hpp"
 #include "decl.hpp"
+#include "catalyst/rtti.hpp"
 #include "decl_proto_pass.hpp"
 #include "decl_overloading_pass.hpp"
 #include <iostream>
@@ -42,6 +43,28 @@ state::state()
 }
 
 void codegen(codegen::state &state, ast::translation_unit &tu) {
+	// check for global namespace decl
+	int num_global_ns = 0;
+	for (int i = 0; i < tu.declarations.size(); i++) {
+		if (isa<ast::decl_ns>(tu.declarations[i])) {
+			auto ns = std::static_pointer_cast<ast::decl_ns>(tu.declarations[i]);
+			if (ns->is_global) {
+				if (num_global_ns > 0) {
+					state.report_message(report_type::error, "Multiple global namespace definitions", ns.get());
+				} else {
+					// do namespace stuff
+					if (i != 0) {
+						state.report_message(report_type::warning, "Global namespace specifier not the first declaration of the file", ns.get());
+						state.report_message(report_type::help, "Move the namespace specifier to the top of the file to prevent confusion");
+					}
+					state.scopes.enter(ns->ident.name);
+					state.global_namespace = ns->ident.name;
+				}
+				num_global_ns++;
+			}
+		}
+	}
+
 	overloading_pass op(state);
 	op(tu);
 	STOP_IF_ERROR();
@@ -73,6 +96,10 @@ void codegen(codegen::state &state, ast::translation_unit &tu) {
 		state.Builder.SetInsertPoint(&state.init_function->getEntryBlock());
 		
 		codegen(state, decl);
+	}
+
+	if (num_global_ns > 0) {
+		state.scopes.leave();
 	}
 }
 

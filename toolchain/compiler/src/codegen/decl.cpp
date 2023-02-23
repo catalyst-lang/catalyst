@@ -30,6 +30,8 @@ void codegen(codegen::state &state, ast::decl_ptr decl) {
 		codegen(state, *(ast::decl_struct *)decl.get());
 	} else if (isa<ast::decl_class>(decl)) {
 		codegen(state, *(ast::decl_class *)decl.get());
+	} else if (isa<ast::decl_ns>(decl)) {
+		codegen(state, *(ast::decl_ns *)decl.get());
 	} else {
 		state.report_message(report_type::error, "Decl type not implemented", decl.get());
 	}
@@ -183,6 +185,20 @@ void codegen(codegen::state &state, ast::decl_var &decl) {
 			state.Builder.CreateStore(default_val, var->value);
 		}
 	}
+}
+
+void codegen(codegen::state &state, ast::decl_ns &decl) {
+	if (decl.is_global) return; // this is handled in the translation unit
+
+	state.scopes.enter(decl.ident.name);
+
+	for (const auto &decl : decl.declarations) {	
+		state.Builder.SetInsertPoint(&state.init_function->getEntryBlock());
+		
+		codegen(state, decl);
+	}
+	
+	state.scopes.leave();
 }
 
 } // namespace catalyst::compiler::codegen

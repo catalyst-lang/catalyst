@@ -156,6 +156,9 @@ llvm::Value *codegen(codegen::state &state, ast::expr_ident &expr,
 
 	if (isa<type_void>(symbol->type)) {
 		return nullptr;
+	} else if (isa<type_ns>(symbol->type)) {
+		state.report_message(report_type::error, "Namespaces can't be referenced directly", &expr);
+		return nullptr;
 	} else if (llvm::isa<llvm::Function>(symbol->value)) {
 		auto *a = (llvm::Function *)symbol->value;
 		// return state.Builder.CreateLoad(a->getType(), a, expr.ident.name.c_str());
@@ -367,8 +370,16 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr,
 
 llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
                      std::shared_ptr<type> expecting_type) {
-	auto lhs_value = codegen(state, expr.lhs);
 	auto lhs_type = expr_resulting_type(state, expr.lhs);
+
+	if (isa<type_ns>(lhs_type)) {
+		auto current_scope = state.current_scope().get_fully_qualified_scope_name();
+		state.scopes.enter_ns(std::static_pointer_cast<type_ns>(lhs_type));
+		auto rhs_value = codegen(state, expr.rhs, expecting_type);
+		state.scopes.leave();
+		state.scopes.enter_fqn(current_scope);
+		return rhs_value;
+	}
 
 	if (!isa<type_object>(lhs_type)) {
 		state.report_message(report_type::error, "Member access can only be performed on an object",
@@ -376,6 +387,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 		return nullptr;
 	}
 
+	auto lhs_value = codegen(state, expr.lhs);
 	auto lhs_object = (type_object *)lhs_type.get();
 	auto lhs_custom = lhs_object->object_type;
 

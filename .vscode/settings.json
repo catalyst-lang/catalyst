@@ -118,7 +118,9 @@
         "cassert": "cpp",
         "cerrno": "cpp",
         "cfloat": "cpp",
-        "climits": "cpp"
+        "climits": "cpp",
+        "ranges": "cpp",
+        "span": "cpp"
     },
     "files.insertFinalNewline": true,
 

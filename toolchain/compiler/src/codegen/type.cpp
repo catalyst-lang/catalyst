@@ -55,8 +55,9 @@ std::shared_ptr<type> type::create_builtin(const std::string &name) {
 }
 
 std::shared_ptr<type> type::create_builtin(const ast::type_ptr &ast_type) {
-	if (isa<ast::type_ident>(ast_type)) {
-		return create_builtin(std::static_pointer_cast<ast::type_ident>(ast_type)->ident.name);
+	if (isa<ast::type_qualified_name>(ast_type)) {
+		return create_builtin(
+			std::static_pointer_cast<ast::type_qualified_name>(ast_type)->to_string());
 	} else {
 		std::cout << "NOT IMPLEMENTED @ type::create_builtin" << std::endl;
 		return nullptr;
@@ -78,8 +79,9 @@ std::shared_ptr<type> type::create(codegen::state &state, const std::string &nam
 }
 
 std::shared_ptr<type> type::create(codegen::state &state, const ast::type_ptr &ast_type) {
-	if (isa<ast::type_ident>(ast_type)) {
-		return create(state, std::static_pointer_cast<ast::type_ident>(ast_type)->ident.name);
+	if (isa<ast::type_qualified_name>(ast_type)) {
+		return create(state,
+		              std::static_pointer_cast<ast::type_qualified_name>(ast_type)->to_string());
 	} else if (isa<ast::type_function>(ast_type)) {
 		auto t = std::static_pointer_cast<ast::type_function>(ast_type);
 		std::vector<std::shared_ptr<type>> parameters;
@@ -462,7 +464,12 @@ llvm::Type *type_function::get_llvm_type(state &state) const {
 		params.push_back(type);
 	}
 
-	return llvm::FunctionType::get(return_type->get_llvm_type(state), params, false);
+	if (isa<type_function>(return_type)) {
+		// if the return type is a function, the llvm_return_type is a ptr
+		return llvm::FunctionType::get(llvm::PointerType::get(*state.TheContext, 0), params, false);
+	} else {
+		return llvm::FunctionType::get(return_type->get_llvm_type(state), params, false);
+	}
 }
 
 llvm::Value *type_function::get_sizeof(catalyst::compiler::codegen::state &state) {

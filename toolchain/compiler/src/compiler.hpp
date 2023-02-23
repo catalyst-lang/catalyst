@@ -37,6 +37,7 @@ struct compile_result {
 	static compile_result create_failed() {
 		compile_result s;
 		s.is_successful = false;
+		s.is_runnable = false;
 		return s;
 	}
 };
