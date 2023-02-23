@@ -94,8 +94,7 @@ struct type_qualified_name_list : lexy::transparent_production {
 
 struct type_qualified_name : lexy::token_production {
 	static constexpr auto name = "qualified type name";
-	static constexpr auto rule =
-		dsl::position + dsl::p<type_qualified_name_list> + dsl::position;
+	static constexpr auto rule = dsl::position + dsl::p<type_qualified_name_list> + dsl::position;
 	static constexpr auto value =
 		lexy::callback<ast::type_ptr>([](auto begin, auto idents, auto end) {
 			return std::make_shared<ast::type_qualified_name>((parser::char_type *)begin,
@@ -632,11 +631,34 @@ struct decl_ns {
 		});
 };
 
+struct decl_classifiers {
+	static constexpr auto name = "classifiers";
+	static constexpr auto classifiers =
+		lexy::symbol_table<ast::decl_classifier>
+			.map<LEXY_SYMBOL("public")>(ast::decl_classifier::public_)
+			.map<LEXY_SYMBOL("private")>(ast::decl_classifier::private_)
+			.map<LEXY_SYMBOL("protected")>(ast::decl_classifier::protected_)
+			.map<LEXY_SYMBOL("abstract")>(ast::decl_classifier::abstract_)
+			.map<LEXY_SYMBOL("override")>(ast::decl_classifier::override_)
+			.map<LEXY_SYMBOL("virtual")>(ast::decl_classifier::virtual_)
+			.map<LEXY_SYMBOL("static")>(ast::decl_classifier::static_);
+
+	static constexpr auto rule = dsl::list(dsl::symbol<classifiers>);
+	static constexpr auto value = lexy::as_list<std::vector<ast::decl_classifier>>;
+};
+
 struct decl {
 	static constexpr auto name = "declaration";
-	static constexpr auto rule = (dsl::p<decl_fn> | dsl::p<decl_var> | dsl::p<decl_const> |
-	                              dsl::p<decl_struct> | dsl::p<decl_class> | dsl::p<decl_ns>);
-	static constexpr auto value = lexy::forward<ast::decl_ptr>;
+	static constexpr auto decl_opts = dsl::p<decl_fn> | dsl::p<decl_var> | dsl::p<decl_const> |
+	                                  dsl::p<decl_struct> | dsl::p<decl_class> | dsl::p<decl_ns>;
+	static constexpr auto rule =
+		dsl::peek(dsl::p<decl_classifiers>) >> (dsl::p<decl_classifiers> + decl_opts) | decl_opts;
+	static constexpr auto value = lexy::callback<ast::decl_ptr>(
+		[](auto classifiers, auto decl) {
+			decl->classifiers = classifiers;
+			return decl;
+		},
+		[](auto decl) { return decl; });
 };
 
 struct decl_sep : lexy::transparent_production {

@@ -73,10 +73,22 @@ struct type_function : type {
 	type_ptr return_type;
 };
 
+enum class decl_classifier {
+	public_,
+	private_,
+	protected_,
+	virtual_,
+	static_,
+	abstract_,
+	override_,
+};
+
 struct decl : parser::ast_node {
 	decl(const parser::char_type *begin, const parser::char_type *end, ast::ident const &ident)
 		: parser::ast_node(begin, end), ident(ident) {}
 	ident ident;
+
+	std::vector<decl_classifier> classifiers;
 
 	virtual ~decl() = default;
 };
