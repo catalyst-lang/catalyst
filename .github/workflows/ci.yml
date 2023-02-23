@@ -52,9 +52,9 @@ jobs:
         run: cmake --build build
 
       - name: Test parser
-        run: ./build/toolchain/parser/test-parser --force-colors=true
+        run: ./build/toolchain/parser/test-parser --force-colors=true --success
       - name: Test compiler
-        run: ./build/toolchain/compiler/test-compiler --force-colors=true
+        run: ./build/toolchain/compiler/test-compiler --force-colors=true --success
 
   windows:
     strategy:
@@ -92,6 +92,6 @@ jobs:
           cmake --build build
 
       - name: Test parser
-        run: .\build\toolchain\parser\test-parser.exe --force-colors=true
+        run: .\build\toolchain\parser\test-parser.exe --force-colors=true --success
       - name: Test compiler
-        run: .\build\toolchain\compiler\test-compiler.exe --force-colors=true
+        run: .\build\toolchain\compiler\test-compiler.exe --force-colors=true --success
