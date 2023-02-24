@@ -123,17 +123,22 @@
         "span": "cpp"
     },
     "files.insertFinalNewline": false,
-
     "python.analysis.diagnosticSeverityOverrides": {
         "reportUndefinedVariable": "none" // Ignore for SCons
     },
-
-    "testMate.cpp.test.executables": "**/*{test,Test,TEST}-*",
     "testMate.cpp.debug.configTemplate": {
         "type": "cppvsdbg",
-        "linux": { "type": "cppdbg", "MIMode": "gdb" },
-        "darwin": { "type": "cppdbg", "MIMode": "lldb" },
-        "win32": { "type": "cppvsdbg" },
+        "linux": {
+            "type": "cppdbg",
+            "MIMode": "gdb"
+        },
+        "darwin": {
+            "type": "cppdbg",
+            "MIMode": "lldb"
+        },
+        "win32": {
+            "type": "cppvsdbg"
+        },
         "program": "${exec}",
         "args": "${argsArray}",
         "cwd": "${cwd}",
@@ -141,6 +146,18 @@
         "environment": "${envObjArray}",
         "sourceFileMap": "${sourceFileMapObj}",
     },
+    "testMate.cpp.test.advancedExecutables": [
+        {
+            "pattern": "**/*{test,Test,TEST}-*",
+            "doctest": {
+                "testGrouping": {
+                    "groupBySource": {
+                        "label": "${sourceRelPath[-1:]}"
+                    }
+                }
+            }
+        }
+    ],
     "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [
         "modernize-use-trailing-return-type"
     ],
@@ -149,5 +166,5 @@
         "projectKey": "catalyst-lang_catalyst"
     },
     "cmake.generator": "Ninja",
-    "sonarlint.pathToCompileCommands": "${workspaceFolder}/build/compile_commands.json"      
+    "sonarlint.pathToCompileCommands": "${workspaceFolder}/build/compile_commands.json"
 }
