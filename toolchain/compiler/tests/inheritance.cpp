@@ -384,4 +384,38 @@ TEST_CASE("Polymorphism static functions (alternative)") {
     CHECK(ret == 5);
 }
 
+TEST_CASE("Polymorphism function overloading") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        class A {
+            var i = 91i32
+
+            fn test() {
+                return 4i64
+            }
+        }
+
+        class B : A {
+            var j = 2i64
+            var k = 65i16
+
+            fn test() {
+                return 5i64
+            }
+
+            fn test(i: i64) {
+                return i + 5i64
+            }
+        }
+
+        fn main() {
+            var i : B = B()
+            return i.test()
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run<int64_t>(result);
+    REQUIRE(result.is_successful);
+    CHECK(ret == 5);
+}
+
 }

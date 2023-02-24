@@ -247,4 +247,82 @@ TEST_CASE("Virtual functions out-of-order declarations") {
     CHECK(ret == 54 + 54398);
 }
 
+TEST_CASE("Virtual functions overloading") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        class B : A {
+            override fn test() {
+                return 54398
+            }
+
+            override fn test(i: i64) {
+                return i + 1
+            }
+        }
+
+        class A {
+            fn new() {
+                
+            }
+
+            virtual fn test() {
+                return 54
+            }
+
+            virtual fn test(i: i64) {
+                return i - 1
+            }
+
+            virtual fn blaat() {
+                return 13
+            }
+        }
+
+        fn main() {
+            var b = B()
+            return b.test() + b.test(4)
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run<int64_t>(result);
+    REQUIRE(result.is_successful);
+    CHECK(ret == 54398 + 5);
+}
+
+TEST_CASE("Virtual functions overloading") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        class B : A {
+            override fn test() {
+                return 54398
+            }
+        }
+
+        class A {
+            fn new() {
+                
+            }
+
+            virtual fn test() {
+                return 54
+            }
+
+            virtual fn test(i: i64) {
+                return i - 1
+            }
+
+            virtual fn blaat() {
+                return 13
+            }
+        }
+
+        fn main() {
+            var b = B()
+            return b.test(4)
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run<int64_t>(result);
+    REQUIRE(result.is_successful);
+    CHECK(ret == 3);
+}
+
 }
