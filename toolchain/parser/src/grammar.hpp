@@ -491,11 +491,12 @@ struct fn_body : lexy::transparent_production {
 	};
 	static constexpr auto name = "function body";
 	static constexpr auto rule =
-		dsl::p<fn_body_block> | dsl::p<fn_body_expr> | dsl::error<expected_fn_body>;
+		dsl::p<fn_body_block> | dsl::p<fn_body_expr>;
 	static constexpr auto value = lexy::construct<ast::fn_body>;
 };
 
 struct fn_parameter {
+	static constexpr auto whitespace = whitespace_incl_nl;
 	static constexpr auto name = "parameter";
 	static constexpr auto rule =
 		dsl::position + dsl::p<ident> + dsl::opt(dsl::colon >> dsl::p<type>) + dsl::position;
@@ -507,7 +508,6 @@ struct fn_parameter {
 
 struct parameter_list {
 	static constexpr auto name = "parameter list";
-	static constexpr auto whitespace = whitespace_incl_nl;
 	static constexpr auto rule =
 		dsl::round_bracketed.opt_list(dsl::p<fn_parameter>, dsl::sep(dsl::comma));
 	static constexpr auto value = lexy::as_list<std::vector<ast::fn_parameter>>;
@@ -518,13 +518,18 @@ struct decl_fn {
 	static constexpr auto rule = kw_fn >>
 	                             dsl::position + dsl::p<ident> + dsl::p<parameter_list> +
 	                                 dsl::opt(LEXY_LIT("->") >> dsl::p<type>) + dsl::position
-	                                 + dsl::p<fn_body>;
+	                                 + dsl::opt(dsl::p<fn_body>);
 
-	// static constexpr auto value = lexy::construct<ast::decl_fn>;
 	static constexpr auto value = lexy::callback<ast::decl_ptr>(
-		[](auto begin, auto ident, auto parameter_list, lexy::nullopt, auto end, auto body) {
+		[](auto begin, auto ident, auto parameter_list, lexy::nullopt, auto end, lexy::nullopt) {
 			return std::make_shared<ast::decl_fn>(begin, end, ident, parameter_list, std::nullopt,
-		                                          body);
+		                                          std::nullopt);
+		},
+		[](auto begin, auto ident, auto parameter_list, auto type, auto end, lexy::nullopt) {
+			return std::make_shared<ast::decl_fn>(begin, end, ident, parameter_list, type, std::nullopt);
+		},
+		[](auto begin, auto ident, auto parameter_list, lexy::nullopt, auto end, auto body) {
+			return std::make_shared<ast::decl_fn>(begin, end, ident, parameter_list, std::nullopt, body);
 		},
 		[](auto begin, auto ident, auto parameter_list, auto type, auto end, auto body) {
 			return std::make_shared<ast::decl_fn>(begin, end, ident, parameter_list, type, body);

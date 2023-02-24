@@ -127,11 +127,11 @@ using fn_body = std::variant<fn_body_block, fn_body_expr>;
 struct decl_fn : decl {
 	decl_fn(const parser::char_type *begin, const parser::char_type *end, ast::ident &ident,
 	        std::vector<ast::fn_parameter> &parameter_list, std::optional<type_ptr> type,
-	        fn_body &body)
+	        std::optional<fn_body> body)
 		: decl(begin, end, ident), parameter_list(parameter_list), type(type), body(body) {}
 	std::vector<ast::fn_parameter> parameter_list;
 	std::optional<ast::type_ptr> type = std::nullopt;
-	fn_body body;
+	std::optional<fn_body> body;
 };
 
 struct decl_var : decl {

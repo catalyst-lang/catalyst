@@ -57,17 +57,19 @@ int pass::walk(ast::decl *decl) {
 
 int pass::walk(ast::decl_fn &decl) {
 	int res = process(decl);
-	state.scopes.enter(decl.ident.name);
-	if (std::holds_alternative<ast::fn_body_block>(decl.body)) {
-		auto &block = std::get<ast::fn_body_block>(decl.body);
-		for (auto &stmt : block.statements) {
-			res += walk(stmt);
+	if (decl.body.has_value()) {
+		state.scopes.enter(decl.ident.name);
+		if (std::holds_alternative<ast::fn_body_block>(decl.body.value())) {
+			auto &block = std::get<ast::fn_body_block>(decl.body.value());
+			for (auto &stmt : block.statements) {
+				res += walk(stmt);
+			}
+		} else if (std::holds_alternative<ast::fn_body_expr>(decl.body.value())) {
+			auto &expr = std::get<ast::fn_body_expr>(decl.body.value());
+			res += walk(expr);
 		}
-	} else if (std::holds_alternative<ast::fn_body_expr>(decl.body)) {
-		auto &expr = std::get<ast::fn_body_expr>(decl.body);
-		res += walk(expr);
+		state.scopes.leave();
 	}
-	state.scopes.leave();
 	res += process_after(decl);
 	return res;
 }

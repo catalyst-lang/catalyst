@@ -59,6 +59,8 @@ llvm::Value* codegen(codegen::state &state, ast::decl_fn &decl) {
 	// Verify classifiers and report errors
 	if (!check_decl_classifiers(state, decl)) { return nullptr; }
 
+	if (!decl.body.has_value()) { return nullptr; }
+
 	// Check for an existing function from a previous 'extern' declaration.
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 	auto &sym = state.symbol_table[key];
@@ -118,7 +120,7 @@ llvm::Value* codegen(codegen::state &state, ast::decl_fn &decl) {
 		state.Builder.CreateCall(state.init_function);
 	}
 
-	codegen(state, decl.body);
+	codegen(state, decl.body.value());
 
 	if (!state.Builder.GetInsertBlock()->getTerminator()) {
 		state.Builder.CreateBr(state.current_return_block);
