@@ -169,6 +169,15 @@ struct decl_class : decl {
 	std::vector<decl_ptr> declarations;
 };
 
+struct decl_iface : decl {
+	decl_iface(const parser::char_type *begin, const parser::char_type *end, ast::ident &ident,
+	           std::optional<ast::type_ptr> super, std::vector<decl_ptr> declarations)
+		: decl(begin, end, ident), declarations(declarations), super(super) {}
+
+	std::optional<ast::type_ptr> super = std::nullopt;
+	std::vector<decl_ptr> declarations;
+};
+
 struct decl_ns : decl {
 	decl_ns(const parser::char_type *begin, const parser::char_type *end, ast::ident &ident,
 	        std::vector<decl_ptr> declarations, bool is_global = false)

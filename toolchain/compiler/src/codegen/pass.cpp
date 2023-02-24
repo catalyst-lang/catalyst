@@ -102,6 +102,17 @@ int pass::walk(ast::decl_class &decl) {
 	return res;
 }
 
+int pass::walk(ast::decl_iface &decl) {
+	int res = process(decl);
+	state.scopes.enter(decl.ident.name);
+	for (auto &decl : decl.declarations) {
+		res += walk(decl);
+	}
+	state.scopes.leave();
+	res += process_after(decl);
+	return res;
+}
+
 int pass::walk(ast::decl_ns &decl) {
 	int res = process(decl);
 	state.scopes.enter(decl.ident.name);

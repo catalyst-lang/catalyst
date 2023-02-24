@@ -84,6 +84,12 @@ struct type_class : type_custom {
 	llvm::GlobalVariable *metadata_object = nullptr;
 };
 
+struct type_iface : type_class {
+	explicit type_iface(const std::string &name, std::vector<member> const &members);
+	explicit type_iface(const std::string &name, std::shared_ptr<type_iface> super,
+	                    std::vector<member> const &members);
+};
+
 struct type_object : type {
 	explicit type_object(std::shared_ptr<type_custom> object_type);
 
