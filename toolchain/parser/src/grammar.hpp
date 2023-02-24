@@ -34,6 +34,7 @@ constexpr auto kw_false = LEXY_KEYWORD("false", id);
 constexpr auto kw_fn = LEXY_KEYWORD("fn", id);
 constexpr auto kw_for = LEXY_KEYWORD("for", id);
 constexpr auto kw_if = LEXY_KEYWORD("if", id);
+constexpr auto kw_iface = LEXY_KEYWORD("iface", id);
 constexpr auto kw_impl = LEXY_KEYWORD("impl", id);
 constexpr auto kw_in = LEXY_KEYWORD("in", id);
 constexpr auto kw_let = LEXY_KEYWORD("let", id);
@@ -74,8 +75,8 @@ struct ident : lexy::token_production {
 
 	static constexpr auto rule = [] {
 		return id.reserve(kw_as, kw_break, kw_const, kw_continue, kw_crate, kw_else, kw_enum,
-		                  kw_extern, kw_false, kw_fn, kw_for, kw_if, kw_impl, kw_in, kw_let,
-		                  kw_loop, kw_match, kw_mod, kw_move, kw_mut, kw_ns, kw_pub, kw_ref,
+		                  kw_extern, kw_false, kw_fn, kw_for, kw_if, kw_iface, kw_impl, kw_in,
+		                  kw_let, kw_loop, kw_match, kw_mod, kw_move, kw_mut, kw_ns, kw_pub, kw_ref,
 		                  kw_return, kw_self, kw_Self, kw_static, kw_struct, kw_class, kw_super,
 		                  kw_trait, kw_true, kw_type, kw_unsafe, kw_use, kw_var, kw_virtual,
 		                  kw_where, kw_while, kw_async, kw_await, kw_yield) |
@@ -619,6 +620,23 @@ struct decl_class {
 		});
 };
 
+struct decl_iface {
+	static constexpr auto name = "interface declaration";
+	static constexpr auto
+		rule = kw_iface >>
+	           dsl::p<ident> +
+	               dsl::opt(dsl::colon >> dsl::p<type>) + dsl::p<decl_list> + dsl::position;
+
+	static constexpr auto value = lexy::callback<ast::decl_ptr>(
+		[](auto ident, lexy::nullopt, auto decls, auto end) {
+			return std::make_shared<ast::decl_iface>(ident.lexeme.begin, end, ident, std::nullopt,
+		                                             decls);
+		},
+		[](auto ident, auto super, auto decls, auto end) {
+			return std::make_shared<ast::decl_iface>(ident.lexeme.begin, end, ident, super, decls);
+		});
+};
+
 struct decl_ns {
 	static constexpr auto name = "namespace declaration";
 	static constexpr auto rule = kw_ns >>
@@ -653,7 +671,8 @@ struct decl_classifiers {
 struct decl {
 	static constexpr auto name = "declaration";
 	static constexpr auto decl_opts = dsl::p<decl_fn> | dsl::p<decl_var> | dsl::p<decl_const> |
-	                                  dsl::p<decl_struct> | dsl::p<decl_class> | dsl::p<decl_ns>;
+	                                  dsl::p<decl_struct> | dsl::p<decl_class> |
+	                                  dsl::p<decl_iface> | dsl::p<decl_ns>;
 	static constexpr auto rule =
 		dsl::peek(dsl::p<decl_classifiers>) >> (dsl::p<decl_classifiers> + decl_opts) | decl_opts;
 	static constexpr auto value = lexy::callback<ast::decl_ptr>(
