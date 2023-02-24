@@ -149,20 +149,5 @@
         "projectKey": "catalyst-lang_catalyst"
     },
     "cmake.generator": "Ninja",
-    "sonarlint.pathToCompileCommands": "${workspaceFolder}/build/compile_commands.json",
-    "license-header-manager.excludeExtensions": [
-        ".json", ".ct", ".yml", ".xml", ".bat", ".py"
-    ],
-    "license-header-manager.excludeFolders": [
-        "build"
-    ],
-    "license-header-manager.additionalCommentStyles": [{
-        "extension": ".cpp",
-        "commentStart": "",
-        "commentMiddle": "//",
-        "commentEnd": "",
-
-    }]
-
-      
+    "sonarlint.pathToCompileCommands": "${workspaceFolder}/build/compile_commands.json"      
 }
