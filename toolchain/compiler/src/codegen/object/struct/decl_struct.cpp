@@ -79,7 +79,7 @@ int proto_pass::process_after(ast::decl_struct &decl) {
 	return 0;
 }
 
-void codegen(codegen::state &state, ast::decl_struct &decl) {
+llvm::Value* codegen(codegen::state &state, ast::decl_struct &decl) {
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 	auto &sym = state.symbol_table[key];
 	auto type = (type_struct *)sym.type.get();
@@ -124,6 +124,8 @@ void codegen(codegen::state &state, ast::decl_struct &decl) {
 	state.scopes.leave();
 
 	state.FPM->run(*type->init_function);
+
+	return nullptr;
 }
 
 } // namespace catalyst::compiler::codegen

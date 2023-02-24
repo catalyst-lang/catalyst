@@ -22,6 +22,7 @@ struct type_custom : type {
 	virtual llvm::Type *get_llvm_struct_type(codegen::state &state) const = 0;
 
 	virtual member_locator get_member(const std::string &name);
+	virtual member_locator get_member(const type_function *function);
 
 	virtual int get_member_index_in_llvm_struct(member *member);
 	int get_member_index_in_llvm_struct(const member_locator &member_locator);
@@ -57,6 +58,12 @@ struct type_class : type_custom {
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Type *get_llvm_struct_type(codegen::state &state) const override;
 
+	std::vector<member_locator> get_virtual_members(codegen::state &state);
+	int get_virtual_member_index(codegen::state &state, const member_locator& member);
+
+	llvm::StructType *get_llvm_metadata_struct_type(codegen::state &state);
+	llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state);
+
 	virtual std::string get_fqn() const override;
 
 	void copy_from(type_class &other);
@@ -66,10 +73,14 @@ struct type_class : type_custom {
 	std::shared_ptr<type_class> super;
 
 	member_locator get_member(const std::string &name) override;
+	member_locator get_member(const type_function *function) override;
 	int get_member_index_in_llvm_struct(member *member) override;
 
   private:
 	llvm::StructType *structType = nullptr;
+
+	llvm::StructType *metadata_struct_type = nullptr;
+	llvm::GlobalVariable *metadata_object = nullptr;
 };
 
 struct type_object : type {

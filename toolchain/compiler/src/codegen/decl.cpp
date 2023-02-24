@@ -21,19 +21,20 @@ namespace catalyst::compiler::codegen {
 // but the way that would work in C++ is so ugly, it introduces more overhead
 // and bloat to the codebase than just this one ugly dispatch function.
 // Feel free to refactor the AST and introduce an _elegant_ visitation pattern.
-void codegen(codegen::state &state, ast::decl_ptr decl) {
+llvm::Value* codegen(codegen::state &state, ast::decl_ptr decl) {
 	if (isa<ast::decl_fn>(decl)) {
-		codegen(state, *(ast::decl_fn *)decl.get());
+		return codegen(state, *(ast::decl_fn *)decl.get());
 	} else if (isa<ast::decl_var>(decl)) {
-		codegen(state, *(ast::decl_var *)decl.get());
+		return codegen(state, *(ast::decl_var *)decl.get());
 	} else if (isa<ast::decl_struct>(decl)) {
-		codegen(state, *(ast::decl_struct *)decl.get());
+		return codegen(state, *(ast::decl_struct *)decl.get());
 	} else if (isa<ast::decl_class>(decl)) {
-		codegen(state, *(ast::decl_class *)decl.get());
+		return codegen(state, *(ast::decl_class *)decl.get());
 	} else if (isa<ast::decl_ns>(decl)) {
-		codegen(state, *(ast::decl_ns *)decl.get());
+		return codegen(state, *(ast::decl_ns *)decl.get());
 	} else {
 		state.report_message(report_type::error, "Decl type not implemented", decl.get());
+		return nullptr;
 	}
 }
 
@@ -54,7 +55,7 @@ static llvm::AllocaInst *CreateEntryBlockAlloca(codegen::state &state, llvm::Fun
 	}
 }
 
-void codegen(codegen::state &state, ast::decl_fn &decl) {
+llvm::Value* codegen(codegen::state &state, ast::decl_fn &decl) {
 	// First, check for an existing function from a previous 'extern' declaration.
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 	auto &sym = state.symbol_table[key];
@@ -148,32 +149,39 @@ void codegen(codegen::state &state, ast::decl_fn &decl) {
 		the_function->print(llvm::errs());
 		state.scopes.pop_back();
 		the_function->eraseFromParent();
+		the_function = nullptr;
 	}
 
 	state.current_function = previous_function;
 	state.current_function_symbol = previous_function_symbol;
 	state.current_return = previous_return;
 	state.current_return_block = previous_return_block;
+
+	return the_function;
 }
 
-void codegen(codegen::state &state, ast::fn_body &body) {
+llvm::Value* codegen(codegen::state &state, ast::fn_body &body) {
 	if (std::holds_alternative<ast::fn_body_block>(body)) {
-		codegen(state, std::get<ast::fn_body_block>(body));
+		return codegen(state, std::get<ast::fn_body_block>(body));
 	} else if (std::holds_alternative<ast::fn_body_expr>(body)) {
-		codegen(state, std::get<ast::fn_body_expr>(body));
+		return codegen(state, std::get<ast::fn_body_expr>(body));
 	} else {
 		state.report_message(report_type::error, "unsupported body type");
+		return nullptr;
 	}
 }
 
-void codegen(codegen::state &state, ast::fn_body_expr &body) {
+llvm::Value* codegen(codegen::state &state, ast::fn_body_expr &body) {
 	auto expr = codegen(state, body.expr);
-	state.Builder.CreateRet(expr);
+	return state.Builder.CreateRet(expr);
 }
 
-void codegen(codegen::state &state, ast::fn_body_block &body) { codegen(state, body.statements); }
+llvm::Value* codegen(codegen::state &state, ast::fn_body_block &body) { 
+	codegen(state, body.statements);
+	return nullptr;
+}
 
-void codegen(codegen::state &state, ast::decl_var &decl) {
+llvm::Value* codegen(codegen::state &state, ast::decl_var &decl) {
 	// the locals pass already made sure there is a value in the symbol table
 	auto var = state.scopes.find_named_symbol(decl.ident.name);
 	if (decl.expr.has_value() && decl.expr.value() != nullptr) {
@@ -185,10 +193,11 @@ void codegen(codegen::state &state, ast::decl_var &decl) {
 			state.Builder.CreateStore(default_val, var->value);
 		}
 	}
+	return var->value;
 }
 
-void codegen(codegen::state &state, ast::decl_ns &decl) {
-	if (decl.is_global) return; // this is handled in the translation unit
+llvm::Value* codegen(codegen::state &state, ast::decl_ns &decl) {
+	if (decl.is_global) return nullptr; // this is handled in the translation unit
 
 	state.scopes.enter(decl.ident.name);
 
@@ -199,6 +208,8 @@ void codegen(codegen::state &state, ast::decl_ns &decl) {
 	}
 	
 	state.scopes.leave();
+
+	return nullptr;
 }
 
 } // namespace catalyst::compiler::codegen

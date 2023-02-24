@@ -16,6 +16,15 @@ member_locator type_custom::get_member(const std::string &name) {
 	return member_locator::invalid();
 }
 
+member_locator type_custom::get_member(const type_function *function) {
+	for (int i = 0; i < members.size(); i++) {
+		if (members[i].type.get() == function) {
+			return member_locator(&members[i], this);
+		}
+	}
+	return member_locator::invalid();
+}
+
 int type_custom::get_member_index_in_llvm_struct(member *member) {
 	// the llvm_index is the index passed to a GEP instruction. So functions should be left out.
 	// Note that function types should still be counted in if they are a function pointer.

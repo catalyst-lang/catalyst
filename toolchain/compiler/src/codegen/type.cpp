@@ -506,4 +506,11 @@ bool type_function::is_valid() {
 	return true;
 }
 
+bool type_function::is_virtual() const {
+	if (!is_method()) return false;
+	const auto &classifiers = method_of->get_member(this).member->classifiers;
+	return is_method() && (classifiers.contains(ast::decl_classifier::virtual_) ||
+	                       classifiers.contains(ast::decl_classifier::override_));
+}
+
 } // namespace catalyst::compiler::codegen

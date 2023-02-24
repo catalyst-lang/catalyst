@@ -1,9 +1,31 @@
-        fn bla() {
-            return ks + 1
-        }
+class A {
+    var i = 6
+    fn new() {
+        this.i = 3
+    }
+    virtual fn test() {
+        return 54
+    }
 
-        fn main() {
-            var a : (num: i64) -> i64
-            a = bla
-            return a()
-        }
+    virtual fn blaat() {
+        return 13
+    }
+}
+
+class B : A {
+    override fn test() {
+        return 54398
+    }
+
+    var bsd = 9;
+}
+
+fn get(x: A) {
+    return x.test()
+}
+
+fn main() {
+    var b = B()
+    var a = A()
+    return get(9)
+}

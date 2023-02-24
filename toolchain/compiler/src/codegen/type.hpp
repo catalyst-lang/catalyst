@@ -36,7 +36,8 @@ struct type {
 	static std::shared_ptr<type> create_builtin(const std::string &name = "");
 	static std::shared_ptr<type> create_builtin(const catalyst::ast::type_ptr &ast_type);
 	static std::shared_ptr<type> create(codegen::state &state, const std::string &name = "");
-	static std::shared_ptr<type> create(codegen::state &state, const catalyst::ast::type_ptr &ast_type);
+	static std::shared_ptr<type> create(codegen::state &state,
+	                                    const catalyst::ast::type_ptr &ast_type);
 	static std::shared_ptr<type> create_function(const std::shared_ptr<type> &return_type);
 	static std::shared_ptr<type>
 	create_function(const std::shared_ptr<type> &return_type,
@@ -45,7 +46,8 @@ struct type {
 	                                           std::vector<member> const &members);
 	static std::shared_ptr<type> create_class(const std::string &name,
 	                                          std::vector<member> const &members);
-	static std::shared_ptr<type> create_class(const std::string &name, std::shared_ptr<type_class> super,
+	static std::shared_ptr<type> create_class(const std::string &name,
+	                                          std::shared_ptr<type_class> super,
 	                                          std::vector<member> const &members);
 
 	virtual llvm::Type *get_llvm_type(codegen::state &state) const = 0;
@@ -306,6 +308,7 @@ struct type_function : type {
 
 	std::shared_ptr<type_custom> method_of = nullptr;
 	inline bool is_method() const { return method_of != nullptr; }
+	bool is_virtual() const;
 };
 
 struct type_ns : type {
@@ -315,7 +318,6 @@ struct type_ns : type {
 	llvm::Type *get_llvm_type(codegen::state &state) const { return nullptr; }
 
 	virtual llvm::Value *get_sizeof(catalyst::compiler::codegen::state &state) { return nullptr; }
-
 };
 
 } // namespace catalyst::compiler::codegen

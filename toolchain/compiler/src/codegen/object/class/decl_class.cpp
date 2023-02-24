@@ -81,41 +81,10 @@ int proto_pass::process_after(ast::decl_class &decl) {
 		changes++;
 	}
 
-	// Super class (inheritance)
-	/*if (decl.super.has_value()) {
-		auto super_name = decl.super.value().ident.name;
-		auto super_sym = state.scopes.find_named_symbol(super_name);
-		// if (!super_sym) {
-		// 	state.report_message(report_type::error,
-		// 	                     std::string("Undefined class `") + super_name + "`",
-		// 	                     &decl.super.value());
-		// 	return 0;
-		// }
-		if (!super_sym) {
-			s->super = nullptr;
-		}
-		// if (!isa<type_class>(super_sym->type)) {
-		// 	state.report_message(report_type::error,
-		// 	                     std::string("`") + super_name + "` is not a valid parent class",
-		// 	                     &decl.super.value());
-		// 	return 0;
-		// }
-		else if (!isa<type_class>(super_sym->type)) {
-			s->super = type_class::unknown();
-		}
-		 else if (s->super.get() != super_sym->type.get()) {
-			s->super = std::static_pointer_cast<type_class>(super_sym->type);
-			changes++;
-		} else {
-			// should not happen
-			s->super = nullptr;
-		}
-	}*/
-
 	return changes;
 }
 
-void codegen(codegen::state &state, ast::decl_class &decl) {
+llvm::Value* codegen(codegen::state &state, ast::decl_class &decl) {
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 	auto &sym = state.symbol_table[key];
 	auto type = (type_class *)sym.type.get();
@@ -130,10 +99,15 @@ void codegen(codegen::state &state, ast::decl_class &decl) {
 
 	state.scopes.enter(decl.ident.name);
 
+	state.Builder.SetInsertPoint(BB);
+
 	if (type->super) {
-		state.Builder.SetInsertPoint(BB);
 		state.Builder.CreateCall(type->super->init_function, {this_});
 	}
+
+	auto metadata_spot = this_;
+	state.Builder.CreateStore(type->get_llvm_metadata_object(state), metadata_spot);
+
 
 	for (auto &member : type->members) {
 		if (isa<ast::decl_fn>(member.decl)) {
@@ -164,6 +138,9 @@ void codegen(codegen::state &state, ast::decl_class &decl) {
 
 	state.scopes.leave();
 
+	// Generate the metadata object
+	type->get_llvm_metadata_object(state);
+
 	std::string err;
 	llvm::raw_string_ostream err_output(err);
 	if (!llvm::verifyFunction(*type->init_function, &err_output)) {
@@ -175,6 +152,8 @@ void codegen(codegen::state &state, ast::decl_class &decl) {
 		type->init_function->eraseFromParent();
 		type->init_function = nullptr;
 	}
+
+	return nullptr;
 }
 
 } // namespace catalyst::compiler::codegen

@@ -6,19 +6,28 @@
 #include "catalyst/ast/expr.hpp"
 #include <memory>
 #include <string>
+#include <unordered_set>
 
 namespace catalyst::compiler::codegen {
 struct type;
-}
-
-namespace catalyst::compiler::codegen {
+struct type_custom;
 
 struct member {
-	member(const std::string &name, std::shared_ptr<type> type, ast::decl_ptr decl)
-		: name(name), type(type), decl(decl) {}
+	member(const std::string &name, std::shared_ptr<type> type, ast::decl_ptr decl,
+	       const std::vector<ast::decl_classifier> &classifiers)
+		: name(name), type(type), decl(decl) {
+		for (auto c : classifiers)
+			this->classifiers.insert(c);
+	}
 	std::string name;
 	std::shared_ptr<type> type;
 	ast::decl_ptr decl;
+	std::unordered_set<ast::decl_classifier> classifiers;
+
+	bool is_virtual() const {
+		return classifiers.contains(ast::decl_classifier::virtual_) ||
+		       classifiers.contains(ast::decl_classifier::override_);
+	}
 };
 
 struct member_locator {
@@ -31,6 +40,14 @@ struct member_locator {
 
 	member *member;
 	type_custom *residence;
+
+	std::string get_fqn() const;
+
+	bool operator==(const member_locator& rhs) const
+	{
+		return member == rhs.member && residence == rhs.residence;
+	}
+
 };
 
 } // namespace catalyst::compiler::codegen

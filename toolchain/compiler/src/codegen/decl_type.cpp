@@ -43,7 +43,7 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_st
 		// if (auto fn = dynamic_cast<type_function*>(type.get())) {
 		//	fn->is_method = true;
 		// }
-		members.emplace_back(mmbr->ident.name, type, mmbr);
+		members.emplace_back(mmbr->ident.name, type, mmbr, mmbr->classifiers);
 	}
 	return type::create_struct(
 		state.current_scope().get_fully_qualified_scope_name(decl.ident.name), members);
@@ -53,7 +53,7 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_cl
 	std::vector<member> members;
 	for (auto &mmbr : decl.declarations) {
 		auto type = decl_get_type(state, mmbr);
-		members.emplace_back(mmbr->ident.name, type, mmbr);
+		members.emplace_back(mmbr->ident.name, type, mmbr, mmbr->classifiers);
 	}
 
 	auto fqn = state.current_scope().get_fully_qualified_scope_name(decl.ident.name);

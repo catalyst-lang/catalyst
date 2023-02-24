@@ -8,14 +8,14 @@
 
 namespace catalyst::compiler::codegen {
 
-void codegen(codegen::state &state, ast::decl_ptr decl);
-void codegen(codegen::state &state, ast::decl_fn &decl);
-void codegen(codegen::state &state, ast::fn_body &body);
-void codegen(codegen::state &state, ast::fn_body_block &body);
-void codegen(codegen::state &state, ast::fn_body_expr &body);
-void codegen(codegen::state &state, ast::decl_var &decl);
-void codegen(codegen::state &state, ast::decl_struct &decl);
-void codegen(codegen::state &state, ast::decl_class &decl);
-void codegen(codegen::state &state, ast::decl_ns &decl);
+llvm::Value* codegen(codegen::state &state, ast::decl_ptr decl);
+llvm::Value* codegen(codegen::state &state, ast::decl_fn &decl);
+llvm::Value* codegen(codegen::state &state, ast::fn_body &body);
+llvm::Value* codegen(codegen::state &state, ast::fn_body_block &body);
+llvm::Value* codegen(codegen::state &state, ast::fn_body_expr &body);
+llvm::Value* codegen(codegen::state &state, ast::decl_var &decl);
+llvm::Value* codegen(codegen::state &state, ast::decl_struct &decl);
+llvm::Value* codegen(codegen::state &state, ast::decl_class &decl);
+llvm::Value* codegen(codegen::state &state, ast::decl_ns &decl);
 
 } // namespace catalyst::compiler::codegen

@@ -292,6 +292,10 @@ llvm::Value *codegen_call(codegen::state &state, std::shared_ptr<codegen::type> 
 		if (!arg_type->equals(type->parameters[i])) {
 			// TODO: warn if casting happens
 			arg = arg_type->cast_llvm_value(state, arg, *type->parameters[i]);
+			if (arg == nullptr) {
+				state.report_message(report_type::error, std::string("Cannot cast parameter type from `") + arg_type->get_fqn() + "` to expected type `" + type->parameters[i]->get_fqn() + "`", expr.parameters[i].get());
+				return nullptr;
+			}
 		}
 
 		if (llvm::isa<llvm::StructType>(arg->getType())) {
@@ -304,16 +308,35 @@ llvm::Value *codegen_call(codegen::state &state, std::shared_ptr<codegen::type> 
 			return nullptr;
 	}
 
+	// Virtual functions
+	if (type->is_virtual()) {
+		if (!this_) {
+			state.report_message(report_type::error,
+			                     "calling a virtual function without context of `this`", &expr);
+			return nullptr;
+		}
+
+		auto c = std::dynamic_pointer_cast<type_class>(type->method_of);
+		auto member = c->get_member(type);
+		auto metadata_type = c->get_llvm_metadata_struct_type(state);
+		auto metadata_object =
+			state.Builder.CreateLoad(llvm::PointerType::get(*state.TheContext, 0), this_);
+		auto vtable = state.Builder.CreateConstGEP1_32(metadata_type, metadata_object, 0, "vtable");
+		int index = c->get_virtual_member_index(state, member);
+		value = state.Builder.CreateConstGEP2_32(metadata_type->elements()[0], vtable, 0, index,
+		                                         "vfnptr");
+	}
+
 	llvm::CallInst *callinstr = nullptr;
 	if (llvm::isa<llvm::Function>(value)) {
 		// This is a straight function value
 		if (isa<type_void>(type->return_type)) {
-			callinstr = state.Builder.CreateCall(CalleeF, ArgsV);
+			callinstr = state.Builder.CreateCall((llvm::Function *)value, ArgsV);
 		} else {
-			callinstr = state.Builder.CreateCall(CalleeF, ArgsV, "calltmp");
+			callinstr = state.Builder.CreateCall((llvm::Function *)value, ArgsV, "calltmp");
 		}
 	} else if (llvm::isa<llvm::UnaryInstruction>(value) ||
-	           llvm::isa<llvm::GetElementPtrInst>(value)) {
+	           llvm::isa<llvm::GetElementPtrInst>(value) || llvm::isa<llvm::Constant>(value)) {
 		// This is a function pointer
 		llvm::Value *ptr = state.Builder.CreateLoad(value->getType(), value);
 		auto *fty = (llvm::FunctionType *)stype->get_llvm_type(state);
@@ -472,6 +495,10 @@ void codegen_assignment(codegen::state &state, llvm::Value *dest_ptr,
                         std::shared_ptr<type> dest_type, ast::expr_ptr rhs) {
 	auto rhs_value = codegen(state, rhs, dest_type);
 	auto rhs_type = expr_resulting_type(state, rhs, dest_type);
+
+	if (rhs_value == nullptr) {
+		return;
+	}
 
 	if (*dest_type != *rhs_type) {
 		// need to cast

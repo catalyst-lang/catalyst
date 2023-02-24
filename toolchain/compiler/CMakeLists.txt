@@ -20,6 +20,8 @@ add_library(libcompiler
     src/codegen/object/class/class_type.cpp 
     src/codegen/object/object_type.cpp 
     src/codegen/object/object_type.hpp 
+    src/codegen/object/member.hpp 
+    src/codegen/object/member.cpp 
     src/codegen/stmt.cpp 
     src/codegen/stmt.hpp 
     src/codegen/value.hpp 
@@ -77,6 +79,7 @@ add_executable(test-compiler
     tests/scopes.cpp
     tests/inheritance.cpp
     tests/namespaces.cpp
+    tests/virtuals.cpp
 )
 target_compile_features(test-compiler PRIVATE cxx_std_20)
 target_link_libraries(test-compiler PUBLIC libcompiler)
