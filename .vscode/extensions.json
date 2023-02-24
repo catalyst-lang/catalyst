@@ -1,5 +1,6 @@
 {
     "recommendations": [
-        "matepek.vscode-catch2-test-adapter"
+        "matepek.vscode-catch2-test-adapter",
+        "angelo-breuer.license-header-manager"
     ]
 }

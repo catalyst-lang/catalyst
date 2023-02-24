@@ -25,5 +25,5 @@ class A {
 
 fn main() {
     var b = B()
-    return b.test(9)
+    return b.test()
 }

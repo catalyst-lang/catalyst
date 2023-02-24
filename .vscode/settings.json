@@ -122,7 +122,7 @@
         "ranges": "cpp",
         "span": "cpp"
     },
-    "files.insertFinalNewline": true,
+    "files.insertFinalNewline": false,
 
     "python.analysis.diagnosticSeverityOverrides": {
         "reportUndefinedVariable": "none" // Ignore for SCons
@@ -149,6 +149,20 @@
         "projectKey": "catalyst-lang_catalyst"
     },
     "cmake.generator": "Ninja",
-    "sonarlint.pathToCompileCommands": "${workspaceFolder}/build/compile_commands.json"
+    "sonarlint.pathToCompileCommands": "${workspaceFolder}/build/compile_commands.json",
+    "license-header-manager.excludeExtensions": [
+        ".json", ".ct", ".yml", ".xml", ".bat", ".py"
+    ],
+    "license-header-manager.excludeFolders": [
+        "build"
+    ],
+    "license-header-manager.additionalCommentStyles": [{
+        "extension": ".cpp",
+        "commentStart": "",
+        "commentMiddle": "//",
+        "commentEnd": "",
+
+    }]
+
       
 }
