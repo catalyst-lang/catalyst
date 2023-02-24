@@ -213,4 +213,38 @@ TEST_CASE("Virtual functions advanced") {
     CHECK(ret == 54 + 54398);
 }
 
+TEST_CASE("Virtual functions out-of-order declarations") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        fn get(a: A) {
+            return a.test()
+        }
+
+        class B : A {
+            override fn test() {
+                return 54398
+            }
+        }
+
+        class A {
+            virtual fn test() {
+                return 54
+            }
+
+            virtual fn blaat() {
+                return 13
+            }
+        }
+
+        fn main() {
+            var a = A()
+            var b = B()
+            return get(a) + get(b)
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run<int64_t>(result);
+    REQUIRE(result.is_successful);
+    CHECK(ret == 54 + 54398);
+}
+
 }

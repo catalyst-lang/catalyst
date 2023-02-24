@@ -447,6 +447,9 @@ bool type_primitive::is_assignable_from(const std::shared_ptr<type> &type) const
 
 llvm::Type *type_function::get_llvm_type(state &state) const {
 	std::vector<llvm::Type *> params;
+	
+	if (!is_valid()) 
+		return nullptr;
 
 	if (this->is_method()) {
 		params.push_back(llvm::PointerType::get(*state.TheContext, 0));
@@ -496,7 +499,7 @@ std::string type_function::get_fqn() const {
 	return fqn;
 }
 
-bool type_function::is_valid() {
+bool type_function::is_valid() const {
 	if (!return_type->is_valid())
 		return false;
 	for (auto param : parameters) {

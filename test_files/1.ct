@@ -1,3 +1,16 @@
+fn get(x: A) {
+    return x.test()
+}
+
+
+class B : A {
+    override fn test() {
+        return 54398
+    }
+
+    var bsd = 9;
+}
+
 class A {
     var i = 6
     fn new() {
@@ -12,20 +25,8 @@ class A {
     }
 }
 
-class B : A {
-    override fn test() {
-        return 54398
-    }
-
-    var bsd = 9;
-}
-
-fn get(x: A) {
-    return x.test()
-}
-
 fn main() {
     var b = B()
     var a = A()
-    return get(9)
+    return get(b)
 }

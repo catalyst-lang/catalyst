@@ -87,13 +87,20 @@ int locals_pass::process(ast::decl_fn &decl) {
 	state.scopes.enter(decl.ident.name);
 
 	int pass_changes = 0;
-	if (n == 0) {
-		for (auto &param : decl.parameter_list) {
-			if (!param.type.has_value()) {
-				state.report_message(report_type::error, "Parameter has no type", &param);
-				return 0;
+	for (auto &param : decl.parameter_list) {
+		if (!param.type.has_value()) {
+			state.report_message(report_type::error, "Parameter has no type", &param);
+			return 0;
+		}
+
+		auto key = state.scopes.get_fully_qualified_scope_name(param.ident.name);
+		if (state.symbol_table.contains(key)) {
+			if (!state.symbol_table[key].type->is_valid()) {
+				state.symbol_table[key] =
+					symbol(&param, nullptr, codegen::type::create(state, param.type.value()));
+				if (state.symbol_table[key].type->is_valid()) pass_changes++;
 			}
-			auto key = state.scopes.get_fully_qualified_scope_name(param.ident.name);
+		} else {
 			state.symbol_table[key] =
 				symbol(&param, nullptr, codegen::type::create(state, param.type.value()));
 			pass_changes++;

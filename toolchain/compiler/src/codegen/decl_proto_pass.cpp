@@ -100,34 +100,36 @@ int proto_pass::process(ast::decl_fn &decl) {
 		if (sym.value) {
 			((llvm::Function *)sym.value)->eraseFromParent();
 		}
-		auto the_function =
-			llvm::Function::Create((llvm::FunctionType *)current_fn_type->get_llvm_type(state),
-		                           llvm::Function::ExternalLinkage, key, state.TheModule.get());
+		if (current_fn_type->is_valid()) {
+			auto the_function =
+				llvm::Function::Create((llvm::FunctionType *)current_fn_type->get_llvm_type(state),
+									llvm::Function::ExternalLinkage, key, state.TheModule.get());
 
-		// Set names for all arguments.
-		unsigned i = method_of != nullptr ? -1 : 0;
-		for (auto &Arg : the_function->args()) {
-			if (i == -1) {
-				// method; this param
-				Arg.setName("this");
-				i++;
-				continue;
-			}
-			Arg.setName(decl.parameter_list[i].ident.name);
-			if (isa<type_object>(current_fn_type->parameters[i])) {
-				auto to = (type_object *)current_fn_type->parameters[i].get();
-				if (isa<type_struct>(to->object_type)) {
-					Arg.addAttr(llvm::Attribute::NoUndef);
-					Arg.addAttr(llvm::Attribute::getWithByValType(
-						*state.TheContext, current_fn_type->parameters[i]->get_llvm_type(state)));
-				} else if (isa<type_class>(to->object_type)) {
-					Arg.addAttr(llvm::Attribute::NoUndef);
+			// Set names for all arguments.
+			unsigned i = method_of != nullptr ? -1 : 0;
+			for (auto &Arg : the_function->args()) {
+				if (i == -1) {
+					// method; this param
+					Arg.setName("this");
+					i++;
+					continue;
 				}
+				Arg.setName(decl.parameter_list[i].ident.name);
+				if (isa<type_object>(current_fn_type->parameters[i])) {
+					auto to = (type_object *)current_fn_type->parameters[i].get();
+					if (isa<type_struct>(to->object_type)) {
+						Arg.addAttr(llvm::Attribute::NoUndef);
+						Arg.addAttr(llvm::Attribute::getWithByValType(
+							*state.TheContext, current_fn_type->parameters[i]->get_llvm_type(state)));
+					} else if (isa<type_class>(to->object_type)) {
+						Arg.addAttr(llvm::Attribute::NoUndef);
+					}
+				}
+				i++;
 			}
-			i++;
-		}
 
-		sym.value = the_function;
+			sym.value = the_function;
+		}
 	}
 
 	state.current_function_symbol = prev_fn_sym;

@@ -31,7 +31,7 @@ struct type_custom : type {
 struct type_struct : type_custom {
 	explicit type_struct(const std::string &name, std::vector<member> const &members);
 
-	bool is_valid() override;
+	bool is_valid() const override;
 
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Type *get_llvm_struct_type(codegen::state &state) const override;
@@ -51,7 +51,7 @@ struct type_class : type_custom {
 	explicit type_class(const std::string &name, std::shared_ptr<type_class> super,
 	                    std::vector<member> const &members);
 
-	bool is_valid() override;
+	bool is_valid() const override;
 
 	static std::shared_ptr<type_class> unknown();
 
@@ -95,7 +95,7 @@ struct type_object : type {
 
 	virtual std::string get_fqn() const override;
 
-	bool is_valid() override;
+	bool is_valid() const override;
 
 	inline llvm::Value *get_sizeof(codegen::state &state) override {
 		return object_type->get_sizeof(state);

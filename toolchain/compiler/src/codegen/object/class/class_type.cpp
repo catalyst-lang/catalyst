@@ -86,7 +86,7 @@ std::string type_class::get_fqn() const {
 	return fqn;
 }
 
-bool type_class::is_valid() {
+bool type_class::is_valid() const {
 	for (const auto &mmbr : members) {
 		if (!mmbr.type->is_valid())
 			return false;

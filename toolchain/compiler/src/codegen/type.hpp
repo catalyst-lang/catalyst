@@ -27,7 +27,7 @@ struct type {
 
 	virtual ~type() = default;
 
-	virtual bool is_valid() { return true; }
+	virtual bool is_valid() const { return true; }
 
 	type(std::string fqn) : fqn(std::move(fqn)) {}
 	type(std::string fqn, int specialization_score)
@@ -88,14 +88,14 @@ struct type {
 struct type_undefined : type {
 	type_undefined() : type("<undefined>") {}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
-	bool is_valid() override { return false; }
+	bool is_valid() const override { return false; }
 	llvm::Value *get_sizeof(codegen::state &) override;
 };
 
 struct type_void : type {
 	type_void() : type("void") {}
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
-	bool is_valid() override { return true; }
+	bool is_valid() const override { return true; }
 	llvm::Value *get_sizeof(codegen::state &) override;
 };
 
@@ -304,7 +304,7 @@ struct type_function : type {
 
 	virtual llvm::Value *get_sizeof(catalyst::compiler::codegen::state &state) override;
 
-	bool is_valid() override;
+	bool is_valid() const override;
 
 	std::shared_ptr<type_custom> method_of = nullptr;
 	inline bool is_method() const { return method_of != nullptr; }

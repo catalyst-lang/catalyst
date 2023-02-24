@@ -55,7 +55,7 @@ llvm::Type *type_object::get_llvm_type(state &state) const {
 
 std::string type_object::get_fqn() const { return object_type->name; }
 
-bool type_object::is_valid() { return object_type->is_valid(); }
+bool type_object::is_valid() const { return object_type->is_valid(); }
 
 llvm::Value *type_object::cast_llvm_value(codegen::state &state, llvm::Value *value,
                                           const type &to) const {

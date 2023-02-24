@@ -57,7 +57,7 @@ std::string type_struct::get_fqn() const {
 	return fqn;
 }
 
-bool type_struct::is_valid() {
+bool type_struct::is_valid() const {
 	for (const auto &mmbr : members) {
 		if (!mmbr.type->is_valid()) return false;
 	}
