@@ -27,6 +27,7 @@ add_library(libcompiler
     src/codegen/stmt.hpp 
     src/codegen/value.hpp 
     src/codegen/value.cpp 
+    src/codegen/scope.cpp 
     src/codegen/scope.hpp 
     src/codegen/symbol.hpp 
     src/codegen/type.hpp 

@@ -135,13 +135,13 @@ int type_class::get_member_index_in_llvm_struct(member *member) {
 	return 1 + type_custom::get_member_index_in_llvm_struct(member);
 }
 
-std::vector<member_locator> type_class::get_virtual_members(codegen::state &state) {
+std::vector<member_locator> type_class::get_virtual_members() {
 	// TODO: we can probably cache this the first time we call it
 
 	std::vector<member_locator> fns;
 
 	if (super != nullptr) {
-		fns = super->get_virtual_members(state);
+		fns = super->get_virtual_members();
 	}
 
 	for (auto &m : members) {
@@ -178,8 +178,17 @@ std::vector<member_locator> type_class::get_virtual_members(codegen::state &stat
 	return fns;
 }
 
+std::vector<member_locator> type_class::get_virtual_members(const std::string &name) {
+	auto vmems = get_virtual_members();
+	std::erase_if(vmems, [&name](const member_locator &ml) {
+		std::string canonical_name = ml.member->name;
+		return canonical_name.substr(0, canonical_name.find_first_of('`')) != name;
+	});
+	return vmems;
+}
+
 int type_class::get_virtual_member_index(codegen::state &state, const member_locator& member) {
-	auto fns = get_virtual_members(state);
+	auto fns = get_virtual_members();
 	auto it = find(fns.begin(), fns.end(), member);
 	if (it != fns.end()) 
     {
@@ -192,7 +201,7 @@ int type_class::get_virtual_member_index(codegen::state &state, const member_loc
 
 llvm::StructType *type_class::get_llvm_metadata_struct_type(codegen::state &state) {
 	if (metadata_struct_type == nullptr) {
-		auto vmems = get_virtual_members(state);
+		auto vmems = get_virtual_members();
 		std::vector<llvm::Type *> fields;
 		fields.push_back(
 			llvm::ArrayType::get(llvm::PointerType::get(*state.TheContext, 0), vmems.size()));
@@ -205,7 +214,7 @@ llvm::StructType *type_class::get_llvm_metadata_struct_type(codegen::state &stat
 
 llvm::GlobalVariable *type_class::get_llvm_metadata_object(codegen::state &state) {
 	if (metadata_object == nullptr) {
-		auto vmems = get_virtual_members(state);
+		auto vmems = get_virtual_members();
 		auto array_type =
 			llvm::ArrayType::get(llvm::PointerType::get(*state.TheContext, 0), vmems.size());
 		std::vector<llvm::Constant *> vtable;

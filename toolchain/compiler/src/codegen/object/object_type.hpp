@@ -58,7 +58,8 @@ struct type_class : type_custom {
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Type *get_llvm_struct_type(codegen::state &state) const override;
 
-	std::vector<member_locator> get_virtual_members(codegen::state &state);
+	std::vector<member_locator> get_virtual_members();
+	std::vector<member_locator> get_virtual_members(const std::string &name);
 	int get_virtual_member_index(codegen::state &state, const member_locator& member);
 
 	llvm::StructType *get_llvm_metadata_struct_type(codegen::state &state);

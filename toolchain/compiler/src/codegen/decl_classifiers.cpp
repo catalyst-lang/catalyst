@@ -75,7 +75,7 @@ bool check_decl_classifiers(codegen::state &state, const ast::decl_fn &decl) {
 			auto class_type = std::static_pointer_cast<type_class>(symbol.type);
 			if (c == ast::decl_classifier::virtual_) {
 				if (class_type->super != nullptr) {
-					auto vmems = class_type->super->get_virtual_members(state);
+					auto vmems = class_type->super->get_virtual_members();
 					if (vector_contains(vmems, [&](const member_locator &ml) {
 							return ml.member->name == decl.ident.name;
 						})) {
@@ -99,7 +99,7 @@ bool check_decl_classifiers(codegen::state &state, const ast::decl_fn &decl) {
 					continue;
 				}
 
-                auto vmems = class_type->super->get_virtual_members(state);
+                auto vmems = class_type->super->get_virtual_members();
                 if (!vector_contains(vmems, [&](const member_locator &ml) {
                         return ml.member->name == decl.ident.name;
                     })) {
@@ -129,7 +129,7 @@ bool check_decl_classifiers(codegen::state &state, const ast::decl_fn &decl) {
                 auto class_type = std::static_pointer_cast<type_class>(symbol.type);
                 if (class_type->super != nullptr) {
                     // TODO: probably also check for shadowing of non-virtual functions as well
-                    auto vmems = class_type->super->get_virtual_members(state);
+                    auto vmems = class_type->super->get_virtual_members();
                     if (vector_contains(vmems, [&](const member_locator &ml) {
                             return ml.member->name == decl.ident.name;
                         })) {
