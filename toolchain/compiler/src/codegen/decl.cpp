@@ -56,7 +56,10 @@ static llvm::AllocaInst *CreateEntryBlockAlloca(codegen::state &state, llvm::Fun
 }
 
 llvm::Value* codegen(codegen::state &state, ast::decl_fn &decl) {
-	// First, check for an existing function from a previous 'extern' declaration.
+	// Verify classifiers and report errors
+	if (!check_decl_classifiers(state, decl)) { return nullptr; }
+
+	// Check for an existing function from a previous 'extern' declaration.
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 	auto &sym = state.symbol_table[key];
 	auto type = (type_function *)sym.type.get();
@@ -182,6 +185,9 @@ llvm::Value* codegen(codegen::state &state, ast::fn_body_block &body) {
 }
 
 llvm::Value* codegen(codegen::state &state, ast::decl_var &decl) {
+	// Verify classifiers and report errors
+	if (!check_decl_classifiers(state, decl)) { return nullptr; }
+
 	// the locals pass already made sure there is a value in the symbol table
 	auto var = state.scopes.find_named_symbol(decl.ident.name);
 	if (decl.expr.has_value() && decl.expr.value() != nullptr) {
@@ -197,6 +203,9 @@ llvm::Value* codegen(codegen::state &state, ast::decl_var &decl) {
 }
 
 llvm::Value* codegen(codegen::state &state, ast::decl_ns &decl) {
+	// Verify classifiers and report errors
+	if (!check_decl_classifiers(state, decl)) { return nullptr; }
+	
 	if (decl.is_global) return nullptr; // this is handled in the translation unit
 
 	state.scopes.enter(decl.ident.name);

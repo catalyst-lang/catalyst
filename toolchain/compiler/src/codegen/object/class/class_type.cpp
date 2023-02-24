@@ -157,11 +157,14 @@ std::vector<member_locator> type_class::get_virtual_members(codegen::state &stat
 			auto result = std::find_if(fns.begin(), fns.end(), is_override);
 			if (result != fns.end()) {
 				if (!m.classifiers.contains(ast::decl_classifier::override_)) {
-					state.report_message(report_type::error,
-					                     std::string("Function `") + name + "." + m.name +
-					                         "` is overriding a virtual function, but is missing "
-					                         "the 'override' keyword",
-					                     m.decl.get());
+					// We can hide the error below as it get detected in check_decl_classifiers() with
+					// better error messages 
+
+					// state.report_message(report_type::error,
+					//                      std::string("Function `") + name + "." + m.name +
+					//                          "` is overriding a virtual function, but is missing "
+					//                          "the 'override' keyword",
+					//                      m.decl.get());
 				}
 				// override found!
 				(*result) = member_locator(&m, this);

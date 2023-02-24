@@ -85,6 +85,9 @@ int proto_pass::process_after(ast::decl_class &decl) {
 }
 
 llvm::Value* codegen(codegen::state &state, ast::decl_class &decl) {
+	// Verify classifiers and report errors
+	if (!check_decl_classifiers(state, decl)) { return nullptr; }
+	
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 	auto &sym = state.symbol_table[key];
 	auto type = (type_class *)sym.type.get();
