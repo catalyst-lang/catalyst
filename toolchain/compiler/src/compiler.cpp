@@ -1,6 +1,6 @@
-//
-// Created by basdu on 4-11-2022.
-//
+// Copyright (c) 2021-2023 Bas du Pré and Catalyst contributors
+// SPDX-License-Identifier: MIT
+
 #include <iostream>
 #include "compiler.hpp"
 #include "../../parser/src/parser.hpp"

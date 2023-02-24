@@ -1,3 +1,6 @@
+// Copyright (c) 2021-2023 Bas du Pré and Catalyst contributors
+// SPDX-License-Identifier: MIT
+
 #include <cinttypes>
 #include <codecvt>
 #include <cstdint>

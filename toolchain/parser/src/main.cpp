@@ -1,3 +1,6 @@
+// Copyright (c) 2021-2023 Bas du Pré and Catalyst contributors
+// SPDX-License-Identifier: MIT
+
 #include <CLI11.hpp>
 #include <rang.hpp>
 

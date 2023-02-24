@@ -1,3 +1,6 @@
+// Copyright (c) 2021-2022 Bas du Pré and Catalyst contributors
+// SPDX-License-Identifier: MIT
+
 #include "decl_locals_pass.hpp"
 
 #include "catalyst/rtti.hpp"
