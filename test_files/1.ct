@@ -1,4 +1,4 @@
 iface B {
-    fn test(i: i43, 
-    i:ij) fn bla() 
+    fn test(i: i32, i:i64) -> void
+    fn bla() -> void
 }

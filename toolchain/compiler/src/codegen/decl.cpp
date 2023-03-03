@@ -59,7 +59,10 @@ llvm::Value* codegen(codegen::state &state, ast::decl_fn &decl) {
 	// Verify classifiers and report errors
 	if (!check_decl_classifiers(state, decl)) { return nullptr; }
 
-	if (!decl.body.has_value()) { return nullptr; }
+	if (!decl.body.has_value()) {
+		state.report_message(report_type::error, "Function without body", &decl);
+		return nullptr; 
+	}
 
 	// Check for an existing function from a previous 'extern' declaration.
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
@@ -207,7 +210,7 @@ llvm::Value* codegen(codegen::state &state, ast::decl_var &decl) {
 llvm::Value* codegen(codegen::state &state, ast::decl_ns &decl) {
 	// Verify classifiers and report errors
 	if (!check_decl_classifiers(state, decl)) { return nullptr; }
-	
+
 	if (decl.is_global) return nullptr; // this is handled in the translation unit
 
 	state.scopes.enter(decl.ident.name);

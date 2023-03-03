@@ -48,10 +48,12 @@ int pass::walk(ast::decl *decl) {
 		return walk(*(ast::decl_struct *)decl);
 	} else if (isa<ast::decl_class>(decl)) {
 		return walk(*(ast::decl_class *)decl);
+	} else if (isa<ast::decl_iface>(decl)) {
+		return walk(*(ast::decl_iface *)decl);
 	} else if (isa<ast::decl_ns>(decl)) {
 		return walk(*(ast::decl_ns *)decl);
 	}
-	state.report_message(report_type::error, "Choices exhausted", decl);
+	state.report_message(report_type::error, "Choices exhausted @ pass::walk(ast::decl)", decl);
 	return 0;
 }
 
@@ -140,7 +142,7 @@ int pass::walk(ast::statement_ptr &stmt) {
 	} else if (isa<ast::statement_expr>(stmt)) {
 		return walk(*(ast::statement_expr *)stmt.get());
 	}
-	state.report_message(report_type::error, "Choices exhausted", stmt.get());
+	state.report_message(report_type::error, "Choices exhausted @ pass::walk(ast::statement_ptr)", stmt.get());
 	return 0;
 }
 
