@@ -18,7 +18,7 @@
 
 namespace catalyst::compiler::codegen {
 
-int proto_pass::process(ast::decl_class &decl) {
+int proto_pass::process(ast::decl_iface &decl) {
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
 
 	if (n == 0 && state.symbol_table.contains(key)) {
@@ -40,7 +40,7 @@ int proto_pass::process(ast::decl_class &decl) {
 	return changed_num;
 }
 
-int proto_pass::process_after(ast::decl_class &decl) {
+int proto_pass::process_after(ast::decl_iface &decl) {
 	int changes = 0;
 
 	auto key = state.scopes.get_fully_qualified_scope_name(decl.ident.name);
@@ -84,7 +84,7 @@ int proto_pass::process_after(ast::decl_class &decl) {
 	return changes;
 }
 
-llvm::Value* codegen(codegen::state &state, ast::decl_class &decl) {
+llvm::Value* codegen(codegen::state &state, ast::decl_iface &decl) {
 	// Verify classifiers and report errors
 	if (!check_decl_classifiers(state, decl)) { return nullptr; }
 	

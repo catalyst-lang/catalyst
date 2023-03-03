@@ -16,9 +16,11 @@ add_library(libcompiler
     src/codegen/decl_type.cpp 
     src/codegen/decl_type.hpp 
     src/codegen/object/struct/decl_struct.cpp 
-    src/codegen/object/struct/struct_type.cpp 
+    src/codegen/object/struct/type_struct.cpp 
     src/codegen/object/class/decl_class.cpp 
-    src/codegen/object/class/class_type.cpp 
+    src/codegen/object/class/type_class.cpp 
+    src/codegen/object/iface/decl_iface.cpp 
+    src/codegen/object/iface/type_iface.cpp 
     src/codegen/object/object_type.cpp 
     src/codegen/object/object_type.hpp 
     src/codegen/object/member.hpp 

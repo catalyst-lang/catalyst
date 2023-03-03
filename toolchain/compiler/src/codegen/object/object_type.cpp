@@ -1,9 +1,9 @@
 // Copyright (c) 2021-2022 Bas du Pré and Catalyst contributors
 // SPDX-License-Identifier: MIT
 
-#include "catalyst/rtti.hpp"
-
 #include "object_type.hpp"
+
+#include "catalyst/rtti.hpp"
 
 namespace catalyst::compiler::codegen {
 
@@ -67,10 +67,10 @@ llvm::Value *type_object::cast_llvm_value(codegen::state &state, llvm::Value *va
 }
 
 bool type_object::is_assignable_from(const std::shared_ptr<type> &type) const {
-	if (isa<type_class>(object_type)) {
-		auto base_class = std::static_pointer_cast<type_class>(object_type);
-		if (isa<type_class>(type)) {
-			auto descending_class = std::static_pointer_cast<type_class>(type);
+	if (isa<type_virtual>(object_type)) {
+		auto base_class = std::static_pointer_cast<type_virtual>(object_type);
+		if (isa<type_virtual>(type)) {
+			auto descending_class = std::static_pointer_cast<type_virtual>(type);
 			while (descending_class.get() != nullptr && descending_class.get() != base_class.get())
 				descending_class = descending_class->super;
 			return descending_class.get() == base_class.get();
@@ -79,5 +79,18 @@ bool type_object::is_assignable_from(const std::shared_ptr<type> &type) const {
 
 	return false;
 }
+
+type_virtual::type_virtual(const std::string &fqn, const std::string &name, std::vector<member> const &members) : type_custom(fqn, name) {
+	this->members = members;
+	this->name = name;
+}
+
+type_virtual::type_virtual(const std::string &fqn, const std::string &name, std::shared_ptr<type_virtual> super,
+	                    std::vector<member> const &members) : type_custom(fqn, name) {
+							this->name = name;
+							this->members = members;
+							this->super = super;
+						}
+
 
 } // namespace catalyst::compiler::codegen

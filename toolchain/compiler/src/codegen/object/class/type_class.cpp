@@ -8,16 +8,11 @@
 namespace catalyst::compiler::codegen {
 
 type_class::type_class(const std::string &name, std::vector<member> const &members)
-	: type_custom("class", name) {
-	this->members = members;
-}
+	: type_virtual("class", name, members) {}
 
-type_class::type_class(const std::string &name, std::shared_ptr<type_class> super,
+type_class::type_class(const std::string &name, std::shared_ptr<type_virtual> super,
                        std::vector<member> const &members)
-	: type_custom("class", name) {
-	this->members = members;
-	this->super = super;
-}
+	: type_virtual("class", name, super, members) {}
 
 std::shared_ptr<type_class> type_class::unknown() {
 	static auto u = std::make_shared<type_class>("<unknown>", std::vector<member>{});
@@ -29,7 +24,7 @@ std::shared_ptr<type> type::create_class(const std::string &name,
 	return std::make_shared<type_class>(name, members);
 }
 
-std::shared_ptr<type> type::create_class(const std::string &name, std::shared_ptr<type_class> super,
+std::shared_ptr<type> type::create_class(const std::string &name, std::shared_ptr<type_virtual> super,
                                          std::vector<member> const &members) {
 	return std::make_shared<type_class>(name, super, members);
 }

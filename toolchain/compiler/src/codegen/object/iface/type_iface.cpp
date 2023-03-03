@@ -7,34 +7,29 @@
 
 namespace catalyst::compiler::codegen {
 
-type_class::type_class(const std::string &name, std::vector<member> const &members)
-	: type_custom("class", name) {
-	this->members = members;
-}
+type_iface::type_iface(const std::string &name, std::vector<member> const &members)
+	: type_virtual("iface", name, members) {}
 
-type_class::type_class(const std::string &name, std::shared_ptr<type_class> super,
+type_iface::type_iface(const std::string &name, std::shared_ptr<type_virtual> super,
                        std::vector<member> const &members)
-	: type_custom("class", name) {
-	this->members = members;
-	this->super = super;
-}
+	: type_virtual("iface", name, super, members) {}
 
-std::shared_ptr<type_class> type_class::unknown() {
-	static auto u = std::make_shared<type_class>("<unknown>", std::vector<member>{});
+std::shared_ptr<type_iface> type_iface::unknown() {
+	static auto u = std::make_shared<type_iface>("<unknown>", std::vector<member>{});
 	return u;
 }
 
-std::shared_ptr<type> type::create_class(const std::string &name,
+std::shared_ptr<type> type::create_iface(const std::string &name,
                                          std::vector<member> const &members) {
-	return std::make_shared<type_class>(name, members);
+	return std::make_shared<type_iface>(name, members);
 }
 
-std::shared_ptr<type> type::create_class(const std::string &name, std::shared_ptr<type_class> super,
+std::shared_ptr<type> type::create_iface(const std::string &name, std::shared_ptr<type_virtual> super,
                                          std::vector<member> const &members) {
-	return std::make_shared<type_class>(name, super, members);
+	return std::make_shared<type_iface>(name, super, members);
 }
 
-llvm::Type *type_class::get_llvm_struct_type(state &state) const {
+llvm::Type *type_iface::get_llvm_struct_type(state &state) const {
 	if (structType == nullptr) {
 		std::vector<llvm::Type *> fields;
 		
@@ -58,19 +53,19 @@ llvm::Type *type_class::get_llvm_struct_type(state &state) const {
 			}
 		}
 
-		auto self = const_cast<type_class *>(this);
+		auto self = const_cast<type_iface *>(this);
 		self->structType = llvm::StructType::create(*state.TheContext, fields, name, false);
 	}
 	return structType;
 }
 
-llvm::Type *type_class::get_llvm_type(state &state) const {
+llvm::Type *type_iface::get_llvm_type(state &state) const {
 	return llvm::PointerType::get(*state.TheContext, 0);
 }
 
-std::string type_class::get_fqn() const {
+std::string type_iface::get_fqn() const {
 	std::string base = super ? std::string(":") + super->name : "";
-	std::string fqn = "class(" + name + base + "){";
+	std::string fqn = "iface(" + name + base + "){";
 	bool first = true;
 	for (const auto &mmbr : members) {
 		if (!first) {
@@ -86,25 +81,25 @@ std::string type_class::get_fqn() const {
 	return fqn;
 }
 
-bool type_class::is_valid() const {
+bool type_iface::is_valid() const {
 	for (const auto &mmbr : members) {
 		if (!mmbr.type->is_valid())
 			return false;
 	}
-	if (super == type_class::unknown()) {
+	if (super != nullptr && !super->is_valid()) {
 		return false;
 	}
 	return true;
 }
 
-void type_class::copy_from(type_class &other) {
+void type_iface::copy_from(type_iface &other) {
 	this->name = other.name;
 	this->members.clear();
 	this->members = other.members;
 	this->super = other.super;
 }
 
-llvm::Value *type_class::get_sizeof(catalyst::compiler::codegen::state &state) {
+llvm::Value *type_iface::get_sizeof(catalyst::compiler::codegen::state &state) {
 	// Use trick from http://nondot.org/sabre/LLVMNotes/SizeOf-OffsetOf-VariableSizedStructs.txt
 	// to mimic a sizeof()
 
@@ -114,7 +109,7 @@ llvm::Value *type_class::get_sizeof(catalyst::compiler::codegen::state &state) {
 	                                    "sizei");
 }
 
-member_locator type_class::get_member(const std::string &name) {
+member_locator type_iface::get_member(const std::string &name) {
 	auto own_member = type_custom::get_member(name);
 	if (!own_member.member && super) {
 		return super->get_member(name);
@@ -122,7 +117,7 @@ member_locator type_class::get_member(const std::string &name) {
 	return own_member;
 }
 
-member_locator type_class::get_member(const type_function *function) {
+member_locator type_iface::get_member(const type_function *function) {
 	auto own_member = type_custom::get_member(function);
 	if (!own_member.member && super) {
 		return super->get_member(function);
@@ -130,12 +125,12 @@ member_locator type_class::get_member(const type_function *function) {
 	return own_member;
 }
 
-int type_class::get_member_index_in_llvm_struct(member *member) {
+int type_iface::get_member_index_in_llvm_struct(member *member) {
 	// offset of 1, either for the metadata in a bare class, or the parent class otherwise.
 	return 1 + type_custom::get_member_index_in_llvm_struct(member);
 }
 
-std::vector<member_locator> type_class::get_virtual_members() {
+std::vector<member_locator> type_iface::get_virtual_members() {
 	// TODO: we can probably cache this the first time we call it
 
 	std::vector<member_locator> fns;
@@ -156,16 +151,6 @@ std::vector<member_locator> type_class::get_virtual_members() {
 			};
 			auto result = std::find_if(fns.begin(), fns.end(), is_override);
 			if (result != fns.end()) {
-				if (!m.classifiers.contains(ast::decl_classifier::override_)) {
-					// We can hide the error below as it get detected in check_decl_classifiers() with
-					// better error messages 
-
-					// state.report_message(report_type::error,
-					//                      std::string("Function `") + name + "." + m.name +
-					//                          "` is overriding a virtual function, but is missing "
-					//                          "the 'override' keyword",
-					//                      m.decl.get());
-				}
 				// override found!
 				(*result) = member_locator(&m, this);
 			} else {
@@ -178,7 +163,7 @@ std::vector<member_locator> type_class::get_virtual_members() {
 	return fns;
 }
 
-std::vector<member_locator> type_class::get_virtual_members(const std::string &name) {
+std::vector<member_locator> type_iface::get_virtual_members(const std::string &name) {
 	auto vmems = get_virtual_members();
 	std::erase_if(vmems, [&name](const member_locator &ml) {
 		std::string canonical_name = ml.member->name;
@@ -187,7 +172,7 @@ std::vector<member_locator> type_class::get_virtual_members(const std::string &n
 	return vmems;
 }
 
-int type_class::get_virtual_member_index(codegen::state &state, const member_locator& member) {
+int type_iface::get_virtual_member_index(codegen::state &state, const member_locator& member) {
 	auto fns = get_virtual_members();
 	auto it = find(fns.begin(), fns.end(), member);
 	if (it != fns.end()) 
@@ -199,7 +184,7 @@ int type_class::get_virtual_member_index(codegen::state &state, const member_loc
     }
 }
 
-llvm::StructType *type_class::get_llvm_metadata_struct_type(codegen::state &state) {
+llvm::StructType *type_iface::get_llvm_metadata_struct_type(codegen::state &state) {
 	if (metadata_struct_type == nullptr) {
 		auto vmems = get_virtual_members();
 		std::vector<llvm::Type *> fields;
@@ -212,7 +197,7 @@ llvm::StructType *type_class::get_llvm_metadata_struct_type(codegen::state &stat
 	return metadata_struct_type;
 }
 
-llvm::GlobalVariable *type_class::get_llvm_metadata_object(codegen::state &state) {
+llvm::GlobalVariable *type_iface::get_llvm_metadata_object(codegen::state &state) {
 	if (metadata_object == nullptr) {
 		auto vmems = get_virtual_members();
 		auto array_type =

@@ -71,13 +71,42 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_cl
 			return type::create_class(fqn, type_class::unknown(), members);
 		}
 		if (!isa<type_class>(super_sym->type)) {
-			state.report_message(report_type::error, "Unexpected base class",
+			state.report_message(report_type::error, "Unexpected base type",
 			                     decl.super.value().get());
 		}
 		auto super_class = std::static_pointer_cast<type_class>(super_sym->type);
 		return type::create_class(fqn, super_class, members);
 	} else {
 		return type::create_class(fqn, members);
+	}
+}
+
+std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_iface &decl) {
+	std::vector<member> members;
+	for (auto &mmbr : decl.declarations) {
+		auto type = decl_get_type(state, mmbr);
+		members.emplace_back(mmbr->ident.name, type, mmbr, mmbr->classifiers);
+	}
+
+	auto fqn = state.current_scope().get_fully_qualified_scope_name(decl.ident.name);
+	if (decl.super.has_value()) {
+		if (!isa<ast::type_qualified_name>(decl.super.value())) {
+			return type::create_iface(fqn, type_iface::unknown(), members);
+		}
+
+		auto super_qn = std::static_pointer_cast<ast::type_qualified_name>(decl.super.value());
+		auto super_sym = state.scopes.find_named_symbol(*super_qn);
+		if (!super_sym) {
+			return type::create_iface(fqn, type_iface::unknown(), members);
+		}
+		if (!isa<type_class>(super_sym->type)) {
+			state.report_message(report_type::error, "Unexpected base type",
+			                     decl.super.value().get());
+		}
+		auto super_class = std::static_pointer_cast<type_virtual>(super_sym->type);
+		return type::create_iface(fqn, super_class, members);
+	} else {
+		return type::create_iface(fqn, members);
 	}
 }
 
@@ -90,6 +119,8 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, const ast::d
 		return decl_get_type(state, *(ast::decl_struct *)decl.get());
 	} else if (isa<ast::decl_class>(decl)) {
 		return decl_get_type(state, *(ast::decl_class *)decl.get());
+	} else if (isa<ast::decl_iface>(decl)) {
+		return decl_get_type(state, *(ast::decl_iface *)decl.get());
 	} else {
 		state.report_message(report_type::error, "Decl type not implemented", decl.get());
 		return nullptr;

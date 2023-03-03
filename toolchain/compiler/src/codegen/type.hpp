@@ -8,6 +8,8 @@ struct type;
 struct type_ns;
 struct type_custom;
 struct type_class;
+struct type_virtual;
+struct type_iface;
 } // namespace catalyst::compiler::codegen
 
 #include "catalyst/ast/expr.hpp"
@@ -47,7 +49,12 @@ struct type {
 	static std::shared_ptr<type> create_class(const std::string &name,
 	                                          std::vector<member> const &members);
 	static std::shared_ptr<type> create_class(const std::string &name,
-	                                          std::shared_ptr<type_class> super,
+	                                          std::shared_ptr<type_virtual> super,
+	                                          std::vector<member> const &members);
+	static std::shared_ptr<type> create_iface(const std::string &name,
+	                                          std::vector<member> const &members);
+	static std::shared_ptr<type> create_iface(const std::string &name,
+	                                          std::shared_ptr<type_virtual> super,
 	                                          std::vector<member> const &members);
 
 	virtual llvm::Type *get_llvm_type(codegen::state &state) const = 0;
