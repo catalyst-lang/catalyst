@@ -16,6 +16,7 @@ llvm::Value* codegen(codegen::state &state, ast::fn_body_expr &body);
 llvm::Value* codegen(codegen::state &state, ast::decl_var &decl);
 llvm::Value* codegen(codegen::state &state, ast::decl_struct &decl);
 llvm::Value* codegen(codegen::state &state, ast::decl_class &decl);
+llvm::Value* codegen(codegen::state &state, ast::decl_iface &decl);
 llvm::Value* codegen(codegen::state &state, ast::decl_ns &decl);
 
 bool check_decl_classifiers(codegen::state &state, const ast::decl_fn &decl);

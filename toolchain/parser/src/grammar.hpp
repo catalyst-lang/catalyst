@@ -598,6 +598,14 @@ struct decl_list {
 	static constexpr auto value = lexy::as_list<std::vector<ast::decl_ptr>>;
 };
 
+struct inheritance_list {
+	static constexpr auto name = "inheritance list";
+	static constexpr auto rule = dsl::opt(dsl::colon >> dsl::list(dsl::p<type>, dsl::sep(dsl::comma)));
+
+	static constexpr auto value = lexy::as_list<std::vector<ast::type_ptr>>;
+
+};
+
 struct decl_struct {
 	static constexpr auto name = "struct declaration";
 	static constexpr auto rule = kw_struct >> dsl::p<ident> + dsl::p<decl_list> + dsl::position;
@@ -612,16 +620,11 @@ struct decl_class {
 	static constexpr auto name = "class declaration";
 	static constexpr auto
 		rule = kw_class >>
-	           dsl::p<ident> +
-	               dsl::opt(dsl::colon >> dsl::p<type>) + dsl::p<decl_list> + dsl::position;
+	           dsl::p<ident> + dsl::p<inheritance_list> + dsl::p<decl_list> + dsl::position;
 
 	static constexpr auto value = lexy::callback<ast::decl_ptr>(
-		[](auto ident, lexy::nullopt, auto decls, auto end) {
-			return std::make_shared<ast::decl_class>(ident.lexeme.begin, end, ident, std::nullopt,
-		                                             decls);
-		},
-		[](auto ident, auto super, auto decls, auto end) {
-			return std::make_shared<ast::decl_class>(ident.lexeme.begin, end, ident, super, decls);
+		[](auto ident, auto supers, auto decls, auto end) {
+			return std::make_shared<ast::decl_class>(ident.lexeme.begin, end, ident, supers, decls);
 		});
 };
 
@@ -629,14 +632,9 @@ struct decl_iface {
 	static constexpr auto name = "interface declaration";
 	static constexpr auto
 		rule = kw_iface >>
-	           dsl::p<ident> +
-	               dsl::opt(dsl::colon >> dsl::p<type>) + dsl::p<decl_list> + dsl::position;
+	           dsl::p<ident> + dsl::p<inheritance_list> + dsl::p<decl_list> + dsl::position;
 
 	static constexpr auto value = lexy::callback<ast::decl_ptr>(
-		[](auto ident, lexy::nullopt, auto decls, auto end) {
-			return std::make_shared<ast::decl_iface>(ident.lexeme.begin, end, ident, std::nullopt,
-		                                             decls);
-		},
 		[](auto ident, auto super, auto decls, auto end) {
 			return std::make_shared<ast::decl_iface>(ident.lexeme.begin, end, ident, super, decls);
 		});

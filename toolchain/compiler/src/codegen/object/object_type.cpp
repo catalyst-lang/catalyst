@@ -5,6 +5,8 @@
 
 #include "catalyst/rtti.hpp"
 
+#include <algorithm>
+
 namespace catalyst::compiler::codegen {
 
 member_locator type_custom::get_member(const std::string &name) {
@@ -68,29 +70,44 @@ llvm::Value *type_object::cast_llvm_value(codegen::state &state, llvm::Value *va
 
 bool type_object::is_assignable_from(const std::shared_ptr<type> &type) const {
 	if (isa<type_virtual>(object_type)) {
-		auto base_class = std::static_pointer_cast<type_virtual>(object_type);
+		auto assigning_to_class = std::static_pointer_cast<type_virtual>(object_type);
 		if (isa<type_virtual>(type)) {
-			auto descending_class = std::static_pointer_cast<type_virtual>(type);
-			while (descending_class.get() != nullptr && descending_class.get() != base_class.get())
-				descending_class = descending_class->super;
-			return descending_class.get() == base_class.get();
+			auto assigning_from_class = std::static_pointer_cast<type_virtual>(type);
+			return assigning_to_class->is_assignable_from(assigning_from_class);
 		}
 	}
 
 	return false;
 }
 
-type_virtual::type_virtual(const std::string &fqn, const std::string &name, std::vector<member> const &members) : type_custom(fqn, name) {
+type_virtual::type_virtual(const std::string &fqn, const std::string &name,
+                           std::vector<member> const &members)
+	: type_custom(fqn, name) {
 	this->members = members;
 	this->name = name;
 }
 
-type_virtual::type_virtual(const std::string &fqn, const std::string &name, std::shared_ptr<type_virtual> super,
-	                    std::vector<member> const &members) : type_custom(fqn, name) {
-							this->name = name;
-							this->members = members;
-							this->super = super;
-						}
+type_virtual::type_virtual(const std::string &fqn, const std::string &name,
+                           const std::vector<std::shared_ptr<type_virtual>> &super,
+                           std::vector<member> const &members)
+	: type_custom(fqn, name) {
+	this->name = name;
+	this->members = members;
+	this->super = super;
+}
 
+bool type_virtual::is_assignable_from(const std::shared_ptr<type> &type) const {
+	if (type.get() == this)
+		return true;
+
+	if (isa<type_virtual>(type)) {
+		auto const &from = std::static_pointer_cast<type_virtual>(type);
+		return std::any_of(
+			from->super.cbegin(), from->super.cend(),
+			[&](const std::shared_ptr<type_virtual> &s) { return this->is_assignable_from(s); });
+	}
+
+	return false;
+}
 
 } // namespace catalyst::compiler::codegen

@@ -10,7 +10,7 @@ namespace catalyst::compiler::codegen {
 type_class::type_class(const std::string &name, std::vector<member> const &members)
 	: type_virtual("class", name, members) {}
 
-type_class::type_class(const std::string &name, std::shared_ptr<type_virtual> super,
+type_class::type_class(const std::string &name, const std::vector<std::shared_ptr<type_virtual>> &super,
                        std::vector<member> const &members)
 	: type_virtual("class", name, super, members) {}
 
@@ -24,7 +24,7 @@ std::shared_ptr<type> type::create_class(const std::string &name,
 	return std::make_shared<type_class>(name, members);
 }
 
-std::shared_ptr<type> type::create_class(const std::string &name, std::shared_ptr<type_virtual> super,
+std::shared_ptr<type> type::create_class(const std::string &name, const std::vector<std::shared_ptr<type_virtual>> &super,
                                          std::vector<member> const &members) {
 	return std::make_shared<type_class>(name, super, members);
 }
@@ -34,8 +34,10 @@ llvm::Type *type_class::get_llvm_struct_type(state &state) const {
 		std::vector<llvm::Type *> fields;
 		
 		
-		if (super != nullptr) {
-			fields.push_back(super->get_llvm_struct_type(state));
+		if (!super.empty()) {
+			for (auto const & s : super) {
+				fields.push_back(s->get_llvm_struct_type(state));
+			}
 		} else {
 			// metadata pointer (vtable)
 			// Only push it on a bare class, because it get's inherited otherwise
@@ -64,7 +66,17 @@ llvm::Type *type_class::get_llvm_type(state &state) const {
 }
 
 std::string type_class::get_fqn() const {
-	std::string base = super ? std::string(":") + super->name : "";
+	std::string base = "";
+	if (!super.empty()) {
+		for (auto const & s : super) {
+			if (base.empty()) {
+				base += ":";
+			} else {
+				base += ",";
+			}
+			base += s->name;
+		}
+	}
 	std::string fqn = "class(" + name + base + "){";
 	bool first = true;
 	for (const auto &mmbr : members) {
@@ -86,8 +98,10 @@ bool type_class::is_valid() const {
 		if (!mmbr.type->is_valid())
 			return false;
 	}
-	if (super == type_class::unknown()) {
-		return false;
+	for (auto const & s : super){
+		if (!s->is_valid()) {
+			return false;
+		}
 	}
 	return true;
 }
@@ -111,16 +125,22 @@ llvm::Value *type_class::get_sizeof(catalyst::compiler::codegen::state &state) {
 
 member_locator type_class::get_member(const std::string &name) {
 	auto own_member = type_custom::get_member(name);
-	if (!own_member.member && super) {
-		return super->get_member(name);
+	if (!own_member.member && !super.empty()) {
+		for (auto const &s : super) {
+			auto m = s->get_member(name);
+			if (m.is_valid()) return m;
+		}
 	}
 	return own_member;
 }
 
 member_locator type_class::get_member(const type_function *function) {
 	auto own_member = type_custom::get_member(function);
-	if (!own_member.member && super) {
-		return super->get_member(function);
+	if (!own_member.member && !super.empty()) {
+		for (auto const &s : super) {
+			auto m = s->get_member(function);
+			if (m.is_valid()) return m;
+		}
 	}
 	return own_member;
 }
@@ -135,8 +155,9 @@ std::vector<member_locator> type_class::get_virtual_members() {
 
 	std::vector<member_locator> fns;
 
-	if (super != nullptr) {
-		fns = super->get_virtual_members();
+	for (auto const &s : super) {
+		auto new_fns = s->get_virtual_members();
+		fns.insert(fns.end(), new_fns.begin(), new_fns.end());
 	}
 
 	for (auto &m : members) {

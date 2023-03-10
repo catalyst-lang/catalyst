@@ -74,8 +74,8 @@ bool check_decl_classifiers(codegen::state &state, const ast::decl_fn &decl) {
 			}
 			auto class_type = std::static_pointer_cast<type_class>(symbol.type);
 			if (c == ast::decl_classifier::virtual_) {
-				if (class_type->super != nullptr) {
-					auto vmems = class_type->super->get_virtual_members();
+				for (auto const& super : class_type->super) {
+					auto vmems = super->get_virtual_members();
 					if (vector_contains(vmems, [&](const member_locator &ml) {
 							return ml.member->name == decl.ident.name;
 						})) {
@@ -91,25 +91,32 @@ bool check_decl_classifiers(codegen::state &state, const ast::decl_fn &decl) {
 					}
 				}
 			} else if (c == ast::decl_classifier::override_) {
-				if (!class_type->super) {
+				if (class_type->super.empty()) {
 					state.report_message(report_type::error,
 					                     "Cannot `override` function in class without parent",
 					                     &decl);
 					num_errors++;
 					continue;
 				}
-
-                auto vmems = class_type->super->get_virtual_members();
-                if (!vector_contains(vmems, [&](const member_locator &ml) {
-                        return ml.member->name == decl.ident.name;
-                    })) {
-                    state.report_message(
+				
+				bool found = false;
+				for (auto const& super : class_type->super) {
+					auto vmems = super->get_virtual_members();
+					if (vector_contains(vmems, [&](const member_locator &ml) {
+							return ml.member->name == decl.ident.name;
+						})) {
+							found = true;
+							break;
+					}
+				}
+				if (!found) {
+					state.report_message(
                         report_type::error,
                         "declaration does not override a virtual function in any parent class",
                         &decl);
                     num_errors++;
                     continue;
-                }
+				}
 			}
 		} else {
 			state.report_message(report_type::error,
@@ -127,18 +134,20 @@ bool check_decl_classifiers(codegen::state &state, const ast::decl_fn &decl) {
             auto symbol = state.symbol_table[potential_class_name];
             if (isa<type_class>(symbol.type)) {
                 auto class_type = std::static_pointer_cast<type_class>(symbol.type);
-                if (class_type->super != nullptr) {
+                if (!class_type->super.empty()) {
                     // TODO: probably also check for shadowing of non-virtual functions as well
-                    auto vmems = class_type->super->get_virtual_members();
-                    if (vector_contains(vmems, [&](const member_locator &ml) {
-                            return ml.member->name == decl.ident.name;
-                        })) {
-                        state.report_message(
-                            report_type::error,
-                            "declaration shadows a virtual function",
-                            &decl);
-                        num_errors++;
-                    }
+					for (auto const &s : class_type->super) {
+						auto vmems = s->get_virtual_members();
+						if (vector_contains(vmems, [&](const member_locator &ml) {
+								return ml.member->name == decl.ident.name;
+							})) {
+							state.report_message(
+								report_type::error,
+								"declaration shadows a virtual function",
+								&decl);
+							num_errors++;
+						}
+					}
                 }
             }
         }

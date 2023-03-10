@@ -48,16 +48,20 @@ struct type_struct : type_custom {
 };
 
 struct type_virtual : type_custom {
-	type_virtual(const std::string &fqn, const std::string &name, std::vector<member> const &members);
-	type_virtual(const std::string &fqn, const std::string &name, std::shared_ptr<type_virtual> super,
-	                    std::vector<member> const &members);
+	type_virtual(const std::string &fqn, const std::string &name,
+	             std::vector<member> const &members);
+	type_virtual(const std::string &fqn, const std::string &name,
+	             const std::vector<std::shared_ptr<type_virtual>> &super,
+	             std::vector<member> const &members);
 
-	std::shared_ptr<type_virtual> super;
+	std::vector<std::shared_ptr<type_virtual>> super;
+
+	bool is_assignable_from(const std::shared_ptr<type> &type) const override;
 
 	// virtual members
 	virtual std::vector<member_locator> get_virtual_members() = 0;
 	virtual std::vector<member_locator> get_virtual_members(const std::string &name) = 0;
-	virtual int get_virtual_member_index(codegen::state &state, const member_locator& member) = 0;
+	virtual int get_virtual_member_index(codegen::state &state, const member_locator &member) = 0;
 
 	virtual llvm::StructType *get_llvm_metadata_struct_type(codegen::state &state) = 0;
 	virtual llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state) = 0;
@@ -65,7 +69,8 @@ struct type_virtual : type_custom {
 
 struct type_class : type_virtual {
 	explicit type_class(const std::string &name, std::vector<member> const &members);
-	explicit type_class(const std::string &name, std::shared_ptr<type_virtual> super,
+	explicit type_class(const std::string &name,
+	                    const std::vector<std::shared_ptr<type_virtual>> &super,
 	                    std::vector<member> const &members);
 
 	bool is_valid() const override;
@@ -87,7 +92,8 @@ struct type_class : type_virtual {
 
 	virtual std::vector<member_locator> get_virtual_members() override;
 	virtual std::vector<member_locator> get_virtual_members(const std::string &name) override;
-	virtual int get_virtual_member_index(codegen::state &state, const member_locator& member) override;
+	virtual int get_virtual_member_index(codegen::state &state,
+	                                     const member_locator &member) override;
 
 	virtual llvm::StructType *get_llvm_metadata_struct_type(codegen::state &state) override;
 	virtual llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state) override;
@@ -101,7 +107,8 @@ struct type_class : type_virtual {
 
 struct type_iface : type_virtual {
 	explicit type_iface(const std::string &name, std::vector<member> const &members);
-	explicit type_iface(const std::string &name, std::shared_ptr<type_virtual> super,
+	explicit type_iface(const std::string &name,
+	                    const std::vector<std::shared_ptr<type_virtual>> &super,
 	                    std::vector<member> const &members);
 
 	bool is_valid() const override;
@@ -123,7 +130,8 @@ struct type_iface : type_virtual {
 
 	virtual std::vector<member_locator> get_virtual_members() override;
 	virtual std::vector<member_locator> get_virtual_members(const std::string &name) override;
-	virtual int get_virtual_member_index(codegen::state &state, const member_locator& member) override;
+	virtual int get_virtual_member_index(codegen::state &state,
+	                                     const member_locator &member) override;
 
 	virtual llvm::StructType *get_llvm_metadata_struct_type(codegen::state &state) override;
 	virtual llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state) override;

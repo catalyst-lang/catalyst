@@ -162,19 +162,19 @@ struct decl_struct : decl {
 
 struct decl_class : decl {
 	decl_class(const parser::char_type *begin, const parser::char_type *end, ast::ident &ident,
-	           std::optional<ast::type_ptr> super, std::vector<decl_ptr> declarations)
+	           const std::vector<ast::type_ptr> &super, std::vector<decl_ptr> declarations)
 		: decl(begin, end, ident), declarations(declarations), super(super) {}
 
-	std::optional<ast::type_ptr> super = std::nullopt;
+	std::vector<ast::type_ptr> super;
 	std::vector<decl_ptr> declarations;
 };
 
 struct decl_iface : decl {
 	decl_iface(const parser::char_type *begin, const parser::char_type *end, ast::ident &ident,
-	           std::optional<ast::type_ptr> super, std::vector<decl_ptr> declarations)
+	           const std::vector<ast::type_ptr> &super, std::vector<decl_ptr> declarations)
 		: decl(begin, end, ident), declarations(declarations), super(super) {}
 
-	std::optional<ast::type_ptr> super = std::nullopt;
+	std::vector<ast::type_ptr> super;
 	std::vector<decl_ptr> declarations;
 };
 

@@ -48,14 +48,14 @@ struct type {
 	                                           std::vector<member> const &members);
 	static std::shared_ptr<type> create_class(const std::string &name,
 	                                          std::vector<member> const &members);
-	static std::shared_ptr<type> create_class(const std::string &name,
-	                                          std::shared_ptr<type_virtual> super,
-	                                          std::vector<member> const &members);
+	static std::shared_ptr<type>
+	create_class(const std::string &name, const std::vector<std::shared_ptr<type_virtual>> &super,
+	             std::vector<member> const &members);
 	static std::shared_ptr<type> create_iface(const std::string &name,
 	                                          std::vector<member> const &members);
-	static std::shared_ptr<type> create_iface(const std::string &name,
-	                                          std::shared_ptr<type_virtual> super,
-	                                          std::vector<member> const &members);
+	static std::shared_ptr<type>
+	create_iface(const std::string &name, const std::vector<std::shared_ptr<type_virtual>> &super,
+	             std::vector<member> const &members);
 
 	virtual llvm::Type *get_llvm_type(codegen::state &state) const = 0;
 	virtual llvm::Value *cast_llvm_value(codegen::state &state, llvm::Value *value,

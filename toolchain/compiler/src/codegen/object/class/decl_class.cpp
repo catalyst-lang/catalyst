@@ -104,8 +104,11 @@ llvm::Value* codegen(codegen::state &state, ast::decl_class &decl) {
 
 	state.Builder.SetInsertPoint(BB);
 
-	if (type->super) {
-		state.Builder.CreateCall(type->super->init_function, {this_});
+	for (auto & s : type->super) {
+		if (s->init_function != nullptr) {
+			// TODO: probably thunk this_
+			state.Builder.CreateCall(s->init_function, {this_});
+		}
 	}
 
 	auto metadata_spot = this_;
