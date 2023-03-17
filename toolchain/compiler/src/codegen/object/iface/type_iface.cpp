@@ -38,10 +38,6 @@ llvm::Type *type_iface::get_llvm_struct_type(state &state) const {
 			for (auto const & s : super) {
 				fields.push_back(s->get_llvm_struct_type(state));
 			}
-		} else {
-			// metadata pointer (vtable)
-			// Only push it on a bare class, because it get's inherited otherwise
-			fields.push_back(llvm::PointerType::get(*state.TheContext, 0));
 		}
 
 		for (const auto &member : members) {
@@ -121,88 +117,6 @@ llvm::Value *type_iface::get_sizeof(catalyst::compiler::codegen::state &state) {
 	auto size = state.Builder.CreateConstGEP1_64(get_llvm_struct_type(state), constant, 1, "sizep");
 	return state.Builder.CreatePtrToInt(size, llvm::IntegerType::get(*state.TheContext, 64),
 	                                    "sizei");
-}
-
-member_locator type_iface::get_member(const std::string &name) {
-	auto own_member = type_custom::get_member(name);
-	if (!own_member.member && !super.empty()) {
-		for (auto const &s : super) {
-			auto m = s->get_member(name);
-			if (m.is_valid()) return m;
-		}
-	}
-	return own_member;
-}
-
-member_locator type_iface::get_member(const type_function *function) {
-	auto own_member = type_custom::get_member(function);
-	if (!own_member.member && !super.empty()) {
-		for (auto const &s : super) {
-			auto m = s->get_member(function);
-			if (m.is_valid()) return m;
-		}
-	}
-	return own_member;
-}
-
-int type_iface::get_member_index_in_llvm_struct(member *member) {
-	// offset of 1, either for the metadata in a bare class, or the parent class otherwise.
-	return 1 + type_custom::get_member_index_in_llvm_struct(member);
-}
-
-std::vector<member_locator> type_iface::get_virtual_members() {
-	// TODO: we can probably cache this the first time we call it
-
-	std::vector<member_locator> fns;
-
-	for (auto const &s : super) {
-		auto new_fns = s->get_virtual_members();
-		fns.insert(fns.end(), new_fns.begin(), new_fns.end());
-	}
-
-	for (auto &m : members) {
-		if (m.is_virtual()) {
-			// check if this virtual member is already if the list
-			auto is_override = [&](const member_locator &m2) {
-				if (m.name != m2.member->name)
-					return false;
-				if (*m.type != *m2.member->type)
-					return false;
-				return true;
-			};
-			auto result = std::find_if(fns.begin(), fns.end(), is_override);
-			if (result != fns.end()) {
-				// override found!
-				(*result) = member_locator(&m, this);
-			} else {
-				// new virtual function
-				fns.emplace_back(&m, this);
-			}
-		}
-	}
-
-	return fns;
-}
-
-std::vector<member_locator> type_iface::get_virtual_members(const std::string &name) {
-	auto vmems = get_virtual_members();
-	std::erase_if(vmems, [&name](const member_locator &ml) {
-		std::string canonical_name = ml.member->name;
-		return canonical_name.substr(0, canonical_name.find_first_of('`')) != name;
-	});
-	return vmems;
-}
-
-int type_iface::get_virtual_member_index(codegen::state &state, const member_locator& member) {
-	auto fns = get_virtual_members();
-	auto it = find(fns.begin(), fns.end(), member);
-	if (it != fns.end()) 
-    {
-        return it - fns.begin();
-    }
-    else {
-        return -1;
-    }
 }
 
 llvm::StructType *type_iface::get_llvm_metadata_struct_type(codegen::state &state) {

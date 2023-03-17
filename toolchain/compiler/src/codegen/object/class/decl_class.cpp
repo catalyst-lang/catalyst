@@ -104,15 +104,17 @@ llvm::Value* codegen(codegen::state &state, ast::decl_class &decl) {
 
 	state.Builder.SetInsertPoint(BB);
 
+	int super_index = 0;
 	for (auto & s : type->super) {
 		if (s->init_function != nullptr) {
-			// TODO: probably thunk this_
-			state.Builder.CreateCall(s->init_function, {this_});
+			auto offsetted = state.Builder.CreateConstGEP1_32(type->get_llvm_struct_type(state), this_, super_index, s->name + "_offset");
+			state.Builder.CreateCall(s->init_function, {offsetted});
 		}
+		super_index++;
 	}
 
-	auto metadata_spot = this_;
-	state.Builder.CreateStore(type->get_llvm_metadata_object(state), metadata_spot);
+	auto metadata_location = state.Builder.CreateConstGEP1_32(llvm::PointerType::get(*state.TheContext, 0), this_, -1);
+	state.Builder.CreateStore(type->get_llvm_metadata_object(state), metadata_location);
 
 
 	for (auto &member : type->members) {

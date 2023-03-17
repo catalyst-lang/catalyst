@@ -59,9 +59,13 @@ struct type_virtual : type_custom {
 	bool is_assignable_from(const std::shared_ptr<type> &type) const override;
 
 	// virtual members
-	virtual std::vector<member_locator> get_virtual_members() = 0;
-	virtual std::vector<member_locator> get_virtual_members(const std::string &name) = 0;
-	virtual int get_virtual_member_index(codegen::state &state, const member_locator &member) = 0;
+	virtual std::vector<member_locator> get_virtual_members();
+	virtual std::vector<member_locator> get_virtual_members(const std::string &name);
+	virtual int get_virtual_member_index(codegen::state &state, const member_locator &member);
+
+	member_locator get_member(const std::string &name) override;
+	member_locator get_member(const type_function *function) override;
+	virtual int get_member_index_in_llvm_struct(member *member) override;
 
 	virtual llvm::StructType *get_llvm_metadata_struct_type(codegen::state &state) = 0;
 	virtual llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state) = 0;
@@ -85,15 +89,6 @@ struct type_class : type_virtual {
 	void copy_from(type_class &other);
 
 	inline virtual llvm::Value *get_sizeof(catalyst::compiler::codegen::state &state) override;
-
-	member_locator get_member(const std::string &name) override;
-	member_locator get_member(const type_function *function) override;
-	int get_member_index_in_llvm_struct(member *member) override;
-
-	virtual std::vector<member_locator> get_virtual_members() override;
-	virtual std::vector<member_locator> get_virtual_members(const std::string &name) override;
-	virtual int get_virtual_member_index(codegen::state &state,
-	                                     const member_locator &member) override;
 
 	virtual llvm::StructType *get_llvm_metadata_struct_type(codegen::state &state) override;
 	virtual llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state) override;
@@ -123,15 +118,6 @@ struct type_iface : type_virtual {
 	void copy_from(type_iface &other);
 
 	inline virtual llvm::Value *get_sizeof(catalyst::compiler::codegen::state &state) override;
-
-	member_locator get_member(const std::string &name) override;
-	member_locator get_member(const type_function *function) override;
-	int get_member_index_in_llvm_struct(member *member) override;
-
-	virtual std::vector<member_locator> get_virtual_members() override;
-	virtual std::vector<member_locator> get_virtual_members(const std::string &name) override;
-	virtual int get_virtual_member_index(codegen::state &state,
-	                                     const member_locator &member) override;
 
 	virtual llvm::StructType *get_llvm_metadata_struct_type(codegen::state &state) override;
 	virtual llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state) override;

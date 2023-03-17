@@ -199,6 +199,14 @@ llvm::Value *structure_to_pointer(codegen::state &state, llvm::Value *struct_val
 	return ptr;
 }
 
+llvm::Value *get_sizeof_ptr(codegen::state &state) {
+	auto ptr_type = llvm::PointerType::get(*state.TheContext, 0);
+	auto size = state.Builder.CreateConstGEP1_64(ptr_type, llvm::Constant::getNullValue(ptr_type),
+	                                             1, "sizep");
+	return state.Builder.CreatePtrToInt(size, llvm::IntegerType::get(*state.TheContext, 64),
+	                                    "sizei");
+}
+
 llvm::Value *codegen_call_new(codegen::state &state, std::shared_ptr<type> stype,
                               ast::expr_call &expr, llvm::Value *this_) {
 	if (!stype) {
@@ -219,9 +227,13 @@ llvm::Value *codegen_call_new(codegen::state &state, std::shared_ptr<type> stype
 	if (isa<type_struct>(stype)) {
 		new_object = state.Builder.CreateAlloca(sym_c->get_llvm_type(state), nullptr, "new");
 	} else if (isa<type_class>(stype)) {
-		// new_object = state.Builder.CreateAlloca(sym_c->get_llvm_type(state), nullptr, "new");
-		new_object = state.Builder.CreateCall(state.target->get_malloc(),
-		                                      {stype->get_sizeof(state)}, "instance");
+		auto class_size = stype->get_sizeof(state);
+		auto ptr_size = get_sizeof_ptr(state);
+		auto total_size = state.Builder.CreateAdd(class_size, ptr_size, "ptradd");
+		new_object = state.Builder.CreateCall(state.target->get_malloc(), {total_size}, "instance");
+		// offset the object 1 ptr to make room for the metadata
+		new_object = state.Builder.CreateConstGEP1_32(llvm::PointerType::get(*state.TheContext, 0),
+		                                              new_object, 1, "offsetted");
 	} else {
 		state.report_message(report_type::error, "TODO " CATALYST_AT, &expr);
 		return nullptr;
@@ -293,7 +305,11 @@ llvm::Value *codegen_call(codegen::state &state, std::shared_ptr<codegen::type> 
 			// TODO: warn if casting happens
 			arg = arg_type->cast_llvm_value(state, arg, *type->parameters[i]);
 			if (arg == nullptr) {
-				state.report_message(report_type::error, std::string("Cannot cast parameter type from `") + arg_type->get_fqn() + "` to expected type `" + type->parameters[i]->get_fqn() + "`", expr.parameters[i].get());
+				state.report_message(report_type::error,
+				                     std::string("Cannot cast parameter type from `") +
+				                         arg_type->get_fqn() + "` to expected type `" +
+				                         type->parameters[i]->get_fqn() + "`",
+				                     expr.parameters[i].get());
 				return nullptr;
 			}
 		}
@@ -319,8 +335,9 @@ llvm::Value *codegen_call(codegen::state &state, std::shared_ptr<codegen::type> 
 		auto c = std::dynamic_pointer_cast<type_class>(type->method_of);
 		auto member = c->get_member(type);
 		auto metadata_type = c->get_llvm_metadata_struct_type(state);
+		auto metadata_location = state.Builder.CreateConstGEP1_32(llvm::PointerType::get(*state.TheContext, 0), this_, -1);
 		auto metadata_object =
-			state.Builder.CreateLoad(llvm::PointerType::get(*state.TheContext, 0), this_);
+			state.Builder.CreateLoad(llvm::PointerType::get(*state.TheContext, 0), metadata_location);
 		auto vtable = state.Builder.CreateConstGEP1_32(metadata_type, metadata_object, 0, "vtable");
 		int index = c->get_virtual_member_index(state, member);
 		value = state.Builder.CreateConstGEP2_32(metadata_type->elements()[0], vtable, 0, index,
