@@ -1,4 +1,31 @@
-iface B {
-    fn test(i: i32, i:i64) -> void
-    fn bla() -> void
+class A1 {
+    var ee = 42
+
+    fn test(i: i32, i2:i64) {
+        return i + i2
+    }
+
+    virtual fn bla() {
+        return 4
+    }
+
+    fn ddd() { 
+        return this.ee 
+    }
+}
+
+class A2 {
+    var sds  = 99
+    fn sdk() {
+        return this.sds
+    }
+}
+
+class B : A1, A2 {
+    var dskl : i32 = 398;
+}
+
+fn main() {
+    var a = B()
+    return a.sdk()
 }
