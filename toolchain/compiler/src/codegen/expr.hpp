@@ -24,4 +24,7 @@ void codegen_assignment(codegen::state &state, llvm::Value* dest_ptr,
 llvm::Value *codegen_call(codegen::state &state, std::shared_ptr<type> fn_type, llvm::Value *value, ast::expr_call &expr, llvm::Value *this_ = nullptr, std::shared_ptr<type> expecting_type = nullptr);
 llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &expr, llvm::Value *this_ = nullptr, std::shared_ptr<type> expecting_type = nullptr);
 
+llvm::Value *get_super_typed_value(codegen::state &state, llvm::Value *this_,
+                                   type_custom *this_type, type_custom *super_type);
+
 } // namespace catalyst::compiler::codegen

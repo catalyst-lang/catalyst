@@ -159,9 +159,46 @@ llvm::GlobalVariable *type_class::get_llvm_metadata_object(codegen::state &state
 	return metadata_object;
 }
 
-int type_class::get_member_index_in_llvm_struct(member *member) {
+int type_class::get_member_index_in_llvm_struct(member *member) const {
 	// add 1 for the metadata ptr
 	return 1 + type_virtual::get_member_index_in_llvm_struct(member);
+}
+
+int type_class::get_super_index_in_llvm_struct(const type_custom *super) const {
+	auto ret = type_virtual::get_super_index_in_llvm_struct(super);
+	if (ret >= 0) {
+		return 1 + ret;
+	} else {
+		return -1;
+	}
+}
+
+llvm::Value *type_class::cast_llvm_value(codegen::state &state, llvm::Value *value,
+                                          const type &to) const {
+	if (!isa<type_class>(to)) {
+		return nullptr;
+	}
+
+	auto to_class = (const type_class*)&to;
+
+	if (this == to_class) return value;
+
+	if (int index = this->get_super_index_in_llvm_struct(to_class); index >= 0) {
+		return state.Builder.CreateStructGEP(this->get_llvm_struct_type(state),
+												value, index, to_class->name + "_ptr");
+	} else {
+		for (auto const &s : this->super) {
+			if (to_class->is_assignable_from(s)) {
+				value = state.Builder.CreateStructGEP(
+					this->get_llvm_struct_type(state), value,
+					this->get_super_index_in_llvm_struct(s.get()),
+					s->name + "_ptr");
+				return s->cast_llvm_value(state, value, to);
+			}
+		}
+	}
+	
+	return nullptr;
 }
 
 } // namespace catalyst::compiler::codegen

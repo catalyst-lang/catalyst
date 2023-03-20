@@ -167,5 +167,4 @@
     },
     "cmake.generator": "Ninja",
     "sonarlint.pathToCompileCommands": "${workspaceFolder}/build/compile_commands.json",
-    "editor.mouseWheelScrollSensitivity": 0.5
 }

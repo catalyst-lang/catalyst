@@ -27,7 +27,7 @@ member_locator type_custom::get_member(const type_function *function) {
 	return member_locator::invalid();
 }
 
-int type_custom::get_member_index_in_llvm_struct(member *member) {
+int type_custom::get_member_index_in_llvm_struct(member *member) const {
 	// the llvm_index is the index passed to a GEP instruction. So functions should be left out.
 	// Note that function types should still be counted in if they are a function pointer.
 	int llvm_index = 0;
@@ -42,10 +42,15 @@ int type_custom::get_member_index_in_llvm_struct(member *member) {
 	return -1;
 }
 
-int type_custom::get_member_index_in_llvm_struct(const member_locator &member_locator) {
+int type_custom::get_member_index_in_llvm_struct(const member_locator &member_locator) const {
 	if (member_locator.residence != this)
 		return -1;
 	return get_member_index_in_llvm_struct(member_locator.member);
+}
+
+llvm::Value *type_custom::cast_llvm_value(codegen::state &state, llvm::Value *value,
+                                          const type &to) const {
+	return value;
 }
 
 type_object::type_object(std::shared_ptr<type_custom> object_type)
@@ -62,7 +67,12 @@ bool type_object::is_valid() const { return object_type->is_valid(); }
 llvm::Value *type_object::cast_llvm_value(codegen::state &state, llvm::Value *value,
                                           const type &to) const {
 	if (to.is_assignable_from(this->object_type)) {
-		return value;
+		if (isa<type_object>(to)) {
+			return this->object_type->cast_llvm_value(state, value,
+			                                          *((type_object *)&to)->object_type);
+		} else {
+			return this->object_type->cast_llvm_value(state, value, to);
+		}
 	} else {
 		return nullptr;
 	}
@@ -157,13 +167,11 @@ int type_virtual::get_virtual_member_index(codegen::state &state, const member_l
 	// TODO: multiple inheritance
 	auto fns = get_virtual_members();
 	auto it = find(fns.begin(), fns.end(), member);
-	if (it != fns.end()) 
-    {
-        return it - fns.begin();
-    }
-    else {
-        return -1;
-    }
+	if (it != fns.end()) {
+		return it - fns.begin();
+	} else {
+		return -1;
+	}
 }
 
 member_locator type_virtual::get_member(const std::string &name) {
@@ -171,7 +179,8 @@ member_locator type_virtual::get_member(const std::string &name) {
 	if (!own_member.member && !super.empty()) {
 		for (auto const &s : super) {
 			auto m = s->get_member(name);
-			if (m.is_valid()) return m;
+			if (m.is_valid())
+				return m;
 		}
 	}
 	return own_member;
@@ -182,15 +191,27 @@ member_locator type_virtual::get_member(const type_function *function) {
 	if (!own_member.member && !super.empty()) {
 		for (auto const &s : super) {
 			auto m = s->get_member(function);
-			if (m.is_valid()) return m;
+			if (m.is_valid())
+				return m;
 		}
 	}
 	return own_member;
 }
 
-int type_virtual::get_member_index_in_llvm_struct(member *member) {
+int type_virtual::get_member_index_in_llvm_struct(member *member) const {
 	return super.size() + type_custom::get_member_index_in_llvm_struct(member);
 }
 
+int type_virtual::get_super_index_in_llvm_struct(const type_custom *p) const {
+	auto result =
+		std::find_if(super.begin(), super.end(),
+	                 [&](const std::shared_ptr<type_virtual> &p2) { return p == p2.get(); });
+	if (result != super.end()) {
+		size_t index = std::distance(super.begin(), result);
+		return index;
+	} else {
+		return -1;
+	}
+}
 
 } // namespace catalyst::compiler::codegen

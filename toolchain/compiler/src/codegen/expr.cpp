@@ -229,7 +229,6 @@ llvm::Value *codegen_call_new(codegen::state &state, std::shared_ptr<type> stype
 	} else if (isa<type_class>(stype)) {
 		auto class_size = stype->get_sizeof(state);
 		new_object = state.Builder.CreateCall(state.target->get_malloc(), {class_size}, "instance");
-		// offset the object 1 ptr to make room for the metadata
 	} else {
 		state.report_message(report_type::error, "TODO " CATALYST_AT, &expr);
 		return nullptr;
@@ -331,9 +330,10 @@ llvm::Value *codegen_call(codegen::state &state, std::shared_ptr<codegen::type> 
 		auto c = std::dynamic_pointer_cast<type_class>(type->method_of);
 		auto member = c->get_member(type);
 		auto metadata_type = c->get_llvm_metadata_struct_type(state);
-		auto metadata_location = state.Builder.CreateConstGEP1_32(llvm::PointerType::get(*state.TheContext, 0), this_, -1);
-		auto metadata_object =
-			state.Builder.CreateLoad(llvm::PointerType::get(*state.TheContext, 0), metadata_location);
+		auto metadata_location =
+			state.Builder.CreateStructGEP(c->get_llvm_struct_type(state), this_, 0);
+		auto metadata_object = state.Builder.CreateLoad(
+			llvm::PointerType::get(*state.TheContext, 0), metadata_location);
 		auto vtable = state.Builder.CreateConstGEP1_32(metadata_type, metadata_object, 0, "vtable");
 		int index = c->get_virtual_member_index(state, member);
 		value = state.Builder.CreateConstGEP2_32(metadata_type->elements()[0], vtable, 0, index,
@@ -404,6 +404,31 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr,
 	}
 }
 
+llvm::Value *get_super_typed_value(codegen::state &state, llvm::Value *this_,
+                                   type_custom *this_type, type_custom *super_type) {
+	if (isa<type_virtual>(this_type)) {
+		if (this_type != super_type) {
+			auto this_virtual = (type_virtual *)this_type;
+			int index = this_virtual->get_super_index_in_llvm_struct(super_type);
+			if (index >= 0) {
+				return state.Builder.CreateStructGEP(this_virtual->get_llvm_struct_type(state),
+				                                     this_, index, super_type->name + "_ptr");
+			} else {
+				for (auto const &s : this_virtual->super) {
+					if (super_type->is_assignable_from(s)) {
+						this_ = state.Builder.CreateStructGEP(
+							this_virtual->get_llvm_struct_type(state), this_,
+							this_virtual->get_super_index_in_llvm_struct(s.get()),
+							s->name + "_ptr");
+						return get_super_typed_value(state, this_, s.get(), super_type);
+					}
+				}
+			}
+		}
+	}
+	return this_;
+}
+
 llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
                      std::shared_ptr<type> expecting_type) {
 	auto lhs_type = expr_resulting_type(state, expr.lhs);
@@ -446,6 +471,12 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 
 		auto member_loc = lhs_custom->get_member(ident->name);
 
+		// if this is a virtual (class-like), get the sub-type
+		if (isa<type_virtual>(lhs_custom)) {
+			lhs_value =
+				get_super_typed_value(state, lhs_value, lhs_custom.get(), member_loc.residence);
+		}
+
 		auto ptr = state.Builder.CreateStructGEP(
 			member_loc.residence->get_llvm_struct_type(state), lhs_value,
 			member_loc.residence->get_member_index_in_llvm_struct(member_loc));
@@ -471,7 +502,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 			return nullptr;
 		}
 
-		auto &ident = ((ast::expr_ident *)call->lhs.get())->ident;
+		auto const &ident = ((ast::expr_ident *)call->lhs.get())->ident;
 
 		auto member_loc = lhs_custom->get_member(ident.name);
 		if (isa<ast::decl_fn>(member_loc.member->decl)) {
@@ -479,6 +510,15 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 				state, member_loc.residence->name + "." + member_loc.member->name, *call,
 				expecting_type);
 			auto this_ = lhs_value;
+			auto sym_fn_type = std::static_pointer_cast<type_function>(sym->type);
+			if (!sym_fn_type->is_virtual()) {
+				// make sure this_ is pointing to the correct subtype if we have multiple
+				if (isa<type_virtual>(lhs_custom)) {
+					// if the function is not in this_ directly
+					this_ = get_super_typed_value(state, this_, lhs_custom.get(),
+					                              sym_fn_type->method_of.get());
+				}
+			}
 			return codegen_call(state, sym, *call, this_, expecting_type);
 		} else {
 			// function pointer
