@@ -33,6 +33,9 @@ llvm::Type *type_class::get_llvm_struct_type(state &state) const {
 	if (structType == nullptr) {
 		std::vector<llvm::Type *> fields;
 		
+		// Metatdata
+		fields.push_back(llvm::PointerType::get(*state.TheContext, 0));
+
 		if (!super.empty()) {
 			for (auto const & s : super) {
 				fields.push_back(s->get_llvm_struct_type(state));
@@ -154,6 +157,11 @@ llvm::GlobalVariable *type_class::get_llvm_metadata_object(codegen::state &state
 		// metadata_object->setLinkage(llvm::GlobalValue::InternalLinkage);
 	}
 	return metadata_object;
+}
+
+int type_class::get_member_index_in_llvm_struct(member *member) {
+	// add 1 for the metadata ptr
+	return 1 + type_virtual::get_member_index_in_llvm_struct(member);
 }
 
 } // namespace catalyst::compiler::codegen

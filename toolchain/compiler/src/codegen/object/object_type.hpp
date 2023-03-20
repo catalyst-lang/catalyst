@@ -65,7 +65,7 @@ struct type_virtual : type_custom {
 
 	member_locator get_member(const std::string &name) override;
 	member_locator get_member(const type_function *function) override;
-	virtual int get_member_index_in_llvm_struct(member *member) override;
+	int get_member_index_in_llvm_struct(member *member) override;
 
 	virtual llvm::StructType *get_llvm_metadata_struct_type(codegen::state &state) = 0;
 	virtual llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state) = 0;
@@ -89,6 +89,8 @@ struct type_class : type_virtual {
 	void copy_from(type_class &other);
 
 	inline virtual llvm::Value *get_sizeof(catalyst::compiler::codegen::state &state) override;
+
+	int get_member_index_in_llvm_struct(member *member) override;
 
 	virtual llvm::StructType *get_llvm_metadata_struct_type(codegen::state &state) override;
 	virtual llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state) override;

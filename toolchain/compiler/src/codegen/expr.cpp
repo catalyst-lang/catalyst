@@ -228,12 +228,8 @@ llvm::Value *codegen_call_new(codegen::state &state, std::shared_ptr<type> stype
 		new_object = state.Builder.CreateAlloca(sym_c->get_llvm_type(state), nullptr, "new");
 	} else if (isa<type_class>(stype)) {
 		auto class_size = stype->get_sizeof(state);
-		auto ptr_size = get_sizeof_ptr(state);
-		auto total_size = state.Builder.CreateAdd(class_size, ptr_size, "ptradd");
-		new_object = state.Builder.CreateCall(state.target->get_malloc(), {total_size}, "instance");
+		new_object = state.Builder.CreateCall(state.target->get_malloc(), {class_size}, "instance");
 		// offset the object 1 ptr to make room for the metadata
-		new_object = state.Builder.CreateConstGEP1_32(llvm::PointerType::get(*state.TheContext, 0),
-		                                              new_object, 1, "offsetted");
 	} else {
 		state.report_message(report_type::error, "TODO " CATALYST_AT, &expr);
 		return nullptr;
