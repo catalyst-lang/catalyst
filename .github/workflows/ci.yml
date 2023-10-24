@@ -42,6 +42,7 @@ jobs:
       - name: Install macOS dependencies
         if: ${{ matrix.platform == 'macos-latest' }}
         run: |
+          rm '/usr/local/bin/2to3' # brew bug
           brew update
           brew install llvm@${LLVM_VER%%.*}
           echo "LLVM_DIR=/usr/local/opt/llvm" >> $GITHUB_ENV
