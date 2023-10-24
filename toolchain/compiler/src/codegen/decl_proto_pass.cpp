@@ -18,7 +18,7 @@ int proto_pass::process(ast::decl_fn &decl) {
 
 	symbol *method_of = nullptr;
 	if (state.symbol_table.contains(state.scopes.get_fully_qualified_scope_name())) {
-		auto parent = state.symbol_table[state.scopes.get_fully_qualified_scope_name()];
+		auto &parent = state.symbol_table[state.scopes.get_fully_qualified_scope_name()];
 		if (isa<type_custom>(parent.type))
 			method_of = &parent;
 	}
