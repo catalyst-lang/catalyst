@@ -21,6 +21,7 @@
 #include <map>
 #include <memory>
 #include <ranges>
+#include <set>
 #include <vector>
 
 #include "symbol.hpp"

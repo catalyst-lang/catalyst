@@ -151,7 +151,7 @@ llvm::Value* codegen(codegen::state &state, ast::decl_class &decl) {
 	std::string err;
 	llvm::raw_string_ostream err_output(err);
 	if (!llvm::verifyFunction(*type->init_function, &err_output)) {
-		state.FPM->run(*type->init_function);
+		state.TheFPM->run(*type->init_function, *state.TheFAM);
 	} else {
 		// Error reading body, remove function.
 		state.report_message(report_type::error, err, &decl);

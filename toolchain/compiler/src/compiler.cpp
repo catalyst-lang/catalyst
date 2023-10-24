@@ -14,20 +14,18 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/InstCombine/InstCombine.h"
-#include "llvm/Transforms/AggressiveInstCombine/AggressiveInstCombine.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
-#include "llvm/Transforms/Utils.h"
-#include "llvm/Transforms/IPO/AlwaysInliner.h"
-#include "llvm/Transforms/IPO/Inliner.h"
-#include "llvm/Transforms/IPO/ArgumentPromotion.h"
-#include "llvm/Transforms/Vectorize.h"
-#include "llvm/Transforms/IPO.h"
-#include "llvm/Transforms/IPO/Attributor.h"
-#include "llvm/Transforms/IPO/ForceFunctionAttrs.h"
-#include "llvm/Transforms/IPO/FunctionAttrs.h"
-#include "llvm/Transforms/IPO/InferFunctionAttrs.h"
+#include "llvm/Transforms/Scalar/Reassociate.h"
+#include "llvm/Transforms/Scalar/SimplifyCFG.h"
 #include "llvm/Analysis/Passes.h"
+#include "llvm/Analysis/AssumptionCache.h"
+#include "llvm/Analysis/BasicAliasAnalysis.h"
+#include "llvm/Analysis/MemoryDependenceAnalysis.h"
+#include "llvm/Analysis/MemorySSA.h"
+#include "llvm/Analysis/OptimizationRemarkEmitter.h"
+#include "llvm/Analysis/ProfileSummaryInfo.h"
+#include "llvm/Analysis/TargetTransformInfo.h"
 #include "jit.hpp"
 #pragma warning( pop )
 
@@ -40,51 +38,86 @@ compile_result compile(catalyst::ast::translation_unit &tu, options options) {
 	state->translation_unit = &tu;
 	state->options = options;
 	state->TheModule = std::make_unique<llvm::Module>(tu.parser_state->filename, *state->TheContext);
-	state->FPM = std::make_unique<llvm::legacy::FunctionPassManager>(state->TheModule.get());
+
+	// Create new pass and analysis managers.
+	state->TheFPM = std::make_unique<FunctionPassManager>();
+	state->TheFAM = std::make_unique<FunctionAnalysisManager>();
+	state->TheMAM = std::make_unique<ModuleAnalysisManager>();
+	state->ThePIC = std::make_unique<PassInstrumentationCallbacks>();
+	state->TheSI = std::make_unique<StandardInstrumentations>(*state->TheContext, /*DebugLogging*/ true);
+	state->TheSI->registerCallbacks(*state->ThePIC, state->TheMAM.get());
 
 	state->target->register_symbols();
 
 	options.optimizer_level = 2;
 
 	if (options.optimizer_level >= 1) {
-		// Standard mem2reg pass to construct SSA form from alloca's and stores.
-		state->FPM->add(llvm::createPromoteMemoryToRegisterPass());
-		// Do simple "peephole" optimizations and bit-twiddling optimizations.
-		state->FPM->add(llvm::createInstructionCombiningPass());
-		// Re-associate expressions.
-		state->FPM->add(llvm::createReassociatePass());
+		// // Standard mem2reg pass to construct SSA form from alloca's and stores.
+		// state->FPM->add(llvm::createPromoteMemoryToRegisterPass());
+		// // Do simple "peephole" optimizations and bit-twiddling optimizations.
+		// state->FPM->add(llvm::createInstructionCombiningPass());
+		// // Re-associate expressions.
+		// state->FPM->add(llvm::createReassociatePass());
+
+		// Add transform passes.
+		// Do simple "peephole" optimizations and bit-twiddling optzns.
+		state->TheFPM->addPass(llvm::InstCombinePass());
+		// Reassociate expressions.
+		state->TheFPM->addPass(llvm::ReassociatePass());
+		// Eliminate Common SubExpressions.
+		state->TheFPM->addPass(llvm::GVNPass());
+		// Simplify the control flow graph (deleting unreachable blocks, etc).
+		state->TheFPM->addPass(llvm::SimplifyCFGPass());
+
+		// Register analysis passes used in these transform passes.
+		state->TheFAM->registerPass([&] { return llvm::AAManager(); });
+		state->TheFAM->registerPass([&] { return llvm::AssumptionAnalysis(); });
+		state->TheFAM->registerPass([&] { return llvm::DominatorTreeAnalysis(); });
+		state->TheFAM->registerPass([&] { return llvm::LoopAnalysis(); });
+		state->TheFAM->registerPass([&] { return llvm::MemoryDependenceAnalysis(); });
+		state->TheFAM->registerPass([&] { return llvm::MemorySSAAnalysis(); });
+		state->TheFAM->registerPass([&] { return llvm::OptimizationRemarkEmitterAnalysis(); });
+		state->TheFAM->registerPass([&] {
+			return llvm::OuterAnalysisManagerProxy<ModuleAnalysisManager, Function>(*state->TheMAM);
+		});
+		state->TheFAM->registerPass(
+			[&] { return llvm::PassInstrumentationAnalysis(state->ThePIC.get()); });
+		state->TheFAM->registerPass([&] { return llvm::TargetIRAnalysis(); });
+		state->TheFAM->registerPass([&] { return llvm::TargetLibraryAnalysis(); });
+
+		state->TheMAM->registerPass([&] { return llvm::ProfileSummaryAnalysis(); });
 	}
 	if (options.optimizer_level >= 2) {
-		// Eliminate Common SubExpressions.
-		state->FPM->add(llvm::createGVNPass());
-		state->FPM->add(llvm::createSinkingPass());
-		state->FPM->add(llvm::createGVNHoistPass());
-		state->FPM->add(llvm::createGVNSinkPass());
-		// Simplify the control flow graph (deleting unreachable blocks, etc).
-		state->FPM->add(llvm::createCFGSimplificationPass());
-		state->FPM->add(llvm::createSROAPass());
+		// // Eliminate Common SubExpressions.
+		// state->FPM->add(llvm::createGVNPass());
+		// state->FPM->add(llvm::createSinkingPass());
+		// state->FPM->add(llvm::createGVNHoistPass());
+		// state->FPM->add(llvm::createGVNSinkPass());
+		// // Simplify the control flow graph (deleting unreachable blocks, etc).
+		// state->FPM->add(llvm::createCFGSimplificationPass());
+		// state->FPM->add(llvm::createSROAPass());
 
-		state->FPM->add(llvm::createIndVarSimplifyPass());
-		state->FPM->add(llvm::createAggressiveInstCombinerPass());
-		state->FPM->add(llvm::createPartiallyInlineLibCallsPass());
-		//state->FPM->add(llvm::createAggressiveDCEPass());
-		state->FPM->add(llvm::createMemCpyOptPass());
-		state->FPM->add(llvm::createConstantHoistingPass());
+		// state->FPM->add(llvm::createIndVarSimplifyPass());
+		// state->FPM->add(llvm::createAggressiveInstCombinerPass());
+		// state->FPM->add(llvm::createPartiallyInlineLibCallsPass());
+		// //state->FPM->add(llvm::createAggressiveDCEPass());
+		// state->FPM->add(llvm::createMemCpyOptPass());
+		// state->FPM->add(llvm::createConstantHoistingPass());
 		
-		state->FPM->add(llvm::createDeadCodeEliminationPass());
-		//state->FPM->add(llvm::createDeadArgEliminationPass());
-		state->FPM->add(llvm::createDeadStoreEliminationPass());
-		//state->FPM->add(llvm::createInferFunctionAttrsLegacyPass());
+		// state->FPM->add(llvm::createDeadCodeEliminationPass());
+		// //state->FPM->add(llvm::createDeadArgEliminationPass());
+		// state->FPM->add(llvm::createDeadStoreEliminationPass());
+		// //state->FPM->add(llvm::createInferFunctionAttrsLegacyPass());
 
-		//state->FPM->add(llvm::createAlwaysInlinerLegacyPass());
-		//state->FPM->add(llvm::createVectorCombinePass());
-		//state->FPM->add(llvm::createLoadStoreVectorizerPass());
-		//state->FPM->add(llvm::createSLPVectorizerPass());
-		//state->FPM->add(llvm::createLoopVectorizePass());
+		// //state->FPM->add(llvm::createAlwaysInlinerLegacyPass());
+		// //state->FPM->add(llvm::createVectorCombinePass());
+		// //state->FPM->add(llvm::createLoadStoreVectorizerPass());
+		// //state->FPM->add(llvm::createSLPVectorizerPass());
+		// //state->FPM->add(llvm::createLoopVectorizePass());
 	}
 
 
-	state->FPM->doInitialization();
+	//state->TheFPM->doInitialization();
 
 	codegen::codegen(*state);
 

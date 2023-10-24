@@ -16,7 +16,8 @@ struct state;
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/Passes/PassBuilder.h"
+#include "llvm/Passes/StandardInstrumentations.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
@@ -41,7 +42,11 @@ struct state {
 	std::unique_ptr<llvm::LLVMContext> TheContext;
 	llvm::IRBuilder<> Builder;
 	std::unique_ptr<llvm::Module> TheModule;
-	std::unique_ptr<llvm::legacy::FunctionPassManager> FPM;
+	std::unique_ptr<llvm::FunctionPassManager> TheFPM;
+	std::unique_ptr<llvm::FunctionAnalysisManager> TheFAM;
+	std::unique_ptr<llvm::ModuleAnalysisManager> TheMAM;
+	std::unique_ptr<llvm::PassInstrumentationCallbacks> ThePIC;
+	std::unique_ptr<llvm::StandardInstrumentations> TheSI;
 
 	symbol *current_function_symbol = nullptr;
 	llvm::Function *current_function = nullptr;

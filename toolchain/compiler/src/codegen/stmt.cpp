@@ -155,7 +155,7 @@ void codegen(codegen::state &state, ast::statement_if &stmt) {
 	ThenBB = state.Builder.GetInsertBlock();
 
 	// Emit else block.
-	state.current_function->getBasicBlockList().push_back(ElseBB);
+	state.current_function->insert(state.current_function->end(), ElseBB);
 	state.Builder.SetInsertPoint(ElseBB);
 	if (stmt.else_.has_value()) {
 		codegen(state, stmt.else_.value());
@@ -166,7 +166,7 @@ void codegen(codegen::state &state, ast::statement_if &stmt) {
 	ElseBB = state.Builder.GetInsertBlock();
 
 	// Emit merge block.
-	state.current_function->getBasicBlockList().push_back(MergeBB);
+	state.current_function->insert(state.current_function->end(), MergeBB);
 	state.Builder.SetInsertPoint(MergeBB);
 	/*llvm::PHINode *PN =
 	    state.Builder.CreatePHI(llvm::Type::getInt64Ty(*state.TheContext), 2, "iftmp");

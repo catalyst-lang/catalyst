@@ -149,7 +149,7 @@ llvm::Value* codegen(codegen::state &state, ast::decl_fn &decl) {
 		//		the_function->print(llvm::outs());
 		//		printf("\n");
 
-		state.FPM->run(*the_function);
+		state.TheFPM->run(*the_function, *state.TheFAM);
 		// the_function->viewCFG();
 
 		state.scopes.pop_back();

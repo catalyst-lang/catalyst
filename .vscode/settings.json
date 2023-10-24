@@ -167,4 +167,7 @@
     },
     "cmake.generator": "Ninja",
     "sonarlint.pathToCompileCommands": "${workspaceFolder}/build/compile_commands.json",
+    "cmake.configureEnvironment": {
+        "LLVM_DIR": "/opt/homebrew/opt/llvm"
+    },
 }

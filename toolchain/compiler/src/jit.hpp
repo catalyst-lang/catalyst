@@ -97,14 +97,15 @@ class KaleidoscopeJIT {
 		return ret;
 	}
 
-	Expected<JITEvaluatedSymbol> lookup(StringRef Name) {
+	Expected<ExecutorSymbolDef> lookup(StringRef Name) {
 		return ES->lookup({&MainJD}, Mangle(Name.str()));
 	}
 
 	void define_symbol(const char* name, llvm::JITTargetAddress addr) {
 		SymbolMap M;
 		// Register every symbol that can be accessed from the JIT'ed code.
-		M[Mangle(name)] = JITEvaluatedSymbol(addr, JITSymbolFlags());
+		// Register every symbol that can be accessed from the JIT'ed code.
+		M[Mangle(name)] = ExecutorSymbolDef(llvm::orc::ExecutorAddr(addr), JITSymbolFlags());
 		cantFail(MainJD.define(absoluteSymbols(M)));
 	}
 };
@@ -138,7 +139,7 @@ T run_jit(codegen::state &state, const std::string &symbol_name) {
 
 	// Get the symbol's address and cast it to the right type (takes no
 	// arguments, returns a double) so we can call it as a native function.
-	auto (*FP)() = (T(*)())(*ExprSymbol).getAddress();
+	auto (*FP)() = ExprSymbol->getAddress().toPtr<T (*)()>();
 	return FP();
 }
 
