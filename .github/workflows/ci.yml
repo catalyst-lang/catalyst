@@ -16,7 +16,7 @@ jobs:
       fail-fast: true
       matrix:
         platform: [ubuntu-22.04]
-        cxx_compiler: [clang++-17]
+        cxx_compiler: ["clang++-${LLVM_VER%%.*}"]
         include:
           - platform: macos-latest
             cxx_compiler: "$(brew --prefix llvm@${LLVM_VER%%.*})/bin/clang++"
