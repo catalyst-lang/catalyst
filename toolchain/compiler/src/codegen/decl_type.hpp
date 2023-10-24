@@ -13,7 +13,6 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_fn
 std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_var &decl);
 std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_struct &decl);
 std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_class &decl);
-std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_iface &decl);
 std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, const ast::decl_ptr &decl);
 
 } // namespace catalyst::compiler::codegen

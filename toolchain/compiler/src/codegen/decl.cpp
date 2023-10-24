@@ -32,8 +32,6 @@ llvm::Value* codegen(codegen::state &state, ast::decl_ptr decl) {
 		return codegen(state, *(ast::decl_class *)decl.get());
 	} else if (isa<ast::decl_ns>(decl)) {
 		return codegen(state, *(ast::decl_ns *)decl.get());
-	} else if (isa<ast::decl_iface>(decl)) {
-		return codegen(state, *(ast::decl_iface *)decl.get());
 	} else {
 		state.report_message(report_type::error, "Decl type not implemented", decl.get());
 		return nullptr;

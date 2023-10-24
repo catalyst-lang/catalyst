@@ -156,9 +156,10 @@ std::vector<member_locator> type_virtual::get_virtual_members() {
 
 std::vector<member_locator> type_virtual::get_virtual_members(const std::string &name) {
 	auto vmems = get_virtual_members();
-	std::erase_if(vmems, [&name](const member_locator &ml) {
-		std::string canonical_name = ml.member->name;
-		return canonical_name.substr(0, canonical_name.find_first_of('`')) != name;
+	std::string canonical_name = name.substr(0, name.find_first_of('`'));
+	std::erase_if(vmems, [&canonical_name](const member_locator &ml) {
+		std::string other_canonical_name = ml.member->name;
+		return other_canonical_name.substr(0, other_canonical_name.find_first_of('`')) != canonical_name;
 	});
 	return vmems;
 }

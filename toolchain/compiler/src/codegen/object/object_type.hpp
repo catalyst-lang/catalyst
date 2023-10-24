@@ -9,6 +9,8 @@ struct type_custom;
 
 #include "../type.hpp"
 
+#include <unordered_map>
+
 namespace catalyst::compiler::codegen {
 
 struct type_custom : type {
@@ -73,6 +75,7 @@ struct type_virtual : type_custom {
 
 	virtual llvm::StructType *get_llvm_metadata_struct_type(codegen::state &state) = 0;
 	virtual llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state) = 0;
+	virtual llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state, type_virtual &mimicking_virtual) = 0;
 };
 
 struct type_class : type_virtual {
@@ -97,45 +100,19 @@ struct type_class : type_virtual {
 	int get_member_index_in_llvm_struct(member *member) const override;
 	int get_super_index_in_llvm_struct(const type_custom *super) const override;
 
+	member_locator get_virtual_member_function_that_is_compatible(const type_function *function, const std::string &name);
+
 	llvm::Value *cast_llvm_value(codegen::state &state, llvm::Value *value,
 	                             const type &to) const override;
-	virtual llvm::StructType *get_llvm_metadata_struct_type(codegen::state &state) override;
-	virtual llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state) override;
+	llvm::StructType *get_llvm_metadata_struct_type(codegen::state &state) override;
+	llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state) override;
+	llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state, type_virtual &mimicking_virtual) override;
 
   private:
 	llvm::StructType *structType = nullptr;
 
 	llvm::StructType *metadata_struct_type = nullptr;
-	llvm::GlobalVariable *metadata_object = nullptr;
-};
-
-struct type_iface : type_virtual {
-	explicit type_iface(const std::string &name, std::vector<member> const &members);
-	explicit type_iface(const std::string &name,
-	                    const std::vector<std::shared_ptr<type_virtual>> &super,
-	                    std::vector<member> const &members);
-
-	bool is_valid() const override;
-
-	static std::shared_ptr<type_iface> unknown();
-
-	llvm::Type *get_llvm_type(codegen::state &state) const override;
-	llvm::Type *get_llvm_struct_type(codegen::state &state) const override;
-
-	virtual std::string get_fqn() const override;
-
-	void copy_from(type_iface &other);
-
-	inline virtual llvm::Value *get_sizeof(catalyst::compiler::codegen::state &state) override;
-
-	virtual llvm::StructType *get_llvm_metadata_struct_type(codegen::state &state) override;
-	virtual llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state) override;
-
-  private:
-	llvm::StructType *structType = nullptr;
-
-	llvm::StructType *metadata_struct_type = nullptr;
-	llvm::GlobalVariable *metadata_object = nullptr;
+	std::unordered_map<type_virtual*, llvm::GlobalVariable*> metadata_objects;
 };
 
 struct type_object : type {

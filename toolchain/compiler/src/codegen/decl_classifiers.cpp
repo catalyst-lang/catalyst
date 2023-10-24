@@ -188,17 +188,6 @@ bool check_decl_classifiers(codegen::state &state, const ast::decl_struct &decl)
 	return decl.classifiers.empty();
 }
 
-bool check_decl_classifiers(codegen::state &state, const ast::decl_iface &decl) {
-	// no classifiers are supported for iface yet
-	for (auto c : decl.classifiers) {
-		state.report_message(report_type::error,
-		                     std::string("unsupported classifier `") + classifier_to_string(c) +
-		                         "` on class",
-		                     &decl);
-	}
-	return decl.classifiers.empty();
-}
-
 bool check_decl_classifiers(codegen::state &state, const ast::decl_var &decl) {
 	// no classifiers are supported for var yet
 	for (auto c : decl.classifiers) {

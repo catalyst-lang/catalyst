@@ -628,18 +628,6 @@ struct decl_class {
 		});
 };
 
-struct decl_iface {
-	static constexpr auto name = "interface declaration";
-	static constexpr auto
-		rule = kw_iface >>
-	           dsl::p<ident> + dsl::p<inheritance_list> + dsl::p<decl_list> + dsl::position;
-
-	static constexpr auto value = lexy::callback<ast::decl_ptr>(
-		[](auto ident, auto super, auto decls, auto end) {
-			return std::make_shared<ast::decl_iface>(ident.lexeme.begin, end, ident, super, decls);
-		});
-};
-
 struct decl_ns {
 	static constexpr auto name = "namespace declaration";
 	static constexpr auto rule = kw_ns >>
@@ -674,8 +662,7 @@ struct decl_classifiers {
 struct decl {
 	static constexpr auto name = "declaration";
 	static constexpr auto decl_opts = dsl::p<decl_fn> | dsl::p<decl_var> | dsl::p<decl_const> |
-	                                  dsl::p<decl_struct> | dsl::p<decl_class> |
-	                                  dsl::p<decl_iface> | dsl::p<decl_ns>;
+	                                  dsl::p<decl_struct> | dsl::p<decl_class> | dsl::p<decl_ns>;
 	static constexpr auto rule =
 		dsl::peek(dsl::p<decl_classifiers>) >> (dsl::p<decl_classifiers> + decl_opts) | decl_opts;
 	static constexpr auto value = lexy::callback<ast::decl_ptr>(

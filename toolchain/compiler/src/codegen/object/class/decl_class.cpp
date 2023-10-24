@@ -112,6 +112,9 @@ llvm::Value* codegen(codegen::state &state, ast::decl_class &decl) {
 		if (s->init_function != nullptr) {
 			auto offsetted = state.Builder.CreateStructGEP(type->get_llvm_struct_type(state), this_, super_index, s->name + "_offset");
 			state.Builder.CreateCall(s->init_function, {offsetted});
+		
+			// overwrite the super metadata with our own
+			state.Builder.CreateStore(type->get_llvm_metadata_object(state, *s), offsetted);
 		}
 		super_index++;
 	}
@@ -146,7 +149,7 @@ llvm::Value* codegen(codegen::state &state, ast::decl_class &decl) {
 	state.scopes.leave();
 
 	// Generate the metadata object
-	type->get_llvm_metadata_object(state);
+	type->get_llvm_metadata_object(state); // UGLY: this is a side effect
 
 	std::string err;
 	llvm::raw_string_ostream err_output(err);

@@ -134,29 +134,53 @@ llvm::StructType *type_class::get_llvm_metadata_struct_type(codegen::state &stat
 	return metadata_struct_type;
 }
 
+member_locator type_class::get_virtual_member_function_that_is_compatible(const type_function *function, const std::string &name) {
+	auto vmems = this->get_virtual_members(name);
+
+	for (auto const &vmem : vmems) {
+		if (*vmem.member->type == *function) {
+			return vmem;
+		}
+	}
+	
+	return member_locator::invalid();
+}
+
 llvm::GlobalVariable *type_class::get_llvm_metadata_object(codegen::state &state) {
-	if (metadata_object == nullptr) {
-		auto vmems = get_virtual_members();
+	return get_llvm_metadata_object(state, *this);
+}
+
+llvm::GlobalVariable *type_class::get_llvm_metadata_object(codegen::state &state, type_virtual &mimicking_virtual) {
+	if (!metadata_objects.contains(&mimicking_virtual)) {
+		auto vmems = mimicking_virtual.get_virtual_members();
 		auto array_type =
 			llvm::ArrayType::get(llvm::PointerType::get(*state.TheContext, 0), vmems.size());
 		std::vector<llvm::Constant *> vtable;
-		for (auto &vmem : vmems) {
-			vtable.push_back((llvm::Constant *)state.symbol_table[vmem.get_fqn()].value);
+		for (const auto &vmem : vmems) {
+			member_locator myvmem = isa<type_function>(vmem.member->type) ? 
+				get_virtual_member_function_that_is_compatible(std::static_pointer_cast<type_function>(vmem.member->type).get(), vmem.member->name) : 
+				get_member(vmem.member->name);
+			
+			if (!myvmem.is_valid()) {
+				std::string err = "Could not find virtual member " + mimicking_virtual.name + "." + vmem.member->name + " in " + this->name;
+				state.report_message(report_type::error, err, vmem.member->decl.get());
+			} else {
+				vtable.push_back((llvm::Constant *)state.symbol_table[myvmem.get_fqn()].value);
+			}
 		}
 		auto array = llvm::ConstantArray::get(array_type, vtable);
 		auto struct_constant =
-			llvm::ConstantStruct::get(get_llvm_metadata_struct_type(state), array);
+			llvm::ConstantStruct::get(mimicking_virtual.get_llvm_metadata_struct_type(state), array);
 
-		// state.Builder.SetInsertPoint(&state.init_function->getEntryBlock());
-		auto metadataName = std::string(".meta(") + name + ")";
-		state.TheModule->getOrInsertGlobal(metadataName, get_llvm_metadata_struct_type(state));
-		metadata_object = state.TheModule->getNamedGlobal(metadataName);
+		auto metadataName = std::string(".meta(") + mimicking_virtual.name + (this != &mimicking_virtual ? "->" + name : "") + ")";
+		state.TheModule->getOrInsertGlobal(metadataName, mimicking_virtual.get_llvm_metadata_struct_type(state));
+		llvm::GlobalVariable *metadata_object = state.TheModule->getNamedGlobal(metadataName);
 		metadata_object->setDSOLocal(true);
-		// metadata_object->setInitializer(llvm::ConstantAggregateZero::get(get_llvm_metadata_struct_type(state)));
 		metadata_object->setInitializer(struct_constant);
-		// metadata_object->setLinkage(llvm::GlobalValue::InternalLinkage);
+		metadata_objects[&mimicking_virtual] = metadata_object;
+		return metadata_object;
 	}
-	return metadata_object;
+	return metadata_objects[&mimicking_virtual];
 }
 
 int type_class::get_member_index_in_llvm_struct(member *member) const {

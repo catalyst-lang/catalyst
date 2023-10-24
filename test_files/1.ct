@@ -1,16 +1,32 @@
-class A {
-    virtual fn test() {
-        return 54
-    }
-}
-
 class B : A {
     override fn test() {
         return 54398
     }
+
+    override fn test(i: i64) {
+        return i + 1
+    }
+}
+
+class A {
+    fn new() {
+        
+    }
+
+    virtual fn test() {
+        return 54
+    }
+
+    virtual fn test(i: i64) {
+        return i - 1
+    }
+
+    virtual fn blaat() {
+        return 13
+    }
 }
 
 fn main() {
-    var b: A = B()
-    return b.test()
+    var b = B()
+    return b.test() + b.test(4)
 }

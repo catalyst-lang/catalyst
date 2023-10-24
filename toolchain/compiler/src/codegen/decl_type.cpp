@@ -86,43 +86,6 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_cl
 	}
 }
 
-std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_iface &decl) {
-	std::vector<member> members;
-	for (auto &mmbr : decl.declarations) {
-		auto type = decl_get_type(state, mmbr);
-		members.emplace_back(mmbr->ident.name, type, mmbr, mmbr->classifiers);
-	}
-
-	auto fqn = state.current_scope().get_fully_qualified_scope_name(decl.ident.name);
-
-	if (!decl.super.empty()) {
-		std::vector<std::shared_ptr<type_virtual>> supers;
-
-		for (auto const &super : decl.super) {
-			if (!isa<ast::type_qualified_name>(super)) {
-				return type::create_iface(fqn, {type_class::unknown()}, members);
-			}
-
-			auto super_qn = std::static_pointer_cast<ast::type_qualified_name>(super);
-			auto super_sym = state.scopes.find_named_symbol(*super_qn);
-			if (!super_sym) {
-				return type::create_class(fqn, {type_iface::unknown()}, members);
-			}
-			if (!isa<type_iface>(super_sym->type)) {
-				state.report_message(report_type::error, "Unexpected base type", super.get());
-				state.report_message(report_type::help,
-				                     "An 'iface' can only inherit from other 'iface' types.");
-			}
-			auto super_class = std::static_pointer_cast<type_iface>(super_sym->type);
-			supers.push_back(super_class);
-		}
-
-		return type::create_iface(fqn, supers, members);
-	} else {
-		return type::create_iface(fqn, members);
-	}
-}
-
 std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, const ast::decl_ptr &decl) {
 	if (isa<ast::decl_fn>(decl)) {
 		return decl_get_type(state, *(ast::decl_fn *)decl.get());
@@ -132,8 +95,6 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, const ast::d
 		return decl_get_type(state, *(ast::decl_struct *)decl.get());
 	} else if (isa<ast::decl_class>(decl)) {
 		return decl_get_type(state, *(ast::decl_class *)decl.get());
-	} else if (isa<ast::decl_iface>(decl)) {
-		return decl_get_type(state, *(ast::decl_iface *)decl.get());
 	} else {
 		state.report_message(report_type::error, "Decl type not implemented", decl.get());
 		return nullptr;
