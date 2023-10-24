@@ -9,7 +9,7 @@ on:
 name: Code Quality Scan
 
 env:
-  LLVM_VER: 15.0.6
+  LLVM_VER: 17.0.3
 
 jobs:
   build:
