@@ -165,8 +165,9 @@ llvm::GlobalVariable *type_class::get_llvm_metadata_object(codegen::state &state
 				std::string err = "Could not find virtual member " + mimicking_virtual.name + "." + vmem.member->name + " in " + this->name;
 				state.report_message(report_type::error, err, vmem.member->decl.get());
 			} else {
-				if (myvmem.residence == this && mimicking_virtual != *this) {
-					vtable.push_back(create_thunk_function(state, (llvm::Function *)state.symbol_table[myvmem.get_fqn()].value, mimicking_virtual, *this));
+				if (/*myvmem.residence == this && */mimicking_virtual != *this) {
+					auto const & residence = *myvmem.residence;
+					vtable.push_back(create_thunk_function(state, (llvm::Function *)state.symbol_table[myvmem.get_fqn()].value, mimicking_virtual, dynamic_cast<const type_virtual&>(residence)));
 				} else {
 					vtable.push_back((llvm::Constant *)state.symbol_table[myvmem.get_fqn()].value);
 				}
@@ -253,6 +254,8 @@ llvm::Value *type_class::cast_llvm_value(codegen::state &state, llvm::Value *val
 }
 
 llvm::Constant* type_class::create_thunk_function(codegen::state &state, llvm::Function * function, const type_virtual &from, const type_virtual &to) {
+	// TODO: do not regenerate thunking functions! (cache them)
+
 	// create a new llvm::Function that has the same signature as the function we are thunking
 	auto *thunk_function = llvm::Function::Create(function->getFunctionType(), llvm::Function::ExternalLinkage, function->getName() + "#thunk:" + from.name, *state.TheModule);
 
@@ -270,7 +273,7 @@ llvm::Constant* type_class::create_thunk_function(codegen::state &state, llvm::F
 	auto *this_ = args[0];
 	this_->setName("this");
 	auto intermediate_to = &to;
-	while (*intermediate_to != from) {
+	while (*intermediate_to != from && !intermediate_to->super.empty()) {
 		for (auto const &s : intermediate_to->super) {
 			if (from.is_assignable_from(s)) {
 				auto nullConstant = llvm::Constant::getNullValue(intermediate_to->get_llvm_type(state)->getPointerTo());

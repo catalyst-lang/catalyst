@@ -4,15 +4,23 @@ class A {
     }
 
     var a = 5
+    var bs = 45
 }
 
 class B : A {
-  
+    override fn test() {
+        return this.b
+    }
 
     var b = 6
 }
 
+class C : B {
+
+    var i = 7
+}
+
 fn main() {
-    var a: A = B()
+    var a: A = C()
     return a.test()
 }

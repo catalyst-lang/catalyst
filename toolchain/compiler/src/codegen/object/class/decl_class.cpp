@@ -107,17 +107,33 @@ llvm::Value* codegen(codegen::state &state, ast::decl_class &decl) {
 	auto metadata_location = state.Builder.CreateConstGEP1_32(llvm::PointerType::get(*state.TheContext, 0), this_, 0);
 	state.Builder.CreateStore(type->get_llvm_metadata_object(state), metadata_location);
 
-	int super_index = 1; // offset by 1 for the metadata
-	for (auto & s : type->super) {
-		if (s->init_function != nullptr) {
-			auto offsetted = state.Builder.CreateStructGEP(type->get_llvm_struct_type(state), this_, super_index, s->name + "_offset");
-			state.Builder.CreateCall(s->init_function, {offsetted});
-		
-			// overwrite the super metadata with our own
-			state.Builder.CreateStore(type->get_llvm_metadata_object(state, *s), offsetted);
+	std::function<void(type_virtual*, type_virtual*, llvm::Value*)> call_inits = [&](type_virtual *base, type_virtual *super, llvm::Value *pointer) {
+		int super_index = 1; // offset by 1 for the metadata
+		for (auto & s : super->super) {
+			if (s->init_function != nullptr) {
+				auto offsetted = state.Builder.CreateStructGEP(super->get_llvm_struct_type(state), pointer, super_index, s->name + "_offset");
+				state.Builder.CreateCall(s->init_function, {offsetted});
+			
+				// overwrite the super metadata with our own
+				state.Builder.CreateStore(base->get_llvm_metadata_object(state, *s), offsetted);
+				call_inits(base, s.get(), offsetted);
+			}
+			super_index++;
 		}
-		super_index++;
-	}
+	};
+	call_inits(type, type, this_);
+
+	// int super_index = 1; // offset by 1 for the metadata
+	// for (auto & s : type->super) {
+	// 	if (s->init_function != nullptr) {
+	// 		auto offsetted = state.Builder.CreateStructGEP(type->get_llvm_struct_type(state), this_, super_index, s->name + "_offset");
+	// 		state.Builder.CreateCall(s->init_function, {offsetted});
+		
+	// 		// overwrite the super metadata with our own
+	// 		state.Builder.CreateStore(type->get_llvm_metadata_object(state, *s), offsetted);
+	// 	}
+	// 	super_index++;
+	// }
 
 	for (auto &member : type->members) {
 		if (isa<ast::decl_fn>(member.decl)) {
