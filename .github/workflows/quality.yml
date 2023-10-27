@@ -40,7 +40,7 @@ jobs:
         uses: SonarSource/sonarcloud-github-c-cpp@v1
 
       - name: Configure
-        run: cmake -GNinja -B build -DCMAKE_CXX_COMPILER=clang++-15 -DCMAKE_C_COMPILER=clang-15 -DCMAKE_BUILD_TYPE=Release -DCOVERAGE=true -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+        run: cmake -GNinja -B build -DCMAKE_CXX_COMPILER=clang++-17 -DCMAKE_C_COMPILER=clang-17 -DCMAKE_BUILD_TYPE=Release -DCOVERAGE=true -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
       - name: Build
         run: build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build build
@@ -53,26 +53,26 @@ jobs:
           mv default.profraw compiler.profraw
       - name: Merge counters from different runs and convert the result into an llvm-cov-compatible form
         run: |
-          llvm-profdata-15 merge -o merged.profdata *.profraw
+          llvm-profdata-17 merge -o merged.profdata *.profraw
       - name: Collect the coverage
         run: |
-          llvm-cov-15 show --instr-profile merged.profdata build/toolchain/parser/test-parser -object build/toolchain/compiler/test-compiler > coverage.txt
-          llvm-cov-15 export --format=lcov -instr-profile merged.profdata build/toolchain/parser/test-parser -object build/toolchain/compiler/test-compiler > coverage.lcov
+          llvm-cov-17 show --instr-profile merged.profdata build/toolchain/parser/test-parser -object build/toolchain/compiler/test-compiler > coverage.txt
+          llvm-cov-17 export --format=lcov -instr-profile merged.profdata build/toolchain/parser/test-parser -object build/toolchain/compiler/test-compiler > coverage.lcov
 
       - name: Codacy
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
         run: |
           cd ~
-          wget https://github.com/codacy/codacy-clang-tidy/releases/download/1.3.5/codacy-clang-tidy-linux-1.3.5
-          chmod a+x codacy-clang-tidy-linux-1.3.5
+          wget https://github.com/codacy/codacy-clang-tidy/releases/download/1.3.5/codacy-clang-tidy-linux-1.3.8
+          chmod a+x codacy-clang-tidy-linux-1.3.8
           cd $GITHUB_WORKSPACE
 
           # 1. Run Clang-Tidy
           sudo apt-get install clang-tidy-${LLVM_VER%%.*}
           /usr/lib/llvm-${LLVM_VER%%.*}/bin/run-clang-tidy -p ./build | \
           # 2. Convert the Clang-Tidy output to a format that the Codacy API accepts
-          ~/codacy-clang-tidy-linux-1.3.5 | \
+          ~/codacy-clang-tidy-linux-1.3.8 | \
           # 3. Send the results to Codacy
           curl -XPOST -L -H "project-token: $CODACY_PROJECT_TOKEN" \
               -H "Content-type: application/json" -d @- \
