@@ -203,7 +203,7 @@ int type_virtual::get_member_index_in_llvm_struct(member *member) const {
 	return super.size() + type_custom::get_member_index_in_llvm_struct(member);
 }
 
-int type_virtual::get_super_index_in_llvm_struct(const type_custom *p) const {
+int type_virtual::get_super_index_in_llvm_struct(type_custom *p) const {
 	auto result =
 		std::find_if(super.begin(), super.end(),
 	                 [&](const std::shared_ptr<type_virtual> &p2) { return p == p2.get(); });

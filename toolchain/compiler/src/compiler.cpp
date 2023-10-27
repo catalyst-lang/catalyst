@@ -44,7 +44,7 @@ compile_result compile(catalyst::ast::translation_unit &tu, options options) {
 	state->TheFAM = std::make_unique<FunctionAnalysisManager>();
 	state->TheMAM = std::make_unique<ModuleAnalysisManager>();
 	state->ThePIC = std::make_unique<PassInstrumentationCallbacks>();
-	state->TheSI = std::make_unique<StandardInstrumentations>(*state->TheContext, /*DebugLogging*/ true);
+	state->TheSI = std::make_unique<StandardInstrumentations>(*state->TheContext, /*DebugLogging*/ false);
 	state->TheSI->registerCallbacks(*state->ThePIC, state->TheMAM.get());
 
 	state->target->register_symbols();
@@ -115,9 +115,6 @@ compile_result compile(catalyst::ast::translation_unit &tu, options options) {
 		// //state->FPM->add(llvm::createSLPVectorizerPass());
 		// //state->FPM->add(llvm::createLoopVectorizePass());
 	}
-
-
-	//state->TheFPM->doInitialization();
 
 	codegen::codegen(*state);
 

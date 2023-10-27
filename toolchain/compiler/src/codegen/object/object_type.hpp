@@ -22,7 +22,7 @@ struct type_custom : type {
 
 	llvm::Function *init_function = nullptr;
 
-	virtual llvm::Type *get_llvm_struct_type(codegen::state &state) const = 0;
+	virtual llvm::StructType *get_llvm_struct_type(codegen::state &state) const = 0;
 
 	virtual member_locator get_member(const std::string &name);
 	virtual member_locator get_member(const type_function *function);
@@ -40,7 +40,7 @@ struct type_struct : type_custom {
 	bool is_valid() const override;
 
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
-	llvm::Type *get_llvm_struct_type(codegen::state &state) const override;
+	llvm::StructType *get_llvm_struct_type(codegen::state &state) const override;
 
 	virtual std::string get_fqn() const override;
 
@@ -71,7 +71,7 @@ struct type_virtual : type_custom {
 	member_locator get_member(const std::string &name) override;
 	member_locator get_member(const type_function *function) override;
 	int get_member_index_in_llvm_struct(member *member) const override;
-	virtual int get_super_index_in_llvm_struct(const type_custom *super) const;
+	virtual int get_super_index_in_llvm_struct(type_custom *super) const;
 
 	virtual llvm::StructType *get_llvm_metadata_struct_type(codegen::state &state) = 0;
 	virtual llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state) = 0;
@@ -89,7 +89,7 @@ struct type_class : type_virtual {
 	static std::shared_ptr<type_class> unknown();
 
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
-	llvm::Type *get_llvm_struct_type(codegen::state &state) const override;
+	llvm::StructType *get_llvm_struct_type(codegen::state &state) const override;
 
 	virtual std::string get_fqn() const override;
 
@@ -98,7 +98,7 @@ struct type_class : type_virtual {
 	virtual llvm::Value *get_sizeof(catalyst::compiler::codegen::state &state) override;
 
 	int get_member_index_in_llvm_struct(member *member) const override;
-	int get_super_index_in_llvm_struct(const type_custom *super) const override;
+	int get_super_index_in_llvm_struct(type_custom *super) const override;
 
 	member_locator get_virtual_member_function_that_is_compatible(const type_function *function, const std::string &name);
 
@@ -113,6 +113,8 @@ struct type_class : type_virtual {
 
 	llvm::StructType *metadata_struct_type = nullptr;
 	std::unordered_map<type_virtual*, llvm::GlobalVariable*> metadata_objects;
+
+	static llvm::Constant* create_thunk_function(codegen::state &state, llvm::Function * function, const type_virtual &from, const type_virtual &to);
 };
 
 struct type_object : type {

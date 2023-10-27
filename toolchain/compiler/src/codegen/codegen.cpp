@@ -119,7 +119,9 @@ void codegen(codegen::state &state) {
 
 	state.Builder.SetInsertPoint(BB);
 	state.Builder.CreateRetVoid();
-	state.TheFPM->run(*state.init_function, *state.TheFAM);
+	if (!state.TheFPM->isEmpty()) {
+		state.TheFPM->run(*state.init_function, *state.TheFAM);
+	}
 }
 
 } // namespace catalyst::compiler::codegen

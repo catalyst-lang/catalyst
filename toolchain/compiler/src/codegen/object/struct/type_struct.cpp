@@ -16,7 +16,7 @@ std::shared_ptr<type> type::create_struct(const std::string &name, std::vector<m
 	return std::make_shared<type_struct>(name, members);
 }
 
-llvm::Type *type_struct::get_llvm_struct_type(state &state) const {
+llvm::StructType *type_struct::get_llvm_struct_type(state &state) const {
 	if (structType == nullptr) {
 		std::vector<llvm::Type *> fields;
 		for (const auto &member : members) {

@@ -325,4 +325,79 @@ TEST_CASE("Virtual functions overloading") {
     CHECK(ret == 3);
 }
 
+TEST_CASE("Virtual functions accessing fields simple") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        class A {
+            virtual fn test() {
+                return this.a
+            }
+
+            var a = 5
+        }
+
+        fn main() {
+            var a = A()
+            return a.test()
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run<int64_t>(result);
+    REQUIRE(result.is_successful);
+    CHECK(ret == 5);
+}
+
+TEST_CASE("Virtual functions accessing fields") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        class A {
+            virtual fn test() {
+                return this.a
+            }
+
+            var a = 5
+        }
+
+        class B : A {
+            override fn test() {
+                return this.b
+            }
+
+            var b = 6
+        }
+
+        fn main() {
+            var a: A = B()
+            return a.test()
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run<int64_t>(result);
+    REQUIRE(result.is_successful);
+    CHECK(ret == 6);
+}
+
+TEST_CASE("Virtual functions accessing fields") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        class A {
+            virtual fn test() {
+                return this.a
+            }
+
+            var a = 5
+        }
+
+        class B : A {
+            var b = 6
+        }
+
+        fn main() {
+            var a: A = B()
+            return a.test()
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run<int64_t>(result);
+    REQUIRE(result.is_successful);
+    CHECK(ret == 5);
+}
+
 }

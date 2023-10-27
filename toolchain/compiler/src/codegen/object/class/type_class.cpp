@@ -29,7 +29,7 @@ std::shared_ptr<type> type::create_class(const std::string &name, const std::vec
 	return std::make_shared<type_class>(name, super, members);
 }
 
-llvm::Type *type_class::get_llvm_struct_type(state &state) const {
+llvm::StructType *type_class::get_llvm_struct_type(state &state) const {
 	if (structType == nullptr) {
 		std::vector<llvm::Type *> fields;
 		
@@ -165,14 +165,18 @@ llvm::GlobalVariable *type_class::get_llvm_metadata_object(codegen::state &state
 				std::string err = "Could not find virtual member " + mimicking_virtual.name + "." + vmem.member->name + " in " + this->name;
 				state.report_message(report_type::error, err, vmem.member->decl.get());
 			} else {
-				vtable.push_back((llvm::Constant *)state.symbol_table[myvmem.get_fqn()].value);
+				if (myvmem.residence == this && mimicking_virtual != *this) {
+					vtable.push_back(create_thunk_function(state, (llvm::Function *)state.symbol_table[myvmem.get_fqn()].value, mimicking_virtual, *this));
+				} else {
+					vtable.push_back((llvm::Constant *)state.symbol_table[myvmem.get_fqn()].value);
+				}
 			}
 		}
 		auto array = llvm::ConstantArray::get(array_type, vtable);
 		auto struct_constant =
 			llvm::ConstantStruct::get(mimicking_virtual.get_llvm_metadata_struct_type(state), array);
 
-		auto metadataName = std::string(".meta(") + mimicking_virtual.name + (this != &mimicking_virtual ? "->" + name : "") + ")";
+		auto metadataName = std::string(".meta(") + mimicking_virtual.name + (*this != mimicking_virtual ? "->" + name : "") + ")";
 		state.TheModule->getOrInsertGlobal(metadataName, mimicking_virtual.get_llvm_metadata_struct_type(state));
 		llvm::GlobalVariable *metadata_object = state.TheModule->getNamedGlobal(metadataName);
 		metadata_object->setDSOLocal(true);
@@ -188,7 +192,7 @@ int type_class::get_member_index_in_llvm_struct(member *member) const {
 	return 1 + type_virtual::get_member_index_in_llvm_struct(member);
 }
 
-int type_class::get_super_index_in_llvm_struct(const type_custom *super) const {
+int type_class::get_super_index_in_llvm_struct(type_custom *super) const {
 	auto ret = type_virtual::get_super_index_in_llvm_struct(super);
 	if (ret >= 0) {
 		return 1 + ret;
@@ -203,12 +207,26 @@ llvm::Value *type_class::cast_llvm_value(codegen::state &state, llvm::Value *val
 		return nullptr;
 	}
 
-	auto to_class = (const type_class*)&to;
+	auto to_class = (type_class*)&to;
 
 	if (this == to_class) return value;
 
+	// null check
+	auto *notNullBB = llvm::BasicBlock::Create(*state.TheContext, "is_not_null", state.current_function);
+	auto *nullBB = llvm::BasicBlock::Create(*state.TheContext, "is_null", state.current_function);
+	auto *mergeBB = llvm::BasicBlock::Create(*state.TheContext, "null_check_merge", state.current_function);
+
+	auto* nullValue = llvm::ConstantPointerNull::get(llvm::dyn_cast<llvm::PointerType>(value->getType()));
+	auto* null_check = state.Builder.CreateICmpEQ(value, nullValue, "null_check");
+	state.Builder.CreateCondBr(null_check, nullBB, notNullBB);
+
+	state.Builder.SetInsertPoint(nullBB);
+	state.Builder.CreateBr(mergeBB);
+
+	state.Builder.SetInsertPoint(notNullBB);
+	llvm::Value *casted = nullptr;
 	if (int index = this->get_super_index_in_llvm_struct(to_class); index >= 0) {
-		return state.Builder.CreateStructGEP(this->get_llvm_struct_type(state),
+		casted = state.Builder.CreateStructGEP(this->get_llvm_struct_type(state),
 												value, index, to_class->name + "_ptr");
 	} else {
 		for (auto const &s : this->super) {
@@ -217,12 +235,67 @@ llvm::Value *type_class::cast_llvm_value(codegen::state &state, llvm::Value *val
 					this->get_llvm_struct_type(state), value,
 					this->get_super_index_in_llvm_struct(s.get()),
 					s->name + "_ptr");
-				return s->cast_llvm_value(state, value, to);
+				casted = s->cast_llvm_value(state, value, to);
+				break;
 			}
 		}
 	}
+	// update notNullBB, because we might be completely somewhere else now because of above function calls
+	notNullBB = state.Builder.GetInsertBlock();
+
+	state.Builder.CreateBr(mergeBB);
+	state.Builder.SetInsertPoint(mergeBB);
+	auto* phi = state.Builder.CreatePHI(llvm::PointerType::get(*state.TheContext, 0), 2, "casted");
+	phi->addIncoming(casted, notNullBB);
+	phi->addIncoming(nullValue, nullBB);
 	
-	return nullptr;
+	return phi;
+}
+
+llvm::Constant* type_class::create_thunk_function(codegen::state &state, llvm::Function * function, const type_virtual &from, const type_virtual &to) {
+	// create a new llvm::Function that has the same signature as the function we are thunking
+	auto *thunk_function = llvm::Function::Create(function->getFunctionType(), llvm::Function::ExternalLinkage, function->getName() + "#thunk:" + from.name, *state.TheModule);
+
+	// create a new llvm::BasicBlock for the function
+	auto *BB = llvm::BasicBlock::Create(*state.TheContext, "entry", thunk_function);
+	auto *currentInsertPoint = state.Builder.GetInsertBlock();
+	state.Builder.SetInsertPoint(BB);
+
+	std::vector<llvm::Value *> args;
+	for (auto &arg : thunk_function->args()) {
+		args.push_back(&arg);
+	}
+
+	// adjust the address of the first argument (the 'this') from a pointer to type 'from' to pointer of type 'to'.
+	auto *this_ = args[0];
+	this_->setName("this");
+	auto intermediate_to = &to;
+	while (*intermediate_to != from) {
+		for (auto const &s : intermediate_to->super) {
+			if (from.is_assignable_from(s)) {
+				auto nullConstant = llvm::Constant::getNullValue(intermediate_to->get_llvm_type(state)->getPointerTo());
+				int index = intermediate_to->get_super_index_in_llvm_struct(s.get());
+
+				// Get the offset to from in the parent class struct
+				auto* offsetGepInst = state.Builder.CreateStructGEP(intermediate_to->get_llvm_struct_type(state), nullConstant, index, "super_offset");
+				auto* negOffset = state.Builder.CreateNeg(offsetGepInst, "neg_offset");
+
+				// Subtract the offset from the pointer this_
+				this_ = state.Builder.CreateGEP(llvm::Type::getInt8Ty(*state.TheContext), this_, negOffset, "offsetted_this");
+				intermediate_to = s.get();
+				break;
+			}
+		}
+	}
+	args[0] = this_;
+
+	// generate a call to the original function with the arguments from the thunk function
+	auto *ret = state.Builder.CreateCall(function, args, "thunked_call");
+	state.Builder.CreateRet(ret);
+
+	state.Builder.SetInsertPoint(currentInsertPoint);
+
+	return thunk_function;
 }
 
 } // namespace catalyst::compiler::codegen

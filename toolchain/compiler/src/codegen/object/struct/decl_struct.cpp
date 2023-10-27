@@ -126,7 +126,9 @@ llvm::Value* codegen(codegen::state &state, ast::decl_struct &decl) {
 
 	state.scopes.leave();
 
-	state.TheFPM->run(*type->init_function, *state.TheFAM);
+	if (!state.TheFPM->isEmpty()) {
+		state.TheFPM->run(*type->init_function, *state.TheFAM);
+	}
 	
 
 	return nullptr;

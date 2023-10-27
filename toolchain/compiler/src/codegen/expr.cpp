@@ -291,7 +291,7 @@ llvm::Value *codegen_call(codegen::state &state, std::shared_ptr<codegen::type> 
 		// method call, prepend the this pointer
 		ArgsV.push_back(this_);
 	}
-	for (unsigned i = 0, e = expr.parameters.size(); i != e; ++i) {
+	for (size_t i = 0, e = expr.parameters.size(); i != e; ++i) {
 		auto arg_type = expr_resulting_type(state, expr.parameters[i], type->parameters[i]);
 		auto arg = codegen(state, expr.parameters[i], type->parameters[i]);
 		if (!arg)
