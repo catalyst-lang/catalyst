@@ -4,9 +4,9 @@
 #pragma once
 #pragma warning(disable : 4624)
 
-namespace catalyst::compiler::codegen {
-struct state;
-}
+#include <deque>
+#include <map>
+#include <memory>
 
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/STLExtras.h"
@@ -21,9 +21,6 @@ struct state;
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
-#include <deque>
-#include <map>
-#include <memory>
 
 #include "../../../parser/src/parser.hpp"
 #include "../common/catalyst/ast/ast.hpp"
@@ -31,7 +28,10 @@ struct state;
 #include "../compiler.hpp"
 #include "scope.hpp"
 #include "symbol.hpp"
-#include "../target.hpp"
+
+namespace catalyst::compiler {
+	struct target;
+}
 
 namespace catalyst::compiler::codegen {
 

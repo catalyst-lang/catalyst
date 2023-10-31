@@ -2,16 +2,17 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
-namespace catalyst::compiler {
-struct runtime;
-}
 
 #include <string>
 #include <unordered_map>
 #include <memory>
+
 #include "target.hpp"
-#include "codegen/codegen.hpp"
 #include "llvm/ExecutionEngine/JITSymbol.h"
+
+namespace catalyst::compiler::codegen {
+    struct state;
+}
 
 namespace catalyst::compiler {
 

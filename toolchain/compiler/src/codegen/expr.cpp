@@ -8,6 +8,7 @@
 #include <typeinfo>
 
 #include "catalyst/rtti.hpp"
+#include "../runtime.hpp"
 #include "expr.hpp"
 #include "expr_type.hpp"
 #include "function_overloading.hpp"

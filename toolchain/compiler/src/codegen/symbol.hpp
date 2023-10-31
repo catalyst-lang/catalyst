@@ -7,15 +7,14 @@
 #include <memory>
 #include <utility>
 #include <variant>
+
+#include "llvm/IR/Value.h"
+
 #include "../common/catalyst/ast/ast.hpp"
 
 namespace catalyst::compiler::codegen {
-struct symbol;
-}
 
-#include "type.hpp"
-
-namespace catalyst::compiler::codegen {
+struct type;
 
 template<class> inline constexpr bool always_false_v = false;
 

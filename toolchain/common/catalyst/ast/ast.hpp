@@ -5,4 +5,5 @@
 
 #include "general.hpp"
 #include "expr.hpp"
+#include "decl.hpp"
 #include "stmt.hpp"

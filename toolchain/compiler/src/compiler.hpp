@@ -3,10 +3,11 @@
 
 #pragma once
 
-#include "catalyst/ast/ast.hpp"
 #include <sstream>
 #include <string>
 #include <memory>
+
+#include "catalyst/ast/ast.hpp"
 
 namespace catalyst::compiler {
 

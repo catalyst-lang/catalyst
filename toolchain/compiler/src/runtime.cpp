@@ -1,10 +1,12 @@
 // Copyright (c) 2021-2023 Bas du Pré and Catalyst contributors
 // SPDX-License-Identifier: MIT
 
+
+#include <iostream>
+
 #include "llvm/Support/TargetSelect.h"
 
 #include "runtime.hpp"
-#include <iostream>
 
 using namespace catalyst;
 using type = compiler::codegen::type;

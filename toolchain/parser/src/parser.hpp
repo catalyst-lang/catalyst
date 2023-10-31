@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "catalyst/ast/ast.hpp"
 #include <optional>
 #include <sstream>
 #include <string>

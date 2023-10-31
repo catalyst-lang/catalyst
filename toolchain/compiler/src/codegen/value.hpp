@@ -3,8 +3,9 @@
 
 #pragma once
 
-#include "../common/catalyst/ast/ast.hpp"
 #include <memory>
+
+#include "../common/catalyst/ast/ast.hpp"
 
 #include "codegen.hpp"
 

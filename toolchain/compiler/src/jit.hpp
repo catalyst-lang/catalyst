@@ -3,6 +3,12 @@
 
 #pragma once
 
+#include <algorithm>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+
 #pragma warning(push)
 #pragma warning(disable : 4244)
 #pragma warning(disable : 4624)
@@ -19,11 +25,6 @@
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/LLVMContext.h"
 #pragma warning(pop)
-#include <algorithm>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
 
 #include "runtime.hpp"
 #include "codegen/codegen.hpp"

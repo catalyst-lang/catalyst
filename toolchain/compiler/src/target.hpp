@@ -3,15 +3,13 @@
 
 #pragma once
 
-namespace catalyst::compiler {
-struct target;
-}
-
 #include <string>
 #include <unordered_map>
 #include <memory>
-#include "codegen/codegen.hpp"
+
 #include "llvm/ExecutionEngine/JITSymbol.h"
+
+#include "codegen/codegen.hpp"
 
 namespace catalyst::compiler {
 

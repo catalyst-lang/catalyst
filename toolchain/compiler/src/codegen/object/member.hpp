@@ -3,10 +3,11 @@
 
 #pragma once
 
-#include "catalyst/ast/expr.hpp"
 #include <memory>
 #include <string>
 #include <unordered_set>
+
+#include "catalyst/ast/ast.hpp"
 
 namespace catalyst::compiler::codegen {
 struct type;

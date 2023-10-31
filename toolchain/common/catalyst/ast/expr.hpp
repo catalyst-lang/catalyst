@@ -2,9 +2,12 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
-#include "parser.hpp"
+
 #include <memory>
 #include <variant>
+
+#include "parser.hpp"
+#include "general.hpp"
 
 namespace catalyst::ast {
 
@@ -13,11 +16,6 @@ struct expr : parser::ast_node {
 	using ast_node::ast_node;
 };
 using expr_ptr = std::shared_ptr<struct expr>;
-} // namespace catalyst::ast
-
-#include "general.hpp"
-
-namespace catalyst::ast {
 
 struct expr_ident;
 struct expr_literal;

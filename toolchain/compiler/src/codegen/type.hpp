@@ -3,23 +3,23 @@
 
 #pragma once
 
+#include <memory>
+#include <string>
+#include <utility>
+
+#include "llvm/IR/Type.h"
+#include "catalyst/ast/expr.hpp"
+
+#include "codegen.hpp"
+#include "object/member.hpp"
+
 namespace catalyst::compiler::codegen {
+
 struct type;
 struct type_ns;
 struct type_custom;
 struct type_class;
 struct type_virtual;
-} // namespace catalyst::compiler::codegen
-
-#include "catalyst/ast/expr.hpp"
-#include "codegen.hpp"
-#include "object/member.hpp"
-#include "llvm/IR/Type.h"
-#include <memory>
-#include <string>
-#include <utility>
-
-namespace catalyst::compiler::codegen {
 
 struct type {
 	/// Specialization score is a comparable score that specifies the amount of specialization

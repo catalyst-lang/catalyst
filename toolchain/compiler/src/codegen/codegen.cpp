@@ -1,6 +1,8 @@
 // Copyright (c) 2021-2022 Bas du Pré and Catalyst contributors
 // SPDX-License-Identifier: MIT
 
+#include <iostream>
+
 #include "codegen.hpp"
 #include "../runtime.hpp"
 #include "../../../parser/src/parser.hpp"
@@ -8,7 +10,6 @@
 #include "catalyst/rtti.hpp"
 #include "decl_proto_pass.hpp"
 #include "decl_overloading_pass.hpp"
-#include <iostream>
 
 namespace catalyst::compiler::codegen {
 

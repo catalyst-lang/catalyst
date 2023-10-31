@@ -4,7 +4,9 @@
 #pragma once
 
 #include <memory>
+
 #include "../common/catalyst/ast/ast.hpp"
+
 #include "codegen.hpp"
 
 namespace catalyst::compiler::codegen {

@@ -2,9 +2,14 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
-#include "../common/catalyst/ast/ast.hpp"
-#include "../compiler.hpp"
-#include "type.hpp"
+
+#include <deque>
+#include <map>
+#include <memory>
+#include <ranges>
+#include <set>
+#include <vector>
+
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/BasicBlock.h"
@@ -17,17 +22,18 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
-#include <deque>
-#include <map>
-#include <memory>
-#include <ranges>
-#include <set>
-#include <vector>
 
-#include "symbol.hpp"
+#include "../common/catalyst/ast/ast.hpp"
 #include "catalyst/rtti.hpp"
 
+#include "../compiler.hpp"
+
+#include "type.hpp"
+#include "symbol.hpp"
+
 namespace catalyst::compiler::codegen {
+
+struct type_ns;
 
 // TODO: move to string helper
 inline std::vector<std::string> split(const std::string &s, const std::string &delimiter) {
@@ -44,7 +50,6 @@ inline std::vector<std::string> split(const std::string &s, const std::string &d
     res.push_back (s.substr (pos_start));
     return res;
 }
-
 
 struct scope {
 	std::string name;
