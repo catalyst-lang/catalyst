@@ -51,6 +51,8 @@ void compiler_debug_print(compile_result &);
 
 codegen::state &get_state(const compile_result &result);
 
+std::string get_default_target_triple();
+
 template<typename T>
 T run(const compile_result &result);
 

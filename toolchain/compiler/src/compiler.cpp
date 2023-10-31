@@ -26,6 +26,7 @@
 #include "llvm/Analysis/OptimizationRemarkEmitter.h"
 #include "llvm/Analysis/ProfileSummaryInfo.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
+#include "llvm/TargetParser/Host.h"
 #include "jit.hpp"
 #pragma warning( pop )
 
@@ -168,6 +169,10 @@ void compiler_debug_print(compile_result &result) {
 
 codegen::state &get_state(const compile_result &result) {
 	return *std::static_pointer_cast<codegen::state>(result.state);
+}
+
+std::string get_default_target_triple() {
+	return llvm::sys::getDefaultTargetTriple();
 }
 
 template<typename T>

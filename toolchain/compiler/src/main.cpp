@@ -18,7 +18,7 @@
 #include "catalyst/platform.hpp"
 #include "catalyst/version.hpp"
 #include "compiler.hpp"
-#include "compiler.hpp"
+#include "object_file.hpp"
 
 #if CATALYST_PLATFORM_POSIX
 #include <csignal>
@@ -37,6 +37,8 @@ struct cli_options {
 	bool dump_ast = false;
 	bool dump_bytecode = false;
 	bool run = true;
+	std::string output_file;
+	std::string arch = compiler::get_default_target_triple();
 
 	enum class OutputFormat { ASCII = 0, Color, Fancy } format = OutputFormat::ASCII;
 
@@ -46,6 +48,10 @@ struct cli_options {
 int main(const cli_options &opts) {
 	auto result = compile_file(opts.input.c_str(), opts.compiler_options);
 	compiler_debug_print(result);
+
+	if (opts.output_file != "") {
+		write_object_file(opts.output_file, result, opts.arch);
+	}
 
 	if (opts.run) {
 		if (!result.is_runnable) {
@@ -114,6 +120,10 @@ int main(int argc, char **argv) {
 	app.add_option("-O,--optimize", options.compiler_options.optimizer_level, "Optimizer level");
 	
 	app.add_option("-R,--run", options.run, "Run");
+
+	app.add_option("-o,--output", options.output_file, "Output file");
+
+	app.add_option("--arch", options.arch, "Architecture triple");
 
 	std::atexit([]() { std::cout << rang::style::reset; });
 #if CATALYST_PLATFORM_POSIX
