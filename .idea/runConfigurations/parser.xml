@@ -1,7 +1,0 @@
-<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="parser" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="--dump-ast test_files/1.ct" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" WORKING_DIR="file://$PROJECT_DIR$" PASS_PARENT_ENVS_2="true" PROJECT_NAME="catalyst" TARGET_NAME="parser" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="catalyst" RUN_TARGET_NAME="parser">
-    <method v="2">
-      <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-    </method>
-  </configuration>
-</component>
