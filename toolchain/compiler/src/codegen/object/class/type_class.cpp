@@ -165,7 +165,7 @@ llvm::GlobalVariable *type_class::get_llvm_metadata_object(codegen::state &state
 				std::string err = "Could not find virtual member " + mimicking_virtual.name + "." + vmem.member->name + " in " + this->name;
 				state.report_message(report_type::error, err, vmem.member->decl.get());
 			} else {
-				if (/*myvmem.residence == this && */mimicking_virtual != *this) {
+				if (*myvmem.residence != mimicking_virtual && mimicking_virtual != *this) {
 					auto const & residence = *myvmem.residence;
 					vtable.push_back(create_thunk_function(state, (llvm::Function *)state.symbol_table[myvmem.get_fqn()].value, mimicking_virtual, dynamic_cast<const type_virtual&>(residence)));
 				} else {
@@ -177,7 +177,7 @@ llvm::GlobalVariable *type_class::get_llvm_metadata_object(codegen::state &state
 		auto struct_constant =
 			llvm::ConstantStruct::get(mimicking_virtual.get_llvm_metadata_struct_type(state), array);
 
-		auto metadataName = std::string(".meta(") + mimicking_virtual.name + (*this != mimicking_virtual ? "->" + name : "") + ")";
+		auto metadataName = std::string(".meta(") + mimicking_virtual.name + (*this != mimicking_virtual ? " in " + name : "") + ")";
 		state.TheModule->getOrInsertGlobal(metadataName, mimicking_virtual.get_llvm_metadata_struct_type(state));
 		llvm::GlobalVariable *metadata_object = state.TheModule->getNamedGlobal(metadataName);
 		metadata_object->setDSOLocal(true);
@@ -254,10 +254,14 @@ llvm::Value *type_class::cast_llvm_value(codegen::state &state, llvm::Value *val
 }
 
 llvm::Constant* type_class::create_thunk_function(codegen::state &state, llvm::Function * function, const type_virtual &from, const type_virtual &to) {
-	// TODO: do not regenerate thunking functions! (cache them)
+	// See if we already have a thunk function in this module
+	std::string thunk_name = std::string(function->getName()) + "#thunk:" + from.name;
+	if (state.TheModule->getFunction(thunk_name)) {
+		return state.TheModule->getFunction(thunk_name);
+	}
 
 	// create a new llvm::Function that has the same signature as the function we are thunking
-	auto *thunk_function = llvm::Function::Create(function->getFunctionType(), llvm::Function::ExternalLinkage, function->getName() + "#thunk:" + from.name, *state.TheModule);
+	auto *thunk_function = llvm::Function::Create(function->getFunctionType(), llvm::Function::ExternalLinkage, thunk_name, *state.TheModule);
 
 	// create a new llvm::BasicBlock for the function
 	auto *BB = llvm::BasicBlock::Create(*state.TheContext, "entry", thunk_function);

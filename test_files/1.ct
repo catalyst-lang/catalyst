@@ -3,8 +3,19 @@ class A {
         return this.a
     }
 
+    virtual fn blaat() {
+        return 11
+    }
+
     var a = 5
-    var bs = 45
+    var dbk = 88
+    var dtrb = 88
+    var dkb = 88
+    var doikb = 88
+    var dgfdkb = 88
+    var dojyukb = 88
+    var diob = 88
+    var ddrtb = 88
 }
 
 class B : A {
@@ -12,15 +23,25 @@ class B : A {
         return this.b
     }
 
+    override fn blaat() {
+        return this.db
+    }
+
     var b = 6
+    var db = 88
+    var dbfd = 88
 }
 
 class C : B {
+    override fn test() {
+        return this.i
+    }
 
     var i = 7
+    var dkjb = 88
 }
 
 fn main() {
     var a: A = C()
-    return a.test()
+    return a.test() + a.blaat()
 }

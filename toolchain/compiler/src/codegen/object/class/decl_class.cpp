@@ -92,10 +92,6 @@ llvm::Value* codegen(codegen::state &state, ast::decl_class &decl) {
 	auto &sym = state.symbol_table[key];
 	auto type = (type_class *)sym.type.get();
 
-	// auto llvm_type = type->get_llvm_type(state);
-
-	// auto structAlloca = state.Builder.CreateAlloca(llvm_type);
-
 	// create class init function
 	auto this_ = type->init_function->getArg(0);
 	auto *BB = llvm::BasicBlock::Create(*state.TheContext, "init", type->init_function);
@@ -122,18 +118,6 @@ llvm::Value* codegen(codegen::state &state, ast::decl_class &decl) {
 		}
 	};
 	call_inits(type, type, this_);
-
-	// int super_index = 1; // offset by 1 for the metadata
-	// for (auto & s : type->super) {
-	// 	if (s->init_function != nullptr) {
-	// 		auto offsetted = state.Builder.CreateStructGEP(type->get_llvm_struct_type(state), this_, super_index, s->name + "_offset");
-	// 		state.Builder.CreateCall(s->init_function, {offsetted});
-		
-	// 		// overwrite the super metadata with our own
-	// 		state.Builder.CreateStore(type->get_llvm_metadata_object(state, *s), offsetted);
-	// 	}
-	// 	super_index++;
-	// }
 
 	for (auto &member : type->members) {
 		if (isa<ast::decl_fn>(member.decl)) {
