@@ -21,8 +21,8 @@ llvm::Value * codegen(codegen::state &state, ast::expr_member_access &expr, std:
 void codegen_assignment(codegen::state &state, llvm::Value* dest_ptr,
                         std::shared_ptr<type> dest_type, ast::expr_ptr rhs);
 
-llvm::Value *codegen_call(codegen::state &state, std::shared_ptr<type> fn_type, llvm::Value *value, ast::expr_call &expr, llvm::Value *this_ = nullptr, std::shared_ptr<type> expecting_type = nullptr);
-llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &expr, llvm::Value *this_ = nullptr, std::shared_ptr<type> expecting_type = nullptr);
+llvm::Value *codegen_call(codegen::state &state, std::shared_ptr<type> fn_type, llvm::Value *value, ast::expr_call &expr, llvm::Value *this_ = nullptr, std::shared_ptr<type> this_type = nullptr, std::shared_ptr<type> expecting_type = nullptr);
+llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &expr, llvm::Value *this_ = nullptr, std::shared_ptr<type> this_type = nullptr, std::shared_ptr<type> expecting_type = nullptr);
 
 llvm::Value *get_super_typed_value(codegen::state &state, llvm::Value *this_,
                                    type_custom *this_type, type_custom *super_type);

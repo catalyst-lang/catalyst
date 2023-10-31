@@ -241,7 +241,7 @@ llvm::Value *codegen_call_new(codegen::state &state, std::shared_ptr<type> stype
 	auto sym_new = find_function_overload(state, key, expr, type::create_builtin("void"));
 	if (sym_new) {
 		auto new_call =
-			codegen_call(state, sym_new, expr, new_object, type::create_builtin("void"));
+			codegen_call(state, sym_new, expr, new_object, stype, type::create_builtin("void"));
 	} else if (!expr.parameters.empty()) {
 		state.report_message(
 			report_type::error,
@@ -254,6 +254,7 @@ llvm::Value *codegen_call_new(codegen::state &state, std::shared_ptr<type> stype
 
 llvm::Value *codegen_call(codegen::state &state, std::shared_ptr<codegen::type> stype,
                           llvm::Value *value, ast::expr_call &expr, llvm::Value *this_,
+						  std::shared_ptr<type> this_type,
                           std::shared_ptr<type> expecting_type) {
 	if (!stype)
 		return nullptr;
@@ -328,17 +329,33 @@ llvm::Value *codegen_call(codegen::state &state, std::shared_ptr<codegen::type> 
 			return nullptr;
 		}
 
-		auto c = std::dynamic_pointer_cast<type_class>(type->method_of);
-		auto member = c->get_member(type);
-		auto metadata_type = c->get_llvm_metadata_struct_type(state);
+		if (!isa<type_object>(this_type)) {
+			state.report_message(report_type::error,
+				                     std::string("Unexpected type `") +
+				                        this_type->get_fqn() + "` for virtual function call",
+				                     	&expr);
+			return nullptr;
+		}
+		auto this_obj = (type_object *)this_type.get();
+		auto this_typ = std::dynamic_pointer_cast<type_class>(this_obj->object_type);
+		assert(this_typ != nullptr && "this is not a class");
+
+		auto member = this_typ->get_member(type);
+		auto metadata_type = this_typ->get_llvm_metadata_struct_type(state);
 		auto metadata_location =
-			state.Builder.CreateStructGEP(c->get_llvm_struct_type(state), this_, 0);
+			state.Builder.CreateStructGEP(this_typ->get_llvm_struct_type(state), this_, 0);
 		auto metadata_object = state.Builder.CreateLoad(
 			llvm::PointerType::get(*state.TheContext, 0), metadata_location);
 		auto vtable = state.Builder.CreateConstGEP1_32(metadata_type, metadata_object, 0, "vtable");
-		int index = c->get_virtual_member_index(state, member);
+		int index = this_typ->get_virtual_member_index(state, member);
 		value = state.Builder.CreateConstGEP2_32(metadata_type->elements()[0], vtable, 0, index,
 		                                         "vfnptr");
+
+		// If this is a class with multiple superclasses (MI), then we might need to adjust the
+		// value of this_ to point to the offset of the super class.
+		this_ = get_super_typed_value(state, this_, this_typ.get(), member.residence);
+		ArgsV[0] = this_;
+		this_type = nullptr; // TODO: this should be make_shared<type_object>(member.residence), but member.residence is not a shared_ptr
 	}
 
 	llvm::CallInst *callinstr = nullptr;
@@ -386,10 +403,10 @@ llvm::Value *codegen_call(codegen::state &state, std::shared_ptr<codegen::type> 
 }
 
 llvm::Value *codegen_call(codegen::state &state, symbol *sym, ast::expr_call &expr,
-                          llvm::Value *this_, std::shared_ptr<type> expecting_type) {
+                          llvm::Value *this_, std::shared_ptr<type> this_type, std::shared_ptr<type> expecting_type) {
 	if (!sym)
 		return nullptr;
-	return codegen_call(state, sym->type, sym->value, expr, this_, expecting_type);
+	return codegen_call(state, sym->type, sym->value, expr, this_, this_type, expecting_type);
 }
 
 llvm::Value *codegen(codegen::state &state, ast::expr_call &expr,
@@ -398,7 +415,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_call &expr,
 		auto &callee = *(ast::expr_ident *)expr.lhs.get();
 		// Look up the name in the global module table.
 		auto sym = find_function_overload(state, callee.ident.name, expr, expecting_type);
-		return codegen_call(state, sym, expr, nullptr, expecting_type);
+		return codegen_call(state, sym, expr, nullptr, nullptr, expecting_type);
 	} else {
 		state.report_message(report_type::error, "Virtual functions not implemented", &expr);
 		return nullptr;
@@ -520,7 +537,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 					                              sym_fn_type->method_of.get());
 				}
 			}
-			return codegen_call(state, sym, *call, this_, expecting_type);
+			return codegen_call(state, sym, *call, this_, lhs_type, expecting_type);
 		} else {
 			// function pointer
 			if (!isa<type_function>(member_loc.member->type)) {
@@ -535,7 +552,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 
 				// auto this_ = lhs_value;
 				//  no this available on such call
-				return codegen_call(state, member_loc.member->type, ptr, *call, nullptr,
+				return codegen_call(state, member_loc.member->type, ptr, *call, nullptr, nullptr,
 				                    expecting_type);
 			}
 		}

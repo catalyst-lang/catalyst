@@ -7,41 +7,45 @@ class A {
         return 11
     }
 
+    fn hoi() {
+        return this.s
+    }
+
     var a = 5
-    var dbk = 88
-    var dtrb = 88
-    var dkb = 88
-    var doikb = 88
-    var dgfdkb = 88
-    var dojyukb = 88
-    var diob = 88
-    var ddrtb = 88
+    var s = 333
 }
 
-class B : A {
-    override fn test() {
-        return this.b
+class C {
+    virtual fn ietsInD() {
+        return 5
     }
 
-    override fn blaat() {
-        return this.db
-    }
-
-    var b = 6
-    var db = 88
-    var dbfd = 88
 }
 
-class C : B {
-    override fn test() {
+class D : C {
+    override fn ietsInD() {
+        return this.i + 12
+    }
+    fn dtest() {
         return this.i
     }
 
-    var i = 7
-    var dkjb = 88
+    var i = 44
 }
 
-fn main() {
-    var a: A = C()
-    return a.test() + a.blaat()
+class MI : A, D {
+
+    fn mitest() {
+        return 9
+    }
+
+    var m = 4
+
 }
+
+
+fn main() {
+    var v = MI()
+    return v.test()
+}
+
