@@ -470,4 +470,37 @@ TEST_CASE("Virtual functions accessing fields (triple inheritance, no override)"
     CHECK(ret == 6);
 }
 
+TEST_CASE("Virtual functions accessing fields (super class fields)") {
+    compiler::options opts;
+    auto result = compiler::compile_string(R"catalyst_source(
+        class A {
+            virtual fn test() {
+                return this.a
+            }
+
+            var a = 5
+        }
+
+        class B : A {
+            override fn test() {
+                return this.a
+            }
+
+            var b = 6
+        }
+
+        class C : B {
+            var i = 7
+        }
+
+        fn main() {
+            var a: A = C()
+            return a.test()
+        }
+    )catalyst_source", opts);
+	auto ret = compiler::run<int64_t>(result);
+    REQUIRE(result.is_successful);
+    CHECK(ret == 5);
+}
+
 }

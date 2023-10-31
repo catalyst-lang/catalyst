@@ -3,10 +3,6 @@
 
 #pragma once
 
-namespace catalyst::compiler::codegen {
-struct type_custom;
-}
-
 #include "../type.hpp"
 
 #include <unordered_map>
