@@ -4,6 +4,7 @@
 #include "catalyst/rtti.hpp"
 
 #include "../object_type.hpp"
+#include "llvm/IR/DerivedTypes.h"
 
 namespace catalyst::compiler::codegen {
 
@@ -285,10 +286,14 @@ llvm::Constant* type_class::create_thunk_function(codegen::state &state, llvm::F
 
 				// Get the offset to from in the parent class struct
 				auto* offsetGepInst = state.Builder.CreateStructGEP(intermediate_to->get_llvm_struct_type(state), nullConstant, index, "super_offset");
-				auto* negOffset = state.Builder.CreateNeg(offsetGepInst, "neg_offset");
+				auto ptrSize = (unsigned int)state.TheModule->getDataLayout().getTypeAllocSizeInBits(llvm::PointerType::get(*state.TheContext, 0));
+				auto ptrIntType = llvm::IntegerType::getIntNTy(*state.TheContext, ptrSize);
+				auto *castedPtrInt = state.Builder.CreatePtrToInt(offsetGepInst, ptrIntType);
+				auto* negOffset = state.Builder.CreateNeg(castedPtrInt, "neg_offset");
+				auto *castedIntPtr = state.Builder.CreateIntToPtr(negOffset, llvm::PointerType::get(*state.TheContext, 0));
 
 				// Subtract the offset from the pointer this_
-				this_ = state.Builder.CreateGEP(llvm::Type::getInt8Ty(*state.TheContext), this_, negOffset, "offsetted_this");
+				this_ = state.Builder.CreateGEP(llvm::Type::getInt8Ty(*state.TheContext), this_, castedIntPtr, "offsetted_this");
 				intermediate_to = s.get();
 				break;
 			}

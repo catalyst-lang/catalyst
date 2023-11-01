@@ -56,7 +56,7 @@ bool write_object_file(const std::string &filename, const compile_result &result
 
     // add a pass that emits the code
     llvm::legacy::PassManager pass;
-    auto FileType = llvm::CodeGenFileType::CGFT_ObjectFile;
+    auto FileType = llvm::CodeGenFileType::ObjectFile;
 
     if (TargetMachine->addPassesToEmitFile(pass, dest, nullptr, FileType)) {
         llvm::errs() << "TargetMachine can't emit a file of this type";
