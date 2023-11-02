@@ -43,7 +43,7 @@ jobs:
         if: ${{ matrix.platform == 'macos-latest' }}
         run: |
           brew update || true
-          brew install llvm@${LLVM_VER%%.*}
+          brew install llvm@${LLVM_VER%%.*} --overwrite --force
           echo "LLVM_DIR=/usr/local/opt/llvm" >> $GITHUB_ENV
 
       - name: Configure
