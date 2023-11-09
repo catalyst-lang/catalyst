@@ -7,6 +7,7 @@
 #include <fstream>
 #include <typeinfo>
 #include <unordered_map>
+#include <unordered_set>
 #include <string>
 #include <functional>
 
@@ -17,7 +18,6 @@ public:
     virtual ~ISerializable() = default;
     virtual void serialize(std::ostream& out) const = 0;
 
-protected:
     template<class T>
     static void write_binary(std::ostream& out, const T& value) {
         out.write(reinterpret_cast<const char*>(&value), sizeof(T));
@@ -38,6 +38,14 @@ protected:
     static void write_vector(std::ostream& out, const std::vector<T>& vec, std::function<void(std::ostream&, const T&)> element_fn) {
         write_binary(out, (int32_t)vec.size());
         for (const auto& elem : vec) {
+            element_fn(out, elem);
+        }
+    }
+
+    template<typename T>
+    static void write_unordered_set(std::ostream& out, const std::unordered_set<T>& set, std::function<void(std::ostream&, const T&)> element_fn) {
+        write_binary(out, (int32_t)set.size());
+        for (const auto& elem : set) {
             element_fn(out, elem);
         }
     }

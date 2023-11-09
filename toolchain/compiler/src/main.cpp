@@ -51,6 +51,9 @@ int main(const cli_options &opts) {
 
 	if (opts.output_file != "") {
 		write_object_file(opts.output_file, result, opts.arch);
+		std::ofstream outfile(opts.output_file + ".meta", std::ofstream::binary);
+		create_meta(result, outfile);
+		outfile.close();
 	}
 
 	if (opts.run) {

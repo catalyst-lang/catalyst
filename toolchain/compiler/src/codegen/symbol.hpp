@@ -24,6 +24,7 @@ struct symbol : serializable::ISerializable {
 	// value can't be a smart pointer, because the destructor is protected
 	llvm::Value *value = nullptr;
 	std::shared_ptr<codegen::type> type;
+	bool imported = false;
 
 	symbol() = default;
 

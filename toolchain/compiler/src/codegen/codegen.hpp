@@ -29,6 +29,8 @@
 #include "scope.hpp"
 #include "symbol.hpp"
 
+#include "../serializable.hpp"
+
 namespace catalyst::compiler {
 	struct target;
 }

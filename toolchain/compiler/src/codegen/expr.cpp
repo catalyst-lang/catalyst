@@ -534,7 +534,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 				if (isa<type_virtual>(lhs_custom.get())) {
 					// if the function is not in this_ directly
 					this_ = get_super_typed_value(state, this_, lhs_custom.get().get(),
-					                              sym_fn_type->method_of.get());
+					                              sym_fn_type->method_of.value().get().get());
 				}
 			}
 			return codegen_call(state, sym, *call, this_, lhs_type, expecting_type);

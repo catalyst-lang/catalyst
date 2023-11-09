@@ -48,6 +48,9 @@ struct type_struct : type_custom {
 
 	llvm::Value *get_sizeof(catalyst::compiler::codegen::state &state) override;
 
+	void serialize(std::ostream& out) const override;
+	static std::shared_ptr<type> deserialize(std::istream& in);
+
   private:
 	llvm::StructType *structType = nullptr;
 };
@@ -77,6 +80,9 @@ struct type_virtual : type_custom {
 	virtual llvm::StructType *get_llvm_metadata_struct_type(codegen::state &state) = 0;
 	virtual llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state) = 0;
 	virtual llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state, type_virtual &mimicking_virtual) = 0;
+
+	void serialize(std::ostream& out) const override;
+	static std::shared_ptr<type> deserialize(std::istream& in);
 };
 
 struct type_class : type_virtual {
@@ -109,6 +115,9 @@ struct type_class : type_virtual {
 	llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state) override;
 	llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state, type_virtual &mimicking_virtual) override;
 
+	void serialize(std::ostream& out) const override;
+	static std::shared_ptr<type> deserialize(std::istream& in);
+
   private:
 	llvm::StructType *structType = nullptr;
 
@@ -137,6 +146,9 @@ struct type_object : type {
 	inline llvm::Value *get_sizeof(codegen::state &state) override {
 		return object_type->get_sizeof(state);
 	}
+
+	void serialize(std::ostream& out) const override;
+	static std::shared_ptr<type> deserialize(std::istream& in);
 };
 
 } // namespace catalyst::compiler::codegen

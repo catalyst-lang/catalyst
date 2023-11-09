@@ -8,6 +8,7 @@
 #include "codegen/expr.hpp"
 #include "codegen/type.hpp"
 #include "catalyst/rtti.hpp"
+#include "codegen/metadata.hpp"
 
 #pragma warning( push )
 #pragma warning( disable : 4244 )
@@ -183,6 +184,11 @@ T run(const compile_result &result) {
 	if (!state.global_namespace.empty())
 		main = state.global_namespace + "." + main;
 	return run_jit<T>(state, main);
+}
+
+bool create_meta(const compile_result &result, std::ostream& out) {
+	codegen::create_meta(get_state(result), out);
+	return true;
 }
 
 template int8_t run(const compile_result &);

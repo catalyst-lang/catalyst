@@ -32,7 +32,7 @@ namespace catalyst::compiler::codegen {
 		for (const auto &symbol : results) {
 			if (auto tf = std::dynamic_pointer_cast<type_function>(symbol->type)) {
 				if (tf->is_virtual()) {
-					auto cl = std::dynamic_pointer_cast<type_class>(tf->method_of);
+					auto cl = std::dynamic_pointer_cast<type_class>(tf->method_of.value().get());
 					auto tf_member = cl->get_member(tf.get());
 					auto vmems = cl->get_virtual_members(tf_member.member->name);
 					for (const auto& vmem : vmems) {

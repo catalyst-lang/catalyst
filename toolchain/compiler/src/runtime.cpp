@@ -55,6 +55,7 @@ void runtime::insert_function(const char* name, llvm::JITTargetAddress target, c
     
 	auto funty = type::create_function(return_type);
 	this->state->symbol_table[name] = codegen::symbol(nullptr, fun.getCallee(), funty);
+	this->state->symbol_table[name].imported = true;
     functions[name] = target;
 }
 
@@ -66,6 +67,7 @@ void runtime::insert_function(const char* name, llvm::JITTargetAddress target, c
     auto fun = this->state->TheModule->getOrInsertFunction(name, llvm::FunctionType::get(return_type->get_llvm_type(*state), llvm_args, false));
 	auto funty = type::create_function(return_type, parameters);
 	this->state->symbol_table[name] = codegen::symbol(nullptr, fun.getCallee(), funty);
+	this->state->symbol_table[name].imported = true;
     functions[name] = target;
 }
 

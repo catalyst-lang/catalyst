@@ -39,7 +39,7 @@ int proto_pass::process(ast::decl_fn &decl) {
 	auto fn_type = decl_get_type(state, decl);
 	if (method_of) {
 		auto fn = (type_function *)fn_type.get();
-		fn->method_of = std::dynamic_pointer_cast<type_custom>(method_of->type);
+		fn->method_of = object_type_reference<type_custom>(state, std::dynamic_pointer_cast<type_custom>(method_of->type));
 	}
 
 	const auto [res, symbol_introduced] =

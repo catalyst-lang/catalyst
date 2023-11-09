@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <optional>
 
 #include "llvm/IR/Type.h"
 #include "catalyst/ast/expr.hpp"
@@ -319,8 +320,10 @@ struct type_function : type {
 
 	bool is_valid() const override;
 
-	std::shared_ptr<type_custom> method_of = nullptr;
-	inline bool is_method() const { return method_of != nullptr; }
+	//std::shared_ptr<type_custom> method_of = nullptr;
+	std::optional<object_type_reference<type_custom>> method_of;
+
+	inline bool is_method() const { return method_of.has_value(); }
 	bool is_virtual() const;
 
 	void serialize(std::ostream& out) const override;

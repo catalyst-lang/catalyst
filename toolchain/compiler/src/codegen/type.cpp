@@ -511,7 +511,7 @@ bool type_function::is_valid() const {
 
 bool type_function::is_virtual() const {
 	if (!is_method()) return false;
-	const auto &classifiers = method_of->get_member(this).member->classifiers;
+	const auto &classifiers = method_of.value()->get_member(this).member->classifiers;
 	return is_method() && (classifiers.contains(ast::decl_classifier::virtual_) ||
 	                       classifiers.contains(ast::decl_classifier::override_));
 }

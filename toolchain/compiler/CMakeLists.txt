@@ -12,8 +12,11 @@ add_library(libcompiler
     src/codegen/expr_arithmetic.hpp 
     src/codegen/codegen.cpp 
     src/codegen/codegen.hpp 
+    src/codegen/metadata.hpp 
+    src/codegen/metadata.cpp 
     src/codegen/decl.cpp 
     src/codegen/decl_classifiers.cpp 
+    src/codegen/decl_classifiers.hpp 
     src/codegen/decl.hpp 
     src/codegen/decl_type.cpp 
     src/codegen/decl_type.hpp 
