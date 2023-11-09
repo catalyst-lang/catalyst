@@ -23,6 +23,8 @@ add_library(libcompiler
     src/codegen/object/class/type_class.cpp 
     src/codegen/object/object_type.cpp 
     src/codegen/object/object_type.hpp 
+    src/codegen/object/object_type_reference.cpp 
+    src/codegen/object/object_type_reference.hpp 
     src/codegen/object/member.hpp 
     src/codegen/object/member.cpp 
     src/codegen/stmt.cpp 
@@ -32,8 +34,10 @@ add_library(libcompiler
     src/codegen/scope.cpp 
     src/codegen/scope.hpp 
     src/codegen/symbol.hpp 
+    src/codegen/symbol.cpp 
     src/codegen/type.hpp 
     src/codegen/type.cpp 
+    src/codegen/type_serialization.cpp 
     src/codegen/expr_type.cpp 
     src/codegen/expr_type.hpp 
     src/codegen/decl_overloading_pass.cpp
@@ -51,6 +55,8 @@ add_library(libcompiler
     src/runtime.hpp
     src/jit.cpp 
     src/jit.hpp 
+    src/serializable.cpp
+    src/serializable.hpp
 )
 target_include_directories(libcompiler PUBLIC ../common)
 target_compile_features(libcompiler PUBLIC cxx_std_20)

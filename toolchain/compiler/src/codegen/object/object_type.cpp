@@ -53,8 +53,11 @@ llvm::Value *type_custom::cast_llvm_value(codegen::state &state, llvm::Value *va
 	return value;
 }
 
-type_object::type_object(std::shared_ptr<type_custom> object_type)
-	: type("object"), object_type(object_type) {}
+type_object::type_object(catalyst::compiler::codegen::state &state, const std::string& type_fqn)
+	: type("object"), object_type(state, type_fqn) {}
+
+type_object::type_object(catalyst::compiler::codegen::state &state, std::shared_ptr<type_custom> custom_type)
+	: type("object"), object_type(state, custom_type) {}
 
 llvm::Type *type_object::get_llvm_type(state &state) const {
 	return object_type->get_llvm_type(state);
@@ -66,10 +69,10 @@ bool type_object::is_valid() const { return object_type->is_valid(); }
 
 llvm::Value *type_object::cast_llvm_value(codegen::state &state, llvm::Value *value,
                                           const type &to) const {
-	if (to.is_assignable_from(this->object_type)) {
+	if (to.is_assignable_from(this->object_type.get())) {
 		if (isa<type_object>(to)) {
 			return this->object_type->cast_llvm_value(state, value,
-			                                          *((type_object *)&to)->object_type);
+			                                          *((type_object *)&to)->object_type.get());
 		} else {
 			return this->object_type->cast_llvm_value(state, value, to);
 		}
@@ -79,8 +82,8 @@ llvm::Value *type_object::cast_llvm_value(codegen::state &state, llvm::Value *va
 }
 
 bool type_object::is_assignable_from(const std::shared_ptr<type> &type) const {
-	if (isa<type_virtual>(object_type)) {
-		auto assigning_to_class = std::static_pointer_cast<type_virtual>(object_type);
+	if (isa<type_virtual>(object_type.get())) {
+		auto assigning_to_class = std::static_pointer_cast<type_virtual>(object_type.get());
 		if (isa<type_virtual>(type)) {
 			auto assigning_from_class = std::static_pointer_cast<type_virtual>(type);
 			return assigning_to_class->is_assignable_from(assigning_from_class);
@@ -98,7 +101,7 @@ type_virtual::type_virtual(const std::string &fqn, const std::string &name,
 }
 
 type_virtual::type_virtual(const std::string &fqn, const std::string &name,
-                           const std::vector<std::shared_ptr<type_virtual>> &super,
+                           const std::vector<object_type_reference<type_virtual>> &super,
                            std::vector<member> const &members)
 	: type_custom(fqn, name) {
 	this->name = name;
@@ -114,7 +117,7 @@ bool type_virtual::is_assignable_from(const std::shared_ptr<type> &type) const {
 		auto const &from = std::static_pointer_cast<type_virtual>(type);
 		return std::any_of(
 			from->super.cbegin(), from->super.cend(),
-			[&](const std::shared_ptr<type_virtual> &s) { return this->is_assignable_from(s); });
+			[&](const object_type_reference<type_virtual> &s) { return this->is_assignable_from(s.get()); });
 	}
 
 	return false;
@@ -206,7 +209,7 @@ int type_virtual::get_member_index_in_llvm_struct(member *member) const {
 int type_virtual::get_super_index_in_llvm_struct(type_custom *p) const {
 	auto result =
 		std::find_if(super.begin(), super.end(),
-	                 [&](const std::shared_ptr<type_virtual> &p2) { return p == p2.get(); });
+	                 [&](const object_type_reference<type_virtual> &p2) { return p == p2.get().get(); });
 	if (result != super.end()) {
 		size_t index = std::distance(super.begin(), result);
 		return index;

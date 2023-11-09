@@ -68,10 +68,10 @@ std::shared_ptr<type> type::create(codegen::state &state, const std::string &nam
 	auto sym = state.scopes.find_named_symbol(name);
 	if (sym != nullptr) {
 		if (isa<type_struct>(sym->type)) {
-			return std::make_shared<type_object>(std::dynamic_pointer_cast<type_struct>(sym->type));
+			return std::make_shared<type_object>(state, std::dynamic_pointer_cast<type_struct>(sym->type));
 		}
 		if (isa<type_class>(sym->type)) {
-			return std::make_shared<type_object>(std::dynamic_pointer_cast<type_class>(sym->type));
+			return std::make_shared<type_object>(state, std::dynamic_pointer_cast<type_class>(sym->type));
 		}
 	}
 

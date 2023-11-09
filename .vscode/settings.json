@@ -120,7 +120,8 @@
         "cfloat": "cpp",
         "climits": "cpp",
         "ranges": "cpp",
-        "span": "cpp"
+        "span": "cpp",
+        "regex": "cpp"
     },
     "files.insertFinalNewline": false,
     "python.analysis.diagnosticSeverityOverrides": {

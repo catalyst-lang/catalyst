@@ -103,9 +103,9 @@ llvm::Value* codegen(codegen::state &state, ast::decl_fn &decl) {
 
 		if (isa<type_object>(arg_local.type)) {
 			auto to = (type_object *)arg_local.type.get();
-			if (isa<type_struct>(to->object_type)) {
+			if (isa<type_struct>(to->object_type.get())) {
 				arg_local.value = &Arg;
-			} else if (isa<type_class>(to->object_type)) {
+			} else if (isa<type_class>(to->object_type.get())) {
 				arg_local.value = &Arg;
 			} else {
 				state.Builder.CreateStore(&Arg, arg_local.value);

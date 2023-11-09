@@ -111,8 +111,8 @@ llvm::Value* codegen(codegen::state &state, ast::decl_class &decl) {
 				state.Builder.CreateCall(s->init_function, {offsetted});
 			
 				// overwrite the super metadata with our own
-				state.Builder.CreateStore(base->get_llvm_metadata_object(state, *s), offsetted);
-				call_inits(base, s.get(), offsetted);
+				state.Builder.CreateStore(base->get_llvm_metadata_object(state, *s.get()), offsetted);
+				call_inits(base, s.get().get(), offsetted);
 			}
 			super_index++;
 		}

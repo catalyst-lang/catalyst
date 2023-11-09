@@ -120,11 +120,11 @@ int proto_pass::process(ast::decl_fn &decl) {
 				Arg.setName(decl.parameter_list[i].ident.name);
 				if (isa<type_object>(current_fn_type->parameters[i])) {
 					auto to = (type_object *)current_fn_type->parameters[i].get();
-					if (isa<type_struct>(to->object_type)) {
+					if (isa<type_struct>(to->object_type.get())) {
 						Arg.addAttr(llvm::Attribute::NoUndef);
 						Arg.addAttr(llvm::Attribute::getWithByValType(
 							*state.TheContext, current_fn_type->parameters[i]->get_llvm_type(state)));
-					} else if (isa<type_class>(to->object_type)) {
+					} else if (isa<type_class>(to->object_type.get())) {
 						Arg.addAttr(llvm::Attribute::NoUndef);
 					}
 				}

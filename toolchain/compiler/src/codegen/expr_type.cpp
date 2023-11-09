@@ -144,7 +144,7 @@ std::shared_ptr<type> expr_resulting_type_this(codegen::state &state, ast::expr_
 	if (!fn_type || !fn_type->is_method()) {
 		return nullptr;
 	}
-	return std::make_shared<type_object>(fn_type->method_of);
+	return std::make_shared<type_object>(state, fn_type->method_of);
 }
 
 std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_ident &expr,
@@ -231,7 +231,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_call 
 			return type->return_type;
 		} else if (isa<type_custom>(sym->type)) {
 			// constructor
-			return std::make_shared<type_object>(std::dynamic_pointer_cast<type_custom>(sym->type));
+			return std::make_shared<type_object>(state, std::dynamic_pointer_cast<type_custom>(sym->type));
 		}
 	}
 	return type::create_builtin();
@@ -286,7 +286,7 @@ std::shared_ptr<type> expr_resulting_type(codegen::state &state, ast::expr_membe
 				return type->return_type;
 			} else if (isa<type_custom>(sym->type)) {
 				// constructor
-				return std::make_shared<type_object>(
+				return std::make_shared<type_object>(state,
 					std::dynamic_pointer_cast<type_custom>(sym->type));
 			} else {
 				return type::create_builtin();

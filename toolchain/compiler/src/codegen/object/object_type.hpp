@@ -4,6 +4,7 @@
 #pragma once
 
 #include "../type.hpp"
+#include "object_type_reference.hpp"
 
 #include <unordered_map>
 
@@ -28,6 +29,9 @@ struct type_custom : type {
 
 	virtual int get_member_index_in_llvm_struct(member *member) const;
 	int get_member_index_in_llvm_struct(const member_locator &member_locator) const;
+
+	void serialize(std::ostream& out) const override;
+	static std::shared_ptr<type> deserialize(std::istream& in);
 };
 
 struct type_struct : type_custom {
@@ -38,11 +42,11 @@ struct type_struct : type_custom {
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::StructType *get_llvm_struct_type(codegen::state &state) const override;
 
-	virtual std::string get_fqn() const override;
+	std::string get_fqn() const override;
 
 	void copy_from(type_struct &other);
 
-	inline virtual llvm::Value *get_sizeof(catalyst::compiler::codegen::state &state) override;
+	llvm::Value *get_sizeof(catalyst::compiler::codegen::state &state) override;
 
   private:
 	llvm::StructType *structType = nullptr;
@@ -52,10 +56,11 @@ struct type_virtual : type_custom {
 	type_virtual(const std::string &fqn, const std::string &name,
 	             std::vector<member> const &members);
 	type_virtual(const std::string &fqn, const std::string &name,
-	             const std::vector<std::shared_ptr<type_virtual>> &super,
+	             const std::vector<object_type_reference<type_virtual>> &super,
 	             std::vector<member> const &members);
 
-	std::vector<std::shared_ptr<type_virtual>> super;
+
+	std::vector<object_type_reference<type_virtual>> super;
 
 	bool is_assignable_from(const std::shared_ptr<type> &type) const override;
 
@@ -77,7 +82,7 @@ struct type_virtual : type_custom {
 struct type_class : type_virtual {
 	explicit type_class(const std::string &name, std::vector<member> const &members);
 	explicit type_class(const std::string &name,
-	                    const std::vector<std::shared_ptr<type_virtual>> &super,
+	                    const std::vector<object_type_reference<type_virtual>> &super,
 	                    std::vector<member> const &members);
 
 	bool is_valid() const override;
@@ -114,16 +119,18 @@ struct type_class : type_virtual {
 };
 
 struct type_object : type {
-	explicit type_object(std::shared_ptr<type_custom> object_type);
+	explicit type_object(codegen::state &state, const std::string& type_fqn);
+	explicit type_object(codegen::state &state, std::shared_ptr<type_custom> custom_type);
 
-	std::shared_ptr<type_custom> object_type;
+	//std::shared_ptr<type_custom> object_type;
+	object_type_reference<type_custom> object_type;
 
 	llvm::Type *get_llvm_type(codegen::state &state) const override;
 	llvm::Value *cast_llvm_value(codegen::state &state, llvm::Value *value,
 	                             const type &to) const override;
 	bool is_assignable_from(const std::shared_ptr<type> &type) const override;
 
-	virtual std::string get_fqn() const override;
+	std::string get_fqn() const override;
 
 	bool is_valid() const override;
 

@@ -337,7 +337,7 @@ llvm::Value *codegen_call(codegen::state &state, std::shared_ptr<codegen::type> 
 			return nullptr;
 		}
 		auto this_obj = (type_object *)this_type.get();
-		auto this_typ = std::dynamic_pointer_cast<type_class>(this_obj->object_type);
+		auto this_typ = std::dynamic_pointer_cast<type_class>(this_obj->object_type.get());
 		assert(this_typ != nullptr && "this is not a class");
 
 		auto member = this_typ->get_member(type);
@@ -388,13 +388,13 @@ llvm::Value *codegen_call(codegen::state &state, std::shared_ptr<codegen::type> 
 		auto arg_type = expr_resulting_type(state, expr.parameters[i], type->parameters[i]);
 		if (isa<type_object>(arg_type)) {
 			auto to = (type_object *)arg_type.get();
-			if (isa<type_struct>(to->object_type)) {
+			if (isa<type_struct>(to->object_type.get())) {
 				callinstr->addParamAttr(i + method_offset, llvm::Attribute::NoUndef);
 				callinstr->addParamAttr(
 					i + method_offset,
 					llvm::Attribute::getWithByValType(*state.TheContext,
 				                                      to->object_type->get_llvm_type(state)));
-			} else if (isa<type_class>(to->object_type)) {
+			} else if (isa<type_class>(to->object_type.get())) {
 				callinstr->addParamAttr(i + method_offset, llvm::Attribute::NoUndef);
 			}
 		}
@@ -433,12 +433,12 @@ llvm::Value *get_super_typed_value(codegen::state &state, llvm::Value *this_,
 				                                     this_, index, super_type->name + "_ptr");
 			} else {
 				for (auto const &s : this_virtual->super) {
-					if (super_type->is_assignable_from(s)) {
+					if (super_type->is_assignable_from(s.get())) {
 						this_ = state.Builder.CreateStructGEP(
 							this_virtual->get_llvm_struct_type(state), this_,
-							this_virtual->get_super_index_in_llvm_struct(s.get()),
+							this_virtual->get_super_index_in_llvm_struct(s.get().get()),
 							s->name + "_ptr");
-						return get_super_typed_value(state, this_, s.get(), super_type);
+						return get_super_typed_value(state, this_, s.get().get(), super_type);
 					}
 				}
 			}
@@ -490,9 +490,9 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 		auto member_loc = lhs_custom->get_member(ident->name);
 
 		// if this is a virtual (class-like), get the sub-type
-		if (isa<type_virtual>(lhs_custom)) {
+		if (isa<type_virtual>(lhs_custom.get())) {
 			lhs_value =
-				get_super_typed_value(state, lhs_value, lhs_custom.get(), member_loc.residence);
+				get_super_typed_value(state, lhs_value, lhs_custom.get().get(), member_loc.residence);
 		}
 
 		auto ptr = state.Builder.CreateStructGEP(
@@ -502,7 +502,7 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 		auto rhs_type = member_loc.member->type;
 		if (isa<type_object>(rhs_type) && (!expecting_type || !isa<type_object>(expecting_type))) {
 			auto to = (type_object *)rhs_type.get();
-			if (isa<type_struct>(to->object_type)) {
+			if (isa<type_struct>(to->object_type.get())) {
 				// member is a struct, return the pointer if we don't request the object value
 				// itself Note that this is only valid for a struct. With a class, the pointer IS
 				// the value, so we want to retrieve that value and dereference it to a pointer to a
@@ -531,9 +531,9 @@ llvm::Value *codegen(codegen::state &state, ast::expr_member_access &expr,
 			auto sym_fn_type = std::static_pointer_cast<type_function>(sym->type);
 			if (!sym_fn_type->is_virtual()) {
 				// make sure this_ is pointing to the correct subtype if we have multiple
-				if (isa<type_virtual>(lhs_custom)) {
+				if (isa<type_virtual>(lhs_custom.get())) {
 					// if the function is not in this_ directly
-					this_ = get_super_typed_value(state, this_, lhs_custom.get(),
+					this_ = get_super_typed_value(state, this_, lhs_custom.get().get(),
 					                              sym_fn_type->method_of.get());
 				}
 			}
@@ -589,7 +589,7 @@ void codegen_assignment(codegen::state &state, llvm::Value *dest_ptr,
 
 	if (isa<type_object>(rhs_type)) {
 		auto to = (type_object *)rhs_type.get();
-		if (isa<type_struct>(to->object_type)) {
+		if (isa<type_struct>(to->object_type.get())) {
 			auto size = to->object_type->get_sizeof(state);
 			if (llvm::isa<llvm::PointerType>(rhs_value->getType())) {
 				state.Builder.CreateMemCpy(dest_ptr, llvm::MaybeAlign(0), rhs_value,

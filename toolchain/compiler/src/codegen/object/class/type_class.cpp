@@ -11,7 +11,7 @@ namespace catalyst::compiler::codegen {
 type_class::type_class(const std::string &name, std::vector<member> const &members)
 	: type_virtual("class", name, members) {}
 
-type_class::type_class(const std::string &name, const std::vector<std::shared_ptr<type_virtual>> &super,
+type_class::type_class(const std::string &name, const std::vector<object_type_reference<type_virtual>> &super,
                        std::vector<member> const &members)
 	: type_virtual("class", name, super, members) {}
 
@@ -25,7 +25,7 @@ std::shared_ptr<type> type::create_class(const std::string &name,
 	return std::make_shared<type_class>(name, members);
 }
 
-std::shared_ptr<type> type::create_class(const std::string &name, const std::vector<std::shared_ptr<type_virtual>> &super,
+std::shared_ptr<type> type::create_class(const std::string &name, const std::vector<object_type_reference<type_virtual>> &super,
                                          std::vector<member> const &members) {
 	return std::make_shared<type_class>(name, super, members);
 }
@@ -232,10 +232,10 @@ llvm::Value *type_class::cast_llvm_value(codegen::state &state, llvm::Value *val
 												value, index, to_class->name + "_ptr");
 	} else {
 		for (auto const &s : this->super) {
-			if (to_class->is_assignable_from(s)) {
+			if (to_class->is_assignable_from(s.get())) {
 				value = state.Builder.CreateStructGEP(
 					this->get_llvm_struct_type(state), value,
-					this->get_super_index_in_llvm_struct(s.get()),
+					this->get_super_index_in_llvm_struct(s.get().get()),
 					s->name + "_ptr");
 				casted = s->cast_llvm_value(state, value, to);
 				break;
@@ -280,9 +280,9 @@ llvm::Constant* type_class::create_thunk_function(codegen::state &state, llvm::F
 	auto intermediate_to = &to;
 	while (*intermediate_to != from && !intermediate_to->super.empty()) {
 		for (auto const &s : intermediate_to->super) {
-			if (from.is_assignable_from(s)) {
+			if (from.is_assignable_from(s.get())) {
 				auto nullConstant = llvm::Constant::getNullValue(intermediate_to->get_llvm_type(state)->getPointerTo());
-				int index = intermediate_to->get_super_index_in_llvm_struct(s.get());
+				int index = intermediate_to->get_super_index_in_llvm_struct(s.get().get());
 
 				// Get the offset to from in the parent class struct
 				auto* offsetGepInst = state.Builder.CreateStructGEP(intermediate_to->get_llvm_struct_type(state), nullConstant, index, "super_offset");
@@ -294,7 +294,7 @@ llvm::Constant* type_class::create_thunk_function(codegen::state &state, llvm::F
 
 				// Subtract the offset from the pointer this_
 				this_ = state.Builder.CreateGEP(llvm::Type::getInt8Ty(*state.TheContext), this_, castedIntPtr, "offsetted_this");
-				intermediate_to = s.get();
+				intermediate_to = s.get().get();
 				break;
 			}
 		}

@@ -61,23 +61,23 @@ std::shared_ptr<codegen::type> decl_get_type(codegen::state &state, ast::decl_cl
 
 	auto fqn = state.current_scope().get_fully_qualified_scope_name(decl.ident.name);
 	if (!decl.super.empty()) {
-		std::vector<std::shared_ptr<type_virtual>> supers;
+		std::vector<object_type_reference<type_virtual>> supers;
 
 		for (auto const &super : decl.super) {
 			if (!isa<ast::type_qualified_name>(super)) {
-				return type::create_class(fqn, {type_class::unknown()}, members);
+				return type::create_class(fqn, {object_type_reference<type_virtual>::unknown(state)}, members);
 			}
 
 			auto super_qn = std::static_pointer_cast<ast::type_qualified_name>(super);
 			auto super_sym = state.scopes.find_named_symbol(*super_qn);
 			if (!super_sym) {
-				return type::create_class(fqn, {type_class::unknown()}, members);
+				return type::create_class(fqn, {object_type_reference<type_virtual>::unknown(state)}, members);
 			}
 			if (!isa<type_virtual>(super_sym->type)) {
 				state.report_message(report_type::error, "Unexpected base type", super.get());
 			}
 			auto super_class = std::static_pointer_cast<type_virtual>(super_sym->type);
-			supers.push_back(super_class);
+			supers.push_back(object_type_reference<type_virtual>(state, super_class));
 		}
 
 		return type::create_class(fqn, supers, members);

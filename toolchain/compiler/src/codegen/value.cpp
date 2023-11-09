@@ -40,7 +40,7 @@ llvm::Value *get_lvalue(codegen::state &state, ast::expr_ptr expr) {
 			return nullptr;
 		}
 
-		lhs_value = get_super_typed_value(state, lhs_value, lhs_custom.get(), member_loc.residence);
+		lhs_value = get_super_typed_value(state, lhs_value, lhs_custom.get().get(), member_loc.residence);
 
 		auto ptr = state.Builder.CreateStructGEP(
 			member_loc.residence->get_llvm_struct_type(state), lhs_value,
