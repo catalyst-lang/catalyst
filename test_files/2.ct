@@ -2,13 +2,15 @@ fn main() {
      ikh = 6.4
     var fk = test
     var ksf = fk
-    return nacho(78.91 + pizza() + foo() + ikh + ksf(43))
+    var s = main2()
+    return s;
+    //return nacho(78.91 + pizza() + foo() + ikh + ksf(43))
     // return 1234567891011121314
-    //return ikh
+    //return nacho(foo() + ikh)
 }
 
 fn test(i: i32) {
     return 2 + i;
 }
 
-var ikh = 8.6f80
+var ikh = 8.6f64

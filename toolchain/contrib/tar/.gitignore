@@ -1,0 +1,7 @@
+*.pyc
+*.swp
+out/
+
+# OS X related file
+Icon
+

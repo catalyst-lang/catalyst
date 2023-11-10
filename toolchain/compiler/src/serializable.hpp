@@ -51,6 +51,15 @@ public:
     }
 
     template<typename T>
+    static void read_unordered_set(std::istream& in, std::unordered_set<T>& set, std::function<T(std::istream&)> element_fn) {
+        int32_t size;
+        read_binary(in, size);
+        for (size_t i = 0; i < size; i++) {
+            set.insert(element_fn(in));
+        }
+    }
+
+    template<typename T>
     static std::vector<T> read_vector(std::istream& in, std::function<T(std::istream&)> element_fn) {
         int32_t size;
         read_binary(in, size);

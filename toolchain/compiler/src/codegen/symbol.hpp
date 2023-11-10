@@ -16,6 +16,7 @@
 namespace catalyst::compiler::codegen {
 
 struct type;
+struct state;
 
 template<class> inline constexpr bool always_false_v = false;
 
@@ -32,7 +33,7 @@ struct symbol : serializable::ISerializable {
 		: ast_node(ast_node), value(value), type(std::move(type)) {}
 
 	void serialize(std::ostream& out) const override;
-	static symbol deserialize(std::istream& in);
+	static symbol deserialize(state &state, std::istream& in);
 };
 
 using symbol_map = std::map<std::string, symbol>;

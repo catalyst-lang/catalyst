@@ -43,7 +43,7 @@ class MI : A, D {
 
 }
 
-fn main() {
+fn main2() {
     var v = MI()
     return v.test()
 }

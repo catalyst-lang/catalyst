@@ -37,6 +37,7 @@ struct cli_options {
 	bool dump_ast = false;
 	bool dump_bytecode = false;
 	bool run = true;
+	std::vector<std::string> imports;
 	std::string output_file;
 	std::string arch = compiler::get_default_target_triple();
 
@@ -46,51 +47,58 @@ struct cli_options {
 };
 
 int main(const cli_options &opts) {
-	auto result = compile_file(opts.input.c_str(), opts.compiler_options);
-	compiler_debug_print(result);
+	compile_session session;
+
+	for (const auto &import : opts.imports) {
+		compiler_import_bundle(session, import, opts.compiler_options);
+		if (!session.is_successful) {
+			std::cout << "Error: failed to import bundle `" << import << "`." << std::endl;
+			return 1;
+		}
+	}
+
+	compile_file(session, opts.input.c_str(), opts.compiler_options);
+	compiler_debug_print(session);
 
 	if (opts.output_file != "") {
-		write_object_file(opts.output_file, result, opts.arch);
-		std::ofstream outfile(opts.output_file + ".meta", std::ofstream::binary);
-		create_meta(result, outfile);
-		outfile.close();
+		write_bundle_file(opts.output_file, session, opts.arch);
 	}
 
 	if (opts.run) {
-		if (!result.is_runnable) {
+		if (!session.is_runnable) {
 			std::cout << "Error: entry point `main` not found or not a function." << std::endl;
 			return 2;
 		}
 
-		if (result.result_type_name == "i8")
-			std::cout << "Result: <i8> " << (int) run<int8_t>(result) << std::endl;
-		else if (result.result_type_name == "u8")
-			std::cout << "Result: <u8> " << (unsigned) run<uint8_t>(result) << std::endl;
-		else if (result.result_type_name == "i16")
-			std::cout << "Result: <i16> " << run<int16_t>(result) << std::endl;
-		else if (result.result_type_name == "u16")
-			std::cout << "Result: <u16> " << run<uint16_t>(result) << std::endl;
-		else if (result.result_type_name == "i32")
-			std::cout << "Result: <i32> " << run<int32_t>(result) << std::endl;
-		else if (result.result_type_name == "u32")
-			std::cout << "Result: <u32> " << run<uint32_t>(result) << std::endl;
-		else if (result.result_type_name == "i64")
-			std::cout << "Result: <i64> " << run<int64_t>(result) << std::endl;
-		else if (result.result_type_name == "u64")
-			std::cout << "Result: <u64> " << run<uint64_t>(result) << std::endl;
-		else if (result.result_type_name == "f32")
-			std::cout << "Result: <f32> " << run<float>(result) << std::endl;
-		else if (result.result_type_name == "f64")
-			std::cout << "Result: <f64> " << run<double>(result) << std::endl;
-		else if (result.result_type_name == "bool")
-			std::cout << "Result: <bool> " << run<bool>(result) << std::endl;
+		if (session.result_type_name == "i8")
+			std::cout << "Result: <i8> " << (int) run<int8_t>(session) << std::endl;
+		else if (session.result_type_name == "u8")
+			std::cout << "Result: <u8> " << (unsigned) run<uint8_t>(session) << std::endl;
+		else if (session.result_type_name == "i16")
+			std::cout << "Result: <i16> " << run<int16_t>(session) << std::endl;
+		else if (session.result_type_name == "u16")
+			std::cout << "Result: <u16> " << run<uint16_t>(session) << std::endl;
+		else if (session.result_type_name == "i32")
+			std::cout << "Result: <i32> " << run<int32_t>(session) << std::endl;
+		else if (session.result_type_name == "u32")
+			std::cout << "Result: <u32> " << run<uint32_t>(session) << std::endl;
+		else if (session.result_type_name == "i64")
+			std::cout << "Result: <i64> " << run<int64_t>(session) << std::endl;
+		else if (session.result_type_name == "u64")
+			std::cout << "Result: <u64> " << run<uint64_t>(session) << std::endl;
+		else if (session.result_type_name == "f32")
+			std::cout << "Result: <f32> " << run<float>(session) << std::endl;
+		else if (session.result_type_name == "f64")
+			std::cout << "Result: <f64> " << run<double>(session) << std::endl;
+		else if (session.result_type_name == "bool")
+			std::cout << "Result: <bool> " << run<bool>(session) << std::endl;
 		else 
-			std::cout << "Result: <" << result.result_type_name << "> " << std::showbase << std::hex << run<int64_t>(result) << std::endl;
+			std::cout << "Result: <" << session.result_type_name << "> " << std::showbase << std::hex << run<int64_t>(session) << std::endl;
 		
 		return 0;
 	}
 	else
-		return result.is_successful ? 0 : 1;
+		return session.is_successful ? 0 : 1;
 }
 
 } // namespace catalyst::parser
@@ -127,6 +135,8 @@ int main(int argc, char **argv) {
 	app.add_option("-o,--output", options.output_file, "Output file");
 
 	app.add_option("--arch", options.arch, "Architecture triple");
+
+	app.add_option("-I,--import", options.imports, "Import bundle");
 
 	std::atexit([]() { std::cout << rang::style::reset; });
 #if CATALYST_PLATFORM_POSIX

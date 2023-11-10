@@ -59,6 +59,9 @@ type_object::type_object(catalyst::compiler::codegen::state &state, const std::s
 type_object::type_object(catalyst::compiler::codegen::state &state, std::shared_ptr<type_custom> custom_type)
 	: type("object"), object_type(state, custom_type) {}
 
+type_object::type_object(object_type_reference<type_custom> virtual_type)
+	: type("object"), object_type(virtual_type) {}
+
 llvm::Type *type_object::get_llvm_type(state &state) const {
 	return object_type->get_llvm_type(state);
 }

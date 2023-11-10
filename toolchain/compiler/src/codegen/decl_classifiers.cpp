@@ -33,6 +33,29 @@ std::string classifier_to_string(ast::decl_classifier c) {
 	}
 }
 
+
+ast::decl_classifier string_to_classifier(const std::string &str) {
+	using enum catalyst::ast::decl_classifier;
+	if (str == "abstract") {
+		return abstract_;
+	} else if (str == "public") {
+		return public_;
+	} else if (str == "private") {
+		return private_;
+	} else if (str == "protected") {
+		return protected_;
+	} else if (str == "virtual") {
+		return virtual_;
+	} else if (str == "static") {
+		return static_;
+	} else if (str == "override") {
+		return override_;
+	} else {
+		parser::report_message(parser::report_type::warning, "Classifier `" + str + "` is defined on a member, but is not supported in this version.", std::cerr);
+		return ast::decl_classifier::public_; // fallback
+	}
+}
+
 template <typename T>
 bool vector_contains(const std::vector<T> &v, const T &value) {
 	return std::any_of(v.begin(), v.end(), [&](const T &i) { return i == value; });

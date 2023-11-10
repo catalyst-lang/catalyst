@@ -9,6 +9,7 @@
 #include "codegen/type.hpp"
 #include "catalyst/rtti.hpp"
 #include "codegen/metadata.hpp"
+#include "object_file.hpp"
 
 #pragma warning( push )
 #pragma warning( disable : 4244 )
@@ -35,13 +36,12 @@ using namespace catalyst;
 
 namespace catalyst::compiler {
 
-compile_result compile(catalyst::ast::translation_unit &tu, options options) {
+void initialize_state(compile_session& session, options options) {
 	auto state = std::make_shared<codegen::state>();
-	state->translation_unit = &tu;
-	state->options = options;
-	state->TheModule = std::make_unique<llvm::Module>(tu.parser_state->filename, *state->TheContext);
-
-	// Create new pass and analysis managers.
+	session.state = state;
+	//auto module_name = tu.parser_state->filename;
+	std::string module_name = "module";
+	state->TheModule = std::make_unique<llvm::Module>(module_name, *state->TheContext);
 	state->TheFPM = std::make_unique<FunctionPassManager>();
 	state->TheFAM = std::make_unique<FunctionAnalysisManager>();
 	state->TheMAM = std::make_unique<ModuleAnalysisManager>();
@@ -117,49 +117,85 @@ compile_result compile(catalyst::ast::translation_unit &tu, options options) {
 		// //state->FPM->add(llvm::createSLPVectorizerPass());
 		// //state->FPM->add(llvm::createLoopVectorizePass());
 	}
+}
+
+bool compile(compile_session& session, catalyst::ast::translation_unit &tu, options options) {
+	if (session.state == nullptr) {
+		initialize_state(session, options);
+	}
+
+	auto state = std::static_pointer_cast<codegen::state>(session.state);
+	state->translation_unit = &tu;
+	state->options = options;
 
 	codegen::codegen(*state);
 
-	compile_result result;
-	result.is_successful = state->num_errors == 0;
+	session.is_successful = state->num_errors == 0;
 
 	std::string main = "main";
 	if (!state->global_namespace.empty())
 		main = state->global_namespace + "." + main;
 
-	if (result.is_successful && state->symbol_table.contains(main)) {
+	if (session.is_successful && state->symbol_table.contains(main)) {
 		auto sym_type = state->symbol_table[main].type;
 		if (catalyst::isa<codegen::type_function>(sym_type.get())) {
 			auto sym_fun = (codegen::type_function*)sym_type.get();
-			result.result_type_name = sym_fun->return_type->get_fqn();
-			result.is_runnable = true;
+			session.result_type_name = sym_fun->return_type->get_fqn();
+			session.is_runnable = true;
 		} else {
-			result.is_runnable = false;
+			session.is_runnable = false;
 		}
 	}
-	result.state = std::move(state);
-	return result;
+	
+	return state->num_errors == 0;
 }
 
-compile_result compile_string(const std::string &string, options options) {
+bool compile_string(compile_session& session, const std::string &string, options options) {
 	auto ast = parser::parse_string(string);
 	if (ast.has_value()) {
-		return compile(ast.value(), options);
+		return compile(session, ast.value(), options);
 	} else {
-		return compile_result::create_failed();
+		session.is_successful = false;
+		session.is_runnable = false;
+		return false;
 	}
 }
 
-compile_result compile_file(const std::string &filename, options options) {
+compile_session compile_string(const std::string &string, options options) {
+	auto ast = parser::parse_string(string);
+	if (ast.has_value()) {
+		compile_session session;
+		if (compile(session, ast.value(), options)) {
+			return session;
+		} else {
+			session.is_successful = false;
+			return session;
+		}
+	} else {
+		return compile_session::create_failed();
+	}
+}
+
+bool compile_file(compile_session& session, const std::string &filename, options options) {
 	auto ast = parser::parse_filename(filename);
 	if (ast.has_value()) {
-		return compile(ast.value(), options);
+		return compile(session, ast.value(), options);
 	} else {
-		return compile_result::create_failed();
+		session.is_successful = false;
+		session.is_runnable = false;
+		return false;
 	}
 }
 
-void compiler_debug_print(compile_result &result) {
+void compiler_import_bundle(compile_session& session, const std::string &filename, options options) {
+	if (session.state == nullptr) {
+		initialize_state(session, options);
+	}
+
+	session.is_successful = read_bundle_file(filename, session, get_default_target_triple());
+}
+
+void compiler_debug_print(compile_session &result) {
 	auto state = std::static_pointer_cast<codegen::state>(result.state);
 	if (state != nullptr && state->TheModule) {
 		printf("Read module:\n");
@@ -168,7 +204,7 @@ void compiler_debug_print(compile_result &result) {
 	}
 }
 
-codegen::state &get_state(const compile_result &result) {
+codegen::state &get_state(const compile_session &result) {
 	return *std::static_pointer_cast<codegen::state>(result.state);
 }
 
@@ -177,7 +213,7 @@ std::string get_default_target_triple() {
 }
 
 template<typename T>
-T run(const compile_result &result) {
+T run(const compile_session &result) {
 	auto &state = get_state(result);
 	std::string main = "main";
 
@@ -186,22 +222,22 @@ T run(const compile_result &result) {
 	return run_jit<T>(state, main);
 }
 
-bool create_meta(const compile_result &result, std::ostream& out) {
+bool create_meta(const compile_session &result, std::ostream& out) {
 	codegen::create_meta(get_state(result), out);
 	return true;
 }
 
-template int8_t run(const compile_result &);
-template int16_t run(const compile_result &);
-template int32_t run(const compile_result &);
-template int64_t run(const compile_result &);
-template uint8_t run(const compile_result &);
-template uint16_t run(const compile_result &);
-template uint32_t run(const compile_result &);
-template uint64_t run(const compile_result &);
-template void* run(const compile_result &);
-template float run(const compile_result &);
-template double run(const compile_result &);
-template bool run(const compile_result &);
+template int8_t run(const compile_session &);
+template int16_t run(const compile_session &);
+template int32_t run(const compile_session &);
+template int64_t run(const compile_session &);
+template uint8_t run(const compile_session &);
+template uint16_t run(const compile_session &);
+template uint32_t run(const compile_session &);
+template uint64_t run(const compile_session &);
+template void* run(const compile_session &);
+template float run(const compile_session &);
+template double run(const compile_session &);
+template bool run(const compile_session &);
 
 } // namespace catalyst::compiler

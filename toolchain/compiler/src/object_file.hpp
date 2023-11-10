@@ -9,6 +9,8 @@
 
 namespace catalyst::compiler {
 
-bool write_object_file(const std::string &filename, const compile_result &result, const std::string &target_triple);
+// bool write_object_file(const std::string &filename, const compile_session &result, const std::string &target_triple);
+bool write_bundle_file(const std::string &filename, const compile_session &result, const std::string &target_triple);
+bool read_bundle_file(const std::string &filename, const compile_session &, const std::string &target_triple);
 
 }

@@ -20,6 +20,9 @@ struct member {
 		for (auto c : classifiers)
 			this->classifiers.insert(c);
 	}
+	member(const std::string &name, std::shared_ptr<type> type, ast::decl_ptr decl,
+	       const std::unordered_set<ast::decl_classifier> &classifiers)
+		: name(name), type(type), decl(decl), classifiers(classifiers) {}
 	std::string name;
 	std::shared_ptr<type> type;
 	ast::decl_ptr decl;

@@ -20,11 +20,13 @@ std::shared_ptr<type_class> type_class::unknown() {
 	return u;
 }
 
+[[ deprecated ]]
 std::shared_ptr<type> type::create_class(const std::string &name,
                                          std::vector<member> const &members) {
 	return std::make_shared<type_class>(name, members);
 }
 
+[[ deprecated ]]
 std::shared_ptr<type> type::create_class(const std::string &name, const std::vector<object_type_reference<type_virtual>> &super,
                                          std::vector<member> const &members) {
 	return std::make_shared<type_class>(name, super, members);

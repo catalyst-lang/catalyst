@@ -29,32 +29,34 @@ struct options {
 	int optimizer_level = 0;
 };
 
-struct compile_result {
+struct compile_session {
 	bool is_successful = false;
 	bool is_runnable = false;
 	std::shared_ptr<void> state;
 	std::string result_type_name;
 
-	static compile_result create_failed() {
-		compile_result s;
+	static compile_session create_failed() {
+		compile_session s;
 		s.is_successful = false;
 		s.is_runnable = false;
 		return s;
 	}
 };
 
-compile_result compile_file(const std::string &filename, options);
-compile_result compile_string(const std::string &string, options);
-compile_result compile(catalyst::ast::translation_unit &tu, options);
-bool create_meta(const compile_result &result, std::ostream& out);
+bool compile_file(compile_session&, const std::string &filename, options);
+bool compile_string(compile_session&, const std::string &string, options);
+compile_session compile_string(const std::string &string, options);
+bool compile(compile_session&, catalyst::ast::translation_unit &tu, options);
+bool create_meta(const compile_session &result, std::ostream& out);
+void compiler_import_bundle(compile_session& session, const std::string &filename, options options);
 
-void compiler_debug_print(compile_result &);
+void compiler_debug_print(compile_session &);
 
-codegen::state &get_state(const compile_result &result);
+codegen::state &get_state(const compile_session &result);
 
 std::string get_default_target_triple();
 
 template<typename T>
-T run(const compile_result &result);
+T run(const compile_session &result);
 
 } // namespace catalyst

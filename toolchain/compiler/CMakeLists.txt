@@ -60,6 +60,8 @@ add_library(libcompiler
     src/jit.hpp 
     src/serializable.cpp
     src/serializable.hpp
+    ../contrib/tar/tar.cpp
+    ../contrib/tar/tar.hpp
 )
 target_include_directories(libcompiler PUBLIC ../common)
 target_compile_features(libcompiler PUBLIC cxx_std_20)

@@ -48,8 +48,19 @@ struct type: serializable::ISerializable {
 	                std::vector<std::shared_ptr<type>> const &parameters);
 	static std::shared_ptr<type> create_struct(const std::string &name,
 	                                           std::vector<member> const &members);
+
+	/**
+	 * @brief Create a class type with a super class
+	 * @deprecated use std::make_shared<type_class(...) instead
+	*/
+	[[ deprecated("use std::make_shared<type_class(...) instead") ]]
 	static std::shared_ptr<type> create_class(const std::string &name,
 	                                          std::vector<member> const &members);
+	/**
+	 * @brief Create a class type with a super class
+	 * @deprecated use std::make_shared<type_class(...) instead
+	*/
+	[[ deprecated("use std::make_shared<type_class(...) instead") ]]
 	static std::shared_ptr<type>
 	create_class(const std::string &name, const std::vector<object_type_reference<type_virtual>> &super,
 	             std::vector<member> const &members);
@@ -89,7 +100,7 @@ struct type: serializable::ISerializable {
 	virtual std::string get_fqn() const;
 
 	void serialize(std::ostream& out) const override;
-	static std::shared_ptr<type> deserialize(std::istream& in);
+	static std::shared_ptr<type> deserialize(state &state, std::istream& in);
 };
 
 struct type_undefined : type {
@@ -98,7 +109,7 @@ struct type_undefined : type {
 	bool is_valid() const override { return false; }
 	llvm::Value *get_sizeof(codegen::state &) override;
 
-	static std::shared_ptr<type> deserialize(std::istream& in);
+	static std::shared_ptr<type> deserialize(state &state, std::istream& in);
 };
 
 struct type_void : type {
@@ -107,7 +118,7 @@ struct type_void : type {
 	bool is_valid() const override { return true; }
 	llvm::Value *get_sizeof(codegen::state &) override;
 
-	static std::shared_ptr<type> deserialize(std::istream& in);
+	static std::shared_ptr<type> deserialize(state &state, std::istream& in);
 };
 
 struct type_primitive : type {
@@ -139,7 +150,7 @@ struct type_primitive : type {
 	virtual llvm::Value *get_sizeof(catalyst::compiler::codegen::state &state) override;
 
 	void serialize(std::ostream& out) const override;
-	static std::shared_ptr<type> deserialize(std::istream& in);
+	static std::shared_ptr<type> deserialize(state &state, std::istream& in);
 };
 
 struct type_bool : type_primitive {
@@ -327,7 +338,7 @@ struct type_function : type {
 	bool is_virtual() const;
 
 	void serialize(std::ostream& out) const override;
-	static std::shared_ptr<type> deserialize(std::istream& in);
+	static std::shared_ptr<type> deserialize(state &state, std::istream& in);
 };
 
 struct type_ns : type {
@@ -339,7 +350,7 @@ struct type_ns : type {
 	llvm::Value *get_sizeof(catalyst::compiler::codegen::state &state) override { return nullptr; }
 
 	void serialize(std::ostream& out) const override;
-	static std::shared_ptr<type> deserialize(std::istream& in);
+	static std::shared_ptr<type> deserialize(state &state, std::istream& in);
 };
 
 } // namespace catalyst::compiler::codegen

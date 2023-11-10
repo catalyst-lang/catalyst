@@ -10,5 +10,6 @@
 namespace catalyst::compiler::codegen {
 
 std::string classifier_to_string(ast::decl_classifier c);
+ast::decl_classifier string_to_classifier(const std::string &str);
 
 } // namespace catalyst::compiler::codegen

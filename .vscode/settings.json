@@ -121,7 +121,8 @@
         "climits": "cpp",
         "ranges": "cpp",
         "span": "cpp",
-        "regex": "cpp"
+        "regex": "cpp",
+        "strstream": "cpp"
     },
     "files.insertFinalNewline": false,
     "python.analysis.diagnosticSeverityOverrides": {

@@ -31,7 +31,7 @@ struct type_custom : type {
 	int get_member_index_in_llvm_struct(const member_locator &member_locator) const;
 
 	void serialize(std::ostream& out) const override;
-	static std::shared_ptr<type> deserialize(std::istream& in);
+	static std::shared_ptr<type> deserialize(state &state, std::istream& in);
 };
 
 struct type_struct : type_custom {
@@ -49,7 +49,7 @@ struct type_struct : type_custom {
 	llvm::Value *get_sizeof(catalyst::compiler::codegen::state &state) override;
 
 	void serialize(std::ostream& out) const override;
-	static std::shared_ptr<type> deserialize(std::istream& in);
+	static std::shared_ptr<type> deserialize(state &state, std::istream& in, const std::string &name, const std::string &init_function_name, const std::vector<member> &members);
 
   private:
 	llvm::StructType *structType = nullptr;
@@ -82,7 +82,7 @@ struct type_virtual : type_custom {
 	virtual llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state, type_virtual &mimicking_virtual) = 0;
 
 	void serialize(std::ostream& out) const override;
-	static std::shared_ptr<type> deserialize(std::istream& in);
+	static std::shared_ptr<type> deserialize(state &state, std::istream& in, const std::string &name, const std::string &init_function_name, const std::vector<member> &members);
 };
 
 struct type_class : type_virtual {
@@ -116,7 +116,7 @@ struct type_class : type_virtual {
 	llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state, type_virtual &mimicking_virtual) override;
 
 	void serialize(std::ostream& out) const override;
-	static std::shared_ptr<type> deserialize(std::istream& in);
+	static std::shared_ptr<type> deserialize(state &state, std::istream& in, const std::string &name, const std::string &init_function_name, const std::vector<object_type_reference<type_virtual>> &super, const std::vector<member> &members);
 
   private:
 	llvm::StructType *structType = nullptr;
@@ -130,6 +130,7 @@ struct type_class : type_virtual {
 struct type_object : type {
 	explicit type_object(codegen::state &state, const std::string& type_fqn);
 	explicit type_object(codegen::state &state, std::shared_ptr<type_custom> custom_type);
+	explicit type_object(object_type_reference<type_custom> custom_type);
 
 	//std::shared_ptr<type_custom> object_type;
 	object_type_reference<type_custom> object_type;
@@ -148,7 +149,7 @@ struct type_object : type {
 	}
 
 	void serialize(std::ostream& out) const override;
-	static std::shared_ptr<type> deserialize(std::istream& in);
+	static std::shared_ptr<type> deserialize(state &state, std::istream& in);
 };
 
 } // namespace catalyst::compiler::codegen
