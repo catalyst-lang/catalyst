@@ -11,7 +11,7 @@
 #ifdef ENABLE_LOGGING
 #  define LOG printf
 #else
-#  define LOG(fmt, args ...) ((void)0)
+#  define LOG(fmt, args, ...) ((void)0)
 #endif
 
 namespace tar
