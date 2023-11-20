@@ -73,12 +73,43 @@ find_package(LLVM REQUIRED CONFIG)
 target_include_directories(libcompiler PRIVATE ${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
-execute_process(COMMAND "$ENV{LLVM_DIR}/bin/llvm-config" "--libfiles" OUTPUT_VARIABLE llvm_libfiles_output)
-separate_arguments(llvm_libfiles NATIVE_COMMAND ${llvm_libfiles_output})
-message("echo  $ENV{LLVM_DIR}/bin/llvm-config.exe ${llvm_libfiles}")
+#execute_process(COMMAND "$ENV{LLVM_DIR}/bin/llvm-config" "--libfiles" OUTPUT_VARIABLE llvm_libfiles_output)
+#separate_arguments(llvm_libfiles NATIVE_COMMAND ${llvm_libfiles_output})
+#message("echo  $ENV{LLVM_DIR}/bin/llvm-config.exe ${llvm_libfiles}")
 #llvm_map_components_to_libnames(llvm_libs ${llvm_components})
+#target_link_libraries(libcompiler PRIVATE libparser)
+#target_link_libraries(libcompiler PRIVATE ${llvm_libfiles})
+
+#llvm_config(libcompiler USE_SHARED all)
+llvm_map_components_to_libnames(llvm_libs 
+    orcjit 
+    AllTargetsAsmParsers
+    AllTargetsCodeGens
+    AllTargetsDescs
+    AllTargetsInfos
+    #Analysis
+    #BitWriter
+    #CodeGen
+    #Extensions
+    #Core
+    #IPO
+    #IRReader
+    #AggressiveInstCombine
+    #InstCombine
+    #Instrumentation
+    #Linker
+    #ObjCARCOpts
+    #ScalarOpts
+    #Support
+    #Target
+    #TargetParser
+    #TransformUtils
+    #Vectorize
+)
+
+
 target_link_libraries(libcompiler PRIVATE libparser)
-target_link_libraries(libcompiler PRIVATE ${llvm_libfiles})
+target_link_libraries(libcompiler PRIVATE ${llvm_libs})
 
 add_executable(compiler src/main.cpp ../common/catalyst/ast/stmt.hpp)
 target_link_libraries(compiler PUBLIC libcompiler)

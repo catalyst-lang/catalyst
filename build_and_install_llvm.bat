@@ -13,7 +13,7 @@ if exist "C:\Program Files\Microsoft Visual Studio\2022\Community" (
 if not exist llvm mkdir llvm
 cd llvm
 
-git clone --config core.autocrlf=false --branch llvmorg-17.0.4 --depth 1 --single-branch https://github.com/llvm/llvm-project.git
+git clone --config core.autocrlf=false --branch llvmorg-17.0.5 --depth 1 --single-branch https://github.com/llvm/llvm-project.git
 
 if not exist build mkdir build
 cd build
