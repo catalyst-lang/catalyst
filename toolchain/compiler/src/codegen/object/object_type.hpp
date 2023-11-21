@@ -66,6 +66,9 @@ struct type_virtual : type_custom {
 	std::vector<object_type_reference<type_virtual>> super;
 
 	bool is_assignable_from(const std::shared_ptr<type> &type) const override;
+	bool is_downcastable_from(const std::shared_ptr<type_virtual> &type) const;
+	virtual llvm::Value *downcast_llvm_value(codegen::state &state, llvm::Value *value,
+							 const type &to) const = 0;
 
 	// virtual members
 	virtual std::vector<member_locator> get_virtual_members();
@@ -102,7 +105,7 @@ struct type_class : type_virtual {
 
 	void copy_from(type_class &other);
 
-	virtual llvm::Value *get_sizeof(catalyst::compiler::codegen::state &state) override;
+	llvm::Value *get_sizeof(catalyst::compiler::codegen::state &state) override;
 
 	int get_member_index_in_llvm_struct(member *member) const override;
 	int get_super_index_in_llvm_struct(type_custom *super) const override;
@@ -111,6 +114,9 @@ struct type_class : type_virtual {
 
 	llvm::Value *cast_llvm_value(codegen::state &state, llvm::Value *value,
 	                             const type &to) const override;
+	llvm::Value *downcast_llvm_value(codegen::state &state, llvm::Value *value,
+								 const type &to) const override;
+
 	llvm::StructType *get_llvm_metadata_struct_type(codegen::state &state) override;
 	llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state) override;
 	llvm::GlobalVariable *get_llvm_metadata_object(codegen::state &state, type_virtual &mimicking_virtual) override;

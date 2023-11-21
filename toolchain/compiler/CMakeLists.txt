@@ -131,6 +131,7 @@ add_executable(test-compiler
     tests/namespaces.cpp
     tests/virtuals.cpp
     tests/multiple_inheritance.cpp
+    tests/class_casting.cpp
 )
 target_compile_features(test-compiler PRIVATE cxx_std_20)
 target_link_libraries(test-compiler PUBLIC libcompiler)

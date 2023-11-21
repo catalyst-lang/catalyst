@@ -627,9 +627,36 @@ llvm::Value *codegen(codegen::state &state, ast::expr_assignment &expr,
 
 llvm::Value *codegen(codegen::state &state, ast::expr_cast &expr,
                      std::shared_ptr<type> expecting_type) {
-	auto expr_type = expr_resulting_type(state, expr.lhs);
+	auto value_type = expr_resulting_type(state, expr.lhs);
 	auto value = codegen(state, expr.lhs);
-	return expr_type->cast_llvm_value(state, value, *type::create(state, expr.type));
+	auto to_type = type::create(state, expr.type);
+	if (isa<type_object>(to_type)) {
+		to_type = std::static_pointer_cast<type_object>(to_type)->object_type.get();
+	}
+	if (isa<type_object>(value_type) && isa<type_virtual>(to_type)) {
+		// in the case of explicit casting virtuals, we can both upcast and downcast
+
+		auto value_virtual_type = std::static_pointer_cast<type_object>(value_type)->object_type.get();
+		auto from = std::dynamic_pointer_cast<type_virtual>(value_virtual_type);
+		auto to = std::dynamic_pointer_cast<type_virtual>(to_type);
+
+		// upcast
+		if (to->is_assignable_from(from)) {
+			return from->cast_llvm_value(state, value, *to);
+		}
+		// downcast
+		if (to->is_downcastable_from(from)) {
+			return from->downcast_llvm_value(state, value, *to);
+		}
+		// invalid cast
+		state.report_message(report_type::error,
+		                     std::string("Cannot cast from `") + from->get_fqn() + "` to `" +
+		                         to->get_fqn() + "`",
+		                     &expr);
+		return nullptr;
+	} else {
+		return value_type->cast_llvm_value(state, value, *to_type);
+	}
 }
 
 } // namespace catalyst::compiler::codegen

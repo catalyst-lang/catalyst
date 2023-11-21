@@ -126,6 +126,15 @@ bool type_virtual::is_assignable_from(const std::shared_ptr<type> &type) const {
 	return false;
 }
 
+bool type_virtual::is_downcastable_from(const std::shared_ptr<type_virtual> &from) const {
+	if (from.get() == this)
+		return true;
+
+	return std::any_of(
+			this->super.cbegin(), this->super.cend(),
+			[&](const object_type_reference<type_virtual> &s) { return s->is_downcastable_from(from); });
+}
+
 std::vector<member_locator> type_virtual::get_virtual_members() {
 	// TODO: we can probably cache this the first time we call it
 

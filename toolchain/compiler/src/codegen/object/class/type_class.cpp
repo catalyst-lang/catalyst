@@ -205,16 +205,7 @@ int type_class::get_super_index_in_llvm_struct(type_custom *super) const {
 	}
 }
 
-llvm::Value *type_class::cast_llvm_value(codegen::state &state, llvm::Value *value,
-                                          const type &to) const {
-	if (!isa<type_class>(to)) {
-		return nullptr;
-	}
-
-	auto to_class = (type_class*)&to;
-
-	if (this == to_class) return value;
-
+static llvm::PHINode* wrap_in_null_check(codegen::state &state, llvm::Value *value, std::function<llvm::Value*()> func) {
 	// null check
 	auto *notNullBB = llvm::BasicBlock::Create(*state.TheContext, "is_not_null", state.current_function);
 	auto *nullBB = llvm::BasicBlock::Create(*state.TheContext, "is_null", state.current_function);
@@ -228,32 +219,94 @@ llvm::Value *type_class::cast_llvm_value(codegen::state &state, llvm::Value *val
 	state.Builder.CreateBr(mergeBB);
 
 	state.Builder.SetInsertPoint(notNullBB);
-	llvm::Value *casted = nullptr;
-	if (int index = this->get_super_index_in_llvm_struct(to_class); index >= 0) {
-		casted = state.Builder.CreateStructGEP(this->get_llvm_struct_type(state),
-												value, index, to_class->name + "_ptr");
-	} else {
-		for (auto const &s : this->super) {
-			if (to_class->is_assignable_from(s.get())) {
-				value = state.Builder.CreateStructGEP(
-					this->get_llvm_struct_type(state), value,
-					this->get_super_index_in_llvm_struct(s.get().get()),
-					s->name + "_ptr");
-				casted = s->cast_llvm_value(state, value, to);
-				break;
-			}
-		}
-	}
+
+	value = func();
+
 	// update notNullBB, because we might be completely somewhere else now because of above function calls
 	notNullBB = state.Builder.GetInsertBlock();
 
 	state.Builder.CreateBr(mergeBB);
 	state.Builder.SetInsertPoint(mergeBB);
 	auto* phi = state.Builder.CreatePHI(llvm::PointerType::get(*state.TheContext, 0), 2, "casted");
-	phi->addIncoming(casted, notNullBB);
+	phi->addIncoming(value, notNullBB);
 	phi->addIncoming(nullValue, nullBB);
-	
+
 	return phi;
+}
+
+static llvm::Value* downcast(codegen::state& state, llvm::Value* value, const type_virtual& from, const type_virtual& to) {
+	auto intermediate_to = &to;
+	while (*intermediate_to != from && !intermediate_to->super.empty()) {
+		for (auto const &s : intermediate_to->super) {
+			if (from.is_assignable_from(s.get())) {
+				auto nullConstant = llvm::Constant::getNullValue(intermediate_to->get_llvm_type(state)->getPointerTo());
+				int index = intermediate_to->get_super_index_in_llvm_struct(s.get().get());
+
+				// Get the offset to from in the parent class struct
+				auto* offsetGepInst = state.Builder.CreateStructGEP(intermediate_to->get_llvm_struct_type(state), nullConstant, index, "super_offset");
+				auto ptrSize = (unsigned int)state.TheModule->getDataLayout().getTypeAllocSizeInBits(llvm::PointerType::get(*state.TheContext, 0));
+				auto ptrIntType = llvm::IntegerType::getIntNTy(*state.TheContext, ptrSize);
+				auto *castedPtrInt = state.Builder.CreatePtrToInt(offsetGepInst, ptrIntType);
+				auto* negOffset = state.Builder.CreateNeg(castedPtrInt, "neg_offset");
+				auto *castedIntPtr = state.Builder.CreateIntToPtr(negOffset, llvm::PointerType::get(*state.TheContext, 0));
+
+				// Subtract the offset from the pointer this_
+				//value = state.Builder.CreateGEP(llvm::Type::getInt8Ty(*state.TheContext), value, castedIntPtr, "offsetted_value");
+				value = state.Builder.CreateGEP(llvm::Type::getInt8Ty(*state.TheContext), value, negOffset, "offsetted_value");
+				intermediate_to = s.get().get();
+				break;
+			}
+		}
+	}
+
+	return value;
+}
+
+
+llvm::Value *type_class::cast_llvm_value(codegen::state &state, llvm::Value *value,
+                                          const type &to) const {
+	if (!isa<type_class>(to)) {
+		return nullptr;
+	}
+
+	auto to_class = (type_class*)&to;
+
+	if (this == to_class) return value;
+
+	return wrap_in_null_check(state, value, [&]() {
+		llvm::Value *casted = nullptr;
+		if (int index = this->get_super_index_in_llvm_struct(to_class); index >= 0) {
+			casted = state.Builder.CreateStructGEP(this->get_llvm_struct_type(state),
+													value, index, to_class->name + "_ptr");
+		} else {
+			for (auto const &s : this->super) {
+				if (to_class->is_assignable_from(s.get())) {
+					value = state.Builder.CreateStructGEP(
+						this->get_llvm_struct_type(state), value,
+						this->get_super_index_in_llvm_struct(s.get().get()),
+						s->name + "_ptr");
+					casted = s->cast_llvm_value(state, value, to);
+					break;
+				}
+			}
+		}
+		return casted;
+	});
+}
+
+llvm::Value *type_class::downcast_llvm_value(codegen::state &state, llvm::Value *value,
+									 const type &to) const {
+	if (!isa<type_class>(to)) {
+		return nullptr;
+	}
+
+	auto to_class = (type_class*)&to;
+
+	if (this == to_class) return value;
+
+	return wrap_in_null_check(state, value, [&]() {
+		return downcast(state, value, *this, *to_class);
+	});
 }
 
 llvm::Constant* type_class::create_thunk_function(codegen::state &state, llvm::Function * function, const type_virtual &from, const type_virtual &to) {
@@ -279,29 +332,7 @@ llvm::Constant* type_class::create_thunk_function(codegen::state &state, llvm::F
 	// adjust the address of the first argument (the 'this') from a pointer to type 'from' to pointer of type 'to'.
 	auto *this_ = args[0];
 	this_->setName("this");
-	auto intermediate_to = &to;
-	while (*intermediate_to != from && !intermediate_to->super.empty()) {
-		for (auto const &s : intermediate_to->super) {
-			if (from.is_assignable_from(s.get())) {
-				auto nullConstant = llvm::Constant::getNullValue(intermediate_to->get_llvm_type(state)->getPointerTo());
-				int index = intermediate_to->get_super_index_in_llvm_struct(s.get().get());
-
-				// Get the offset to from in the parent class struct
-				auto* offsetGepInst = state.Builder.CreateStructGEP(intermediate_to->get_llvm_struct_type(state), nullConstant, index, "super_offset");
-				auto ptrSize = (unsigned int)state.TheModule->getDataLayout().getTypeAllocSizeInBits(llvm::PointerType::get(*state.TheContext, 0));
-				auto ptrIntType = llvm::IntegerType::getIntNTy(*state.TheContext, ptrSize);
-				auto *castedPtrInt = state.Builder.CreatePtrToInt(offsetGepInst, ptrIntType);
-				auto* negOffset = state.Builder.CreateNeg(castedPtrInt, "neg_offset");
-				auto *castedIntPtr = state.Builder.CreateIntToPtr(negOffset, llvm::PointerType::get(*state.TheContext, 0));
-
-				// Subtract the offset from the pointer this_
-				this_ = state.Builder.CreateGEP(llvm::Type::getInt8Ty(*state.TheContext), this_, castedIntPtr, "offsetted_this");
-				intermediate_to = s.get().get();
-				break;
-			}
-		}
-	}
-	args[0] = this_;
+	args[0] = downcast(state, this_, from, to);
 
 	// generate a call to the original function with the arguments from the thunk function
 	auto *ret = state.Builder.CreateCall(function, args, "thunked_call");
