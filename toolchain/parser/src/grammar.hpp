@@ -13,8 +13,9 @@
 namespace catalyst::parser::grammar {
 namespace dsl = lexy::dsl;
 
-constexpr auto whitespace_normal = dsl::ascii::blank | LEXY_LIT("//") >> dsl::until(dsl::newline) |
-                                   LEXY_LIT("/*") >> dsl::until(LEXY_LIT("*/"));
+constexpr auto comment_single_line = LEXY_LIT("//") >> dsl::do_while(dsl::unicode::character, dsl::peek_not(dsl::newline));
+constexpr auto comment_block = LEXY_LIT("/*") >> dsl::until(LEXY_LIT("*/"));
+constexpr auto whitespace_normal = dsl::ascii::blank | comment_single_line | comment_block;
 constexpr auto whitespace_incl_nl = dsl::newline | whitespace_normal;
 
 struct expected_identifier {
