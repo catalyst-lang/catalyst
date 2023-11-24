@@ -18,7 +18,7 @@ git clone --config core.autocrlf=false --branch llvmorg-17.0.5 --depth 1 --singl
 if not exist build mkdir build
 cd build
 
-cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="%cd%\..\package" ../llvm-project/llvm
+cmake -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="%cd%\..\package" -DLLVM_TARGETS_TO_BUILD=X86;ARM;AArch64;WebAssembly ../llvm-project/llvm
 cmake --build . --config Debug
 
 echo.

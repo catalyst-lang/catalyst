@@ -6,7 +6,7 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.24.0)
 endif()
 
 include(FetchContent)
-FetchContent_Declare(lexy URL https://lexy.foonathan.net/download/lexy-src.zip)
+FetchContent_Declare(lexy URL https://github.com/foonathan/lexy/releases/download/v2022.12.1/lexy-src.zip)
 FetchContent_MakeAvailable(lexy)
 
 add_library(libparser ../common/catalyst/ast/ast.hpp src/grammar.hpp src/parser.cpp src/types.hpp src/positional.hpp src/state.hpp)
@@ -20,7 +20,11 @@ target_link_libraries(parser PUBLIC libparser)
 target_include_directories(parser PRIVATE ${rang_SOURCE_DIR})
 target_include_directories(parser PRIVATE ${cli11_SOURCE_DIR})
 
-add_executable(test-parser tests/doctest_main.cpp tests/functions.cpp)
+add_executable(test-parser
+        tests/doctest_main.cpp
+        tests/functions.cpp
+        tests/comments.cpp
+)
 target_compile_features(test-parser PRIVATE cxx_std_17)
 target_link_libraries(test-parser PUBLIC libparser)
 target_include_directories(test-parser PRIVATE ${doctest_SOURCE_DIR})
