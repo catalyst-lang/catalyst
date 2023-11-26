@@ -4,7 +4,7 @@
 #pragma once
 
 #include <memory>
-#include <variant>
+#include <utility>
 
 #include "parser.hpp"
 #include "general.hpp"
@@ -15,7 +15,7 @@ struct expr : parser::ast_node {
 	virtual ~expr() = default;
 	using ast_node::ast_node;
 };
-using expr_ptr = std::shared_ptr<struct expr>;
+using expr_ptr = std::shared_ptr<expr>;
 
 struct expr_ident;
 struct expr_literal;
@@ -79,7 +79,7 @@ struct expr_literal_numeric : expr_literal {
 		  exponent(std::nullopt), classifier(numeric_classifier::signed64) {}
 
 	int sign;
-	int64_t integer;
+	uint64_t integer;
 	std::optional<int64_t> fraction;
 	std::optional<int16_t> exponent;
 	numeric_classifier classifier;
@@ -129,7 +129,7 @@ struct expr_binary_arithmetic : expr {
 	} op;
 	expr_ptr lhs, rhs;
 
-	explicit expr_binary_arithmetic(expr_ptr lhs, op_t op, expr_ptr rhs)
+	explicit expr_binary_arithmetic(const expr_ptr& lhs, op_t op, const expr_ptr& rhs)
 		: expr(lhs->lexeme.end, rhs->lexeme.begin), op(op), lhs(lhs), rhs(rhs) {}
 };
 
@@ -145,9 +145,8 @@ struct expr_cast : expr {
 	expr_ptr lhs;
 	ast::type_ptr type;
 
-	explicit expr_cast(const parser::char_type *begin, const parser::char_type *end, expr_ptr lhs,
-	                   ast::type_ptr type)
-		: expr(begin, end), lhs(lhs), type(type) {}
+	explicit expr_cast(const parser::char_type *begin, const parser::char_type *end, expr_ptr lhs, ast::type_ptr type)
+		: expr(begin, end), lhs(std::move(lhs)), type(std::move(type)) {}
 };
 
 struct expr_assignment : expr {
@@ -156,7 +155,7 @@ struct expr_assignment : expr {
 	} op;
 	expr_ptr lhs, rhs;
 
-	explicit expr_assignment(expr_ptr lhs, op_t op, expr_ptr rhs)
+	explicit expr_assignment(const expr_ptr& lhs, op_t op, const expr_ptr& rhs)
 		: expr(lhs->lexeme.end, rhs->lexeme.begin), op(op), lhs(lhs), rhs(rhs) {}
 };
 

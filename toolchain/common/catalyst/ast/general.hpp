@@ -3,15 +3,10 @@
 
 #pragma once
 
-#include <cinttypes>
-#include <cstdint>
-#include <cstdio>
-#include <map>
 #include <memory>
 #include <optional>
 #include <string>
 #include <utility>
-#include <variant>
 #include <vector>
 
 #include "../../../parser/src/types.hpp"
@@ -50,8 +45,8 @@ struct type_qualified_name : type {
 
 	std::vector<ident> idents;
 
-	inline std::string to_string() const {
-		std::string ret = "";
+	[[nodiscard]] inline std::string to_string() const {
+		std::string ret;
 		for (int i = 0; i < idents.size(); i++) {
 			if (i > 0) ret += ".";
 			ret += idents[i].name;
@@ -67,9 +62,9 @@ struct type_function_parameter : parser::ast_node {
 
 struct type_function : type {
 	explicit type_function(parser::char_type const *begin, parser::char_type const *end,
-	                       std::vector<ast::type_function_parameter> &parameter_list,
-	                       type_ptr &return_type)
-		: parameter_list(parameter_list), return_type(return_type), type(begin, end) {}
+	                       const std::vector<ast::type_function_parameter> &parameter_list,
+	                       type_ptr return_type)
+		: type(begin, end), parameter_list(parameter_list), return_type(std::move(return_type)) {}
 
 	std::vector<ast::type_function_parameter> parameter_list;
 	type_ptr return_type;

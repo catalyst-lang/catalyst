@@ -617,6 +617,17 @@ struct decl_struct {
 		});
 };
 
+struct decl_trait {
+	static constexpr auto name = "trait declaration";
+	static constexpr auto
+		rule = kw_trait >> dsl::p<ident> + dsl::p<decl_list> + dsl::position;
+
+	static constexpr auto value =
+	lexy::callback<ast::decl_ptr>([](auto ident, auto decls, auto end) {
+		return std::make_shared<ast::decl_trait>(ident.lexeme.begin, end, ident, decls);
+	});
+};
+
 struct decl_class {
 	static constexpr auto name = "class declaration";
 	static constexpr auto
@@ -663,7 +674,7 @@ struct decl_classifiers {
 struct decl {
 	static constexpr auto name = "declaration";
 	static constexpr auto decl_opts = dsl::p<decl_fn> | dsl::p<decl_var> | dsl::p<decl_const> |
-	                                  dsl::p<decl_struct> | dsl::p<decl_class> | dsl::p<decl_ns>;
+	                                  dsl::p<decl_struct> | dsl::p<decl_trait> | dsl::p<decl_class> | dsl::p<decl_ns>;
 	static constexpr auto rule =
 		dsl::peek(dsl::p<decl_classifiers>) >> (dsl::p<decl_classifiers> + decl_opts) | decl_opts;
 	static constexpr auto value = lexy::callback<ast::decl_ptr>(
