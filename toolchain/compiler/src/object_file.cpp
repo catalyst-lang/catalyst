@@ -72,7 +72,7 @@ bool write_object_file(std::ostringstream &oss, const compile_session &result, c
 
     // add a pass that emits the code
     llvm::legacy::PassManager pass;
-    auto FileType = llvm::CodeGenFileType::CGFT_ObjectFile;
+    auto FileType = llvm::CodeGenFileType::ObjectFile;
 
     llvm::raw_os_ostream raw_os(oss);
     llvm::buffer_ostream dest(raw_os);
