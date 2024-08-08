@@ -44,7 +44,7 @@ jobs:
         run: |
           brew update || true
           brew install llvm@${LLVM_VER%%.*} --overwrite
-          echo "LLVM_DIR=/usr/local/opt/llvm" >> $GITHUB_ENV
+          echo "LLVM_DIR=/opt/homebrew/opt/llvm" >> $GITHUB_ENV
 
       - name: Configure
         run: cmake -GNinja -B build -DCMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }} -DCMAKE_BUILD_TYPE=Release
