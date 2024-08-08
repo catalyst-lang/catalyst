@@ -42,7 +42,7 @@ jobs:
           java-version: '21'
 
       - name: Install sonar-scanner and build-wrapper
-        uses: SonarSource/sonarcloud-github-c-cpp@v1
+        uses: SonarSource/sonarcloud-github-c-cpp@v2
 
       - name: Configure
         run: cmake -GNinja -B build -DCMAKE_CXX_COMPILER=clang++-${LLVM_VER%%.*} -DCMAKE_C_COMPILER=clang-${LLVM_VER%%.*} -DCMAKE_BUILD_TYPE=Release -DCOVERAGE=true -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
