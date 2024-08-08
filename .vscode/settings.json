@@ -175,4 +175,5 @@
     "cmake.configureEnvironment": {
         "LLVM_DIR": "${workspaceFolder}/llvm/package"
     },
+    "C_Cpp.codeAnalysis.clangTidy.enabled": true,
 }

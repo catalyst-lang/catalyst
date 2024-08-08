@@ -8,7 +8,7 @@ on:
 name: Continuous Integration
 
 env:
-  LLVM_VER: 17.0.3
+  LLVM_VER: 18.1.8
 
 jobs:
   unix:
