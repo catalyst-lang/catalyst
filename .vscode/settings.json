@@ -122,7 +122,10 @@
         "ranges": "cpp",
         "span": "cpp",
         "regex": "cpp",
-        "strstream": "cpp"
+        "strstream": "cpp",
+        "*.tcc": "cpp",
+        "numbers": "cpp",
+        "semaphore": "cpp"
     },
     "files.insertFinalNewline": false,
     "python.analysis.diagnosticSeverityOverrides": {

@@ -35,6 +35,7 @@ Dependencies for building:
           $ wget https://apt.llvm.org/llvm.sh
           $ chmod +x llvm.sh
           $ sudo ./llvm.sh
+          $ sudo apt install -y libzstd-dev
           ```
       - On MacOS use:
         ```
