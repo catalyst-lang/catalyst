@@ -32,7 +32,7 @@ jobs:
           version: 1.12.1
 
       - name: Install Linux dependencies
-        if: ${{ matrix.platform == 'ubuntu-22.04' }}
+        if: ${{ startsWith(matrix.platform, 'ubuntu-') }}
         run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
@@ -40,7 +40,7 @@ jobs:
           echo "LLVM_DIR=/usr/lib/llvm-${LLVM_VER%%.*}" >> $GITHUB_ENV
 
       - name: Install macOS dependencies
-        if: ${{ matrix.platform == 'macos-latest' }}
+        if: ${{ startsWith(matrix.platform, 'macos-') }}
         run: |
           brew update || true
           brew install llvm@${LLVM_VER%%.*} --overwrite
