@@ -14,7 +14,7 @@ env:
 jobs:
   build:
     name: Build and analyze
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory # Directory where build-wrapper output will be placed
 
@@ -27,7 +27,7 @@ jobs:
         uses: ashutoshvarma/setup-ninja@master
         with:
           # ninja version to download. Default: 1.10.0
-          version: 1.10.0
+          version: 1.12.1
 
       - name: Install dependencies
         run: |

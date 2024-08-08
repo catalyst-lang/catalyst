@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        platform: [ubuntu-22.04]
+        platform: [ubuntu-24.04]
         cxx_compiler: ["clang++-${LLVM_VER%%.*}"]
         include:
           - platform: macos-latest
@@ -29,7 +29,7 @@ jobs:
         uses: ashutoshvarma/setup-ninja@master
         with:
           # ninja version to download. Default: 1.10.0
-          version: 1.10.0
+          version: 1.12.1
 
       - name: Install Linux dependencies
         if: ${{ matrix.platform == 'ubuntu-22.04' }}
@@ -72,7 +72,7 @@ jobs:
         uses: ashutoshvarma/setup-ninja@master
         with:
           # ninja version to download. Default: 1.10.0
-          version: 1.10.0
+          version: 1.12.1
 
       - name: Setup LLVM libraries
         shell: cmd
